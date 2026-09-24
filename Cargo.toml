@@ -1,0 +1,65 @@
+[package]
+name = "bertbox"
+version = "0.1.0-dev"
+edition = "2024"
+
+[dependencies]
+aes = "0.9"
+anyhow = "1"
+base64 = "0.23"
+chardetng = "1"
+clap = { version = "4", features = ["derive", "env", "string"] }
+clap_complete = "4"
+crc32fast = "1"
+crossterm = "0.29"
+ctr = "0.10"
+digest-io = "0.1"
+dns-lookup = "4"
+dotenvy = "0.15"
+etcetera = "0.11"
+flate2 = "1"
+hex = "0.4"
+ignore = "0.4"
+imagesize = "0.15"
+indicatif = "0.18"
+infer = "0.22"
+ipnet = "2"
+jiff = "0.2"
+linkify = "0.11"
+lofty = "0.25"
+mailparse = "0.18"
+md-5 = "0.11"
+mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
+nix = { version = "0.31", features = ["fs", "signal", "user"] }
+nucleo-matcher = "0.3"
+percent-encoding = "2"
+qrcode = { version = "0.14", default-features = false }
+rand = "0.10"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+regex = "1"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
+rpassword = "7"
+rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.11"
+sha2 = "0.11"
+signal-hook = "0.4"
+socket2 = "0.6"
+tempfile = "3"
+unicode-normalization = "0.1"
+url = "2"
+walkdir = "2"
+zbus = "6"
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+webpki-root-certs = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[build-dependencies]
+vergen-gix = { version = "10", features = ["emit_and_set"] }
