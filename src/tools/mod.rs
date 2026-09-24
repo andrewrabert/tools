@@ -1,0 +1,62 @@
+pub mod archive;
+pub mod audio_tag;
+pub mod b64;
+pub mod bertbox;
+pub mod broken_links;
+pub mod case_collisions;
+pub mod cb;
+pub mod cdemu_tool;
+pub mod claude_statusline;
+pub mod code_nuke;
+pub mod dl;
+pub mod empty_tree;
+pub mod encode_utf8;
+pub mod escape_files_windows;
+pub mod exit_code;
+pub mod fanpipe;
+pub mod file_hash_recorder;
+pub mod find_dupes;
+pub mod find_file_exts;
+pub mod forgejo;
+pub mod geoip;
+pub mod git;
+pub mod img;
+pub mod img_size;
+pub mod json;
+pub mod lmk;
+pub mod lust;
+pub mod mac_address;
+pub mod mime_ext;
+pub mod mkv_convert;
+pub mod mkv_extract_languages;
+pub mod mkv_find_lang;
+pub mod mkv_language_strip;
+pub mod mkv_preview;
+pub mod mkv_set_title_from_filename;
+pub mod music_organizer;
+pub mod path_renamer;
+pub mod pathbin;
+pub mod pathcacher;
+pub mod pending_sync;
+pub mod preview;
+pub mod publicip;
+pub mod qr;
+pub mod radix;
+pub mod reencode_lossless;
+pub mod rerename;
+pub mod syncthing_conflicts;
+pub mod syncthing_stversions;
+pub mod tmux;
+pub mod txt;
+pub mod ud;
+pub mod url;
+pub mod urlextract;
+pub mod zlib;
+
+use std::process::ExitCode;
+
+use clap::Args;
+
+pub trait Tool: Args {
+    fn run(self) -> ExitCode;
+}

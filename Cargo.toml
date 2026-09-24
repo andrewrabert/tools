@@ -1,0 +1,52 @@
+[package]
+name = "bertbox"
+version = "0.1.0-dev"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.23"
+chardetng = "0.1"
+clap = { version = "4", features = ["derive", "env", "string"] }
+clap_complete = "4"
+crc32fast = "1"
+crossterm = "0.29"
+etcetera = "0.11"
+flate2 = "1"
+ignore = "0.4"
+imagesize = "0.15"
+indicatif = "0.18"
+jiff = "0.2"
+lofty = "0.25"
+mailparse = "0.17"
+md-5 = "0.10"
+mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
+nix = { version = "0.31", features = ["fs", "signal", "user"] }
+nucleo-matcher = "0.3"
+percent-encoding = "2"
+qrcode = { version = "0.14", default-features = false }
+rand = "0.10"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+regex = "1"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
+rpassword = "7"
+rusqlite = { version = "0.40", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.10"
+sha2 = "0.10"
+signal-hook = "0.4"
+tempfile = "3"
+unicode-normalization = "0.1"
+url = "2"
+walkdir = "2"
+zbus = "5"
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[build-dependencies]
+vergen-gix = { version = "10", features = ["emit_and_set"] }
