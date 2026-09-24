@@ -1,0 +1,43 @@
+[package]
+name = "bertbox"
+version = "0.1.0-dev"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.23"
+chardetng = "0.1"
+clap = { version = "4", features = ["derive", "string"] }
+clap_complete = "4"
+crc32fast = "1"
+etcetera = "0.11"
+flate2 = "1"
+ignore = "0.4"
+indicatif = "0.18"
+jiff = "0.2"
+lofty = "0.25"
+mailparse = "0.17"
+md-5 = "0.10"
+mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
+nix = { version = "0.31", features = ["fs", "hostname", "signal", "user"] }
+percent-encoding = "2"
+rand = "0.10"
+regex = "1"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
+rpassword = "7"
+rusqlite = { version = "0.40", features = ["bundled"] }
+serde_json = "1"
+sha1 = "0.10"
+sha2 = "0.10"
+signal-hook = "0.4"
+tempfile = "3"
+unicode-normalization = "0.1"
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[build-dependencies]
+vergen-gix = { version = "10", features = ["emit_and_set"] }
