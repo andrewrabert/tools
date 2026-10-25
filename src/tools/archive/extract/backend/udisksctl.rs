@@ -5,9 +5,13 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use nix::unistd::Uid;
 use tempfile::TempDir;
+use winnow::Parser;
+use winnow::combinator::terminated;
+use winnow::error::{EmptyError, ParseError};
+use winnow::token::{rest, take_until, take_while};
 
 use crate::tools::archive::extract::backend::Request;
 use crate::tools::archive::extract::listing::Contents;
@@ -21,6 +25,7 @@ const SECTION_INDENT: usize = 2;
 const PROPERTY_INDENT: usize = 4;
 const DIRECTORY_MODE: u32 = 0o755;
 const FILE_MODE: u32 = 0o644;
+const UNEXPECTED_OUTPUT: &str = "unexpected udisksctl info output";
 
 type Info = BTreeMap<String, BTreeMap<String, Vec<String>>>;
 
@@ -31,44 +36,82 @@ fn info(device: &str) -> Result<Info> {
             .arg(device),
     )?;
     let output = String::from_utf8(output).context("udisksctl info is not valid UTF-8")?;
+    parse_info(&output)
+}
 
+enum Line<'i> {
+    Ignored,
+    Section(&'i str),
+    Property { name: &'i str, value: &'i str },
+    Continuation(&'i str),
+}
+
+fn parse_info(output: &str) -> Result<Info> {
     let mut info = Info::new();
     let mut section = None;
     let mut property = None;
-    for line in output.lines().filter(|line| !line.trim().is_empty()) {
-        let indent = line.len() - line.trim_start().len();
-        let text = line.trim();
-        if indent < SECTION_INDENT {
-            continue;
-        }
-        if indent < PROPERTY_INDENT {
-            let name = text.trim_end_matches(':').to_owned();
-            info.insert(name.clone(), BTreeMap::new());
-            section = Some(name);
-            property = None;
-            continue;
-        }
-        let properties = section
-            .as_ref()
-            .and_then(|section| info.get_mut(section))
-            .context("unexpected udisksctl info output")?;
-        let value = if indent == PROPERTY_INDENT {
-            let (name, value) = text
-                .split_once(':')
-                .context("unexpected udisksctl info output")?;
-            property = Some(name.to_owned());
-            value.trim()
-        } else {
-            text
+    for text in output.lines() {
+        let value = match line
+            .parse(text)
+            .map_err(|_: ParseError<&str, EmptyError>| anyhow!(UNEXPECTED_OUTPUT))?
+        {
+            Line::Ignored => continue,
+            Line::Section(name) => {
+                info.insert(name.to_owned(), BTreeMap::new());
+                section = Some(name);
+                property = None;
+                continue;
+            }
+            Line::Property { name, value } => {
+                property = Some(name);
+                value
+            }
+            Line::Continuation(value) => value,
         };
-        let name = property
-            .clone()
-            .context("unexpected udisksctl info output")?;
+        let properties = section
+            .and_then(|section| info.get_mut(section))
+            .context(UNEXPECTED_OUTPUT)?;
+        let name = property.context(UNEXPECTED_OUTPUT)?;
         if !value.is_empty() {
-            properties.entry(name).or_default().push(value.to_owned());
+            properties
+                .entry(name.to_owned())
+                .or_default()
+                .push(value.to_owned());
         }
     }
     Ok(info)
+}
+
+fn line<'i>(input: &mut &'i str) -> winnow::Result<Line<'i>, EmptyError> {
+    let indent = whitespace.parse_next(input)?.len();
+    if input.is_empty() || indent < SECTION_INDENT {
+        rest.map(|_| Line::Ignored).parse_next(input)
+    } else if indent < PROPERTY_INDENT {
+        section.map(Line::Section).parse_next(input)
+    } else if indent == PROPERTY_INDENT {
+        property.parse_next(input)
+    } else {
+        continuation.map(Line::Continuation).parse_next(input)
+    }
+}
+
+fn whitespace<'i>(input: &mut &'i str) -> winnow::Result<&'i str, EmptyError> {
+    take_while(0.., char::is_whitespace).parse_next(input)
+}
+
+fn section<'i>(input: &mut &'i str) -> winnow::Result<&'i str, EmptyError> {
+    rest.map(|header: &'i str| header.trim_end().trim_end_matches(':'))
+        .parse_next(input)
+}
+
+fn property<'i>(input: &mut &'i str) -> winnow::Result<Line<'i>, EmptyError> {
+    let name = terminated(take_until(0.., ':'), ':').parse_next(input)?;
+    let value = continuation.parse_next(input)?;
+    Ok(Line::Property { name, value })
+}
+
+fn continuation<'i>(input: &mut &'i str) -> winnow::Result<&'i str, EmptyError> {
+    rest.map(str::trim).parse_next(input)
 }
 
 struct LoopDevice {
@@ -288,4 +331,129 @@ fn copy_tree(source: &Path, dest: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Trimmed from `udisksctl info --block-device /dev/loop0` for a partitioned image.
+    const LOOP_DEVICE: &str = "\
+/org/freedesktop/UDisks2/block_devices/loop0:
+  org.freedesktop.UDisks2.Block:
+    Device:                     /dev/loop0
+    Symlinks:                   /dev/disk/by-id/a
+                                /dev/disk/by-id/b
+
+  org.freedesktop.UDisks2.Filesystem:
+    MountPoints:
+  org.freedesktop.UDisks2.PartitionTable:
+    Partitions:                 /org/freedesktop/UDisks2/block_devices/loop0p1
+    Type:                       dos
+";
+
+    fn values<'i>(info: &'i Info, section: &str, name: &str) -> Option<&'i [String]> {
+        info.get(section)
+            .and_then(|properties| properties.get(name))
+            .map(Vec::as_slice)
+    }
+
+    #[test]
+    fn sections_are_listed() {
+        let info = parse_info(LOOP_DEVICE).expect("valid info");
+        assert_eq!(
+            info.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["org.freedesktop.UDisks2.Block", FILESYSTEM, PARTITION_TABLE]
+        );
+    }
+
+    #[test]
+    fn property_value_is_trimmed() {
+        let info = parse_info(LOOP_DEVICE).expect("valid info");
+        assert_eq!(
+            values(&info, PARTITION_TABLE, "Type"),
+            Some(["dos".to_owned()].as_slice())
+        );
+    }
+
+    #[test]
+    fn continuation_is_appended() {
+        let info = parse_info(LOOP_DEVICE).expect("valid info");
+        assert_eq!(
+            values(&info, "org.freedesktop.UDisks2.Block", "Symlinks"),
+            Some(
+                [
+                    "/dev/disk/by-id/a".to_owned(),
+                    "/dev/disk/by-id/b".to_owned()
+                ]
+                .as_slice()
+            )
+        );
+    }
+
+    #[test]
+    fn empty_value_is_not_appended() {
+        let info = parse_info(LOOP_DEVICE).expect("valid info");
+        assert!(info[FILESYSTEM].is_empty());
+    }
+
+    #[test]
+    fn blank_lines_are_skipped() {
+        let info = parse_info("  Section:\n    Name: a\n\n      \n      b\n").expect("valid info");
+        assert_eq!(
+            values(&info, "Section", "Name"),
+            Some(["a".to_owned(), "b".to_owned()].as_slice())
+        );
+    }
+
+    #[test]
+    fn under_indented_lines_are_ignored() {
+        let info = parse_info(" Ignored: x\n  Section:\n    Name: a\n").expect("valid info");
+        assert_eq!(info.keys().collect::<Vec<_>>(), ["Section"]);
+    }
+
+    #[test]
+    fn section_name_drops_trailing_colons() {
+        let info = parse_info("   Section::  \n").expect("valid info");
+        assert!(info.contains_key("Section"));
+    }
+
+    #[test]
+    fn repeated_section_is_emptied() {
+        let info = parse_info("  Section:\n    Name: a\n  Section:\n").expect("valid info");
+        assert!(info["Section"].is_empty());
+    }
+
+    #[test]
+    fn property_splits_on_first_colon() {
+        let info = parse_info("  Section:\n    Name: a: b\n").expect("valid info");
+        assert_eq!(
+            values(&info, "Section", "Name"),
+            Some(["a: b".to_owned()].as_slice())
+        );
+    }
+
+    #[test]
+    fn property_without_colon_is_an_error() {
+        let error = parse_info("  Section:\n    Name\n").expect_err("invalid info");
+        assert_eq!(error.to_string(), UNEXPECTED_OUTPUT);
+    }
+
+    #[test]
+    fn property_without_section_is_an_error() {
+        let error = parse_info("    Name: a\n").expect_err("invalid info");
+        assert_eq!(error.to_string(), UNEXPECTED_OUTPUT);
+    }
+
+    #[test]
+    fn continuation_without_property_is_an_error() {
+        let error = parse_info("  Section:\n      a\n").expect_err("invalid info");
+        assert_eq!(error.to_string(), UNEXPECTED_OUTPUT);
+    }
+
+    // A section header forgets the property before it.
+    #[test]
+    fn continuation_after_section_is_an_error() {
+        assert!(parse_info("  Section:\n    Name: a\n  Other:\n      b\n").is_err());
+    }
 }
