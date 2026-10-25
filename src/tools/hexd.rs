@@ -8,6 +8,10 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 use clap::{Args as ClapArgs, ValueEnum};
+use winnow::Parser;
+use winnow::combinator::{alt, opt, preceded};
+use winnow::error::EmptyError;
+use winnow::token::rest;
 
 use crate::source::Source;
 use crate::tools::Tool;
@@ -179,13 +183,21 @@ fn run(args: Hexd) -> Result<()> {
             }
             Format::Lines(style) => Lines {
                 style,
-                cols,
-                group,
+                cols: Columns(cols),
+                group: GroupSize(group),
                 digits: if args.uppercase { UPPER } else { LOWER },
-                decimal: args.decimal,
+                address: if args.decimal {
+                    AddressFormat::Decimal
+                } else {
+                    AddressFormat::Hex
+                },
                 base: start.wrapping_add(args.offset),
                 color: use_color(args.color, to_stdout),
-                autoskip: args.autoskip,
+                autoskip: if args.autoskip {
+                    Autoskip::On
+                } else {
+                    Autoskip::Off
+                },
             }
             .dump(input, &mut output),
         };
@@ -195,17 +207,16 @@ fn run(args: Hexd) -> Result<()> {
     Ok(())
 }
 
-/// Writes `input` to `output` as an xxd-style hex dump.
 pub fn dump(input: impl Read, output: impl Write) -> io::Result<()> {
     Lines {
         style: Style::Hex,
-        cols: 16,
-        group: 2,
+        cols: Columns(16),
+        group: GroupSize(2),
         digits: LOWER,
-        decimal: false,
+        address: AddressFormat::Hex,
         base: 0,
-        color: false,
-        autoskip: false,
+        color: Coloring::Off,
+        autoskip: Autoskip::Off,
     }
     .dump(input, output)
 }
@@ -267,7 +278,6 @@ fn open_input(source: &Source) -> Result<File> {
     }
 }
 
-/// Moves `input` to the `-s` position and returns the absolute offset reached.
 fn seek_input(input: &mut File, seek: SeekOffset) -> Result<u64> {
     let target = match (seek.relative, seek.from_end) {
         (false, false) => SeekFrom::Start(seek.amount),
@@ -288,8 +298,8 @@ fn seek_input(input: &mut File, seek: SeekOffset) -> Result<u64> {
     }
 }
 
-fn use_color(when: ColorChoice, to_stdout: bool) -> bool {
-    match when {
+fn use_color(when: ColorChoice, to_stdout: bool) -> Coloring {
+    let on = match when {
         ColorChoice::Always => true,
         ColorChoice::Never => false,
         ColorChoice::Auto => {
@@ -298,7 +308,8 @@ fn use_color(when: ColorChoice, to_stdout: bool) -> bool {
                 && env::var_os("TERM").is_some_and(|term| !term.is_empty() && term != "dumb")
                 && io::stdout().is_terminal()
         }
-    }
+    };
+    if on { Coloring::On } else { Coloring::Off }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -323,32 +334,50 @@ impl Color {
     }
 }
 
+struct Columns(usize);
+
+struct GroupSize(usize);
+
+enum AddressFormat {
+    Hex,
+    Decimal,
+}
+
+enum Coloring {
+    On,
+    Off,
+}
+
+enum Autoskip {
+    Off,
+    On,
+}
+
 struct Lines {
     style: Style,
-    cols: usize,
-    group: usize,
+    cols: Columns,
+    group: GroupSize,
     digits: &'static [u8; 16],
-    decimal: bool,
+    address: AddressFormat,
     base: u64,
-    color: bool,
-    autoskip: bool,
+    color: Coloring,
+    autoskip: Autoskip,
 }
 
 impl Lines {
     fn dump(&self, input: impl Read, mut output: impl Write) -> io::Result<()> {
+        let Columns(cols) = self.cols;
+        let collapse = matches!(self.autoskip, Autoskip::On);
         let mut input = BufReader::new(input);
-        let mut chunk = Vec::with_capacity(self.cols);
+        let mut chunk = Vec::with_capacity(cols);
         let mut line = Vec::new();
-        let mut autoskip = Autoskip::default();
+        let mut autoskip = AutoskipWriter::default();
         let mut offset: u64 = 0;
         loop {
             chunk.clear();
-            input
-                .by_ref()
-                .take(self.cols as u64)
-                .read_to_end(&mut chunk)?;
+            input.by_ref().take(cols as u64).read_to_end(&mut chunk)?;
             if chunk.is_empty() {
-                if self.autoskip {
+                if collapse {
                     autoskip.write(&mut output, &line, LineKind::Last)?;
                 }
                 return Ok(());
@@ -356,10 +385,10 @@ impl Lines {
             line.clear();
             self.render(offset.wrapping_add(self.base), &chunk, &mut line);
             offset += chunk.len() as u64;
-            if chunk.len() < self.cols {
+            if chunk.len() < cols {
                 return autoskip.write(&mut output, &line, LineKind::Shown);
             }
-            let kind = if self.autoskip && chunk.iter().all(|&byte| byte == 0) {
+            let kind = if collapse && chunk.iter().all(|&byte| byte == 0) {
                 LineKind::Zero
             } else {
                 LineKind::Shown
@@ -369,13 +398,13 @@ impl Lines {
     }
 
     fn render(&self, address: u64, bytes: &[u8], out: &mut Vec<u8>) {
-        let address = if self.decimal {
-            format!("{address:08}:")
-        } else {
-            format!("{address:08x}:")
+        let address = match self.address {
+            AddressFormat::Decimal => format!("{address:08}:"),
+            AddressFormat::Hex => format!("{address:08x}:"),
         };
         let start = address.len();
-        let group = self.group;
+        let Columns(cols) = self.cols;
+        let GroupSize(group) = self.group;
         let group_width = match self.style {
             Style::Bits => 8 * group + 1,
             Style::Hex | Style::LittleEndian => 2 * group + 1,
@@ -383,8 +412,8 @@ impl Lines {
         let text = start
             + 3
             + match self.style {
-                Style::LittleEndian => group_width * self.cols.div_ceil(group) - 1,
-                Style::Hex | Style::Bits => (group_width * self.cols - 1) / group,
+                Style::LittleEndian => group_width * cols.div_ceil(group) - 1,
+                Style::Hex | Style::Bits => (group_width * cols - 1) / group,
             };
 
         let mut cells = Cells::new(address.as_bytes());
@@ -394,7 +423,10 @@ impl Lines {
                 Style::Hex | Style::Bits => position,
             };
             let column = start + 1 + group_width * slot / group;
-            let color = self.color.then(|| Color::of(byte));
+            let color = match self.color {
+                Coloring::On => Some(Color::of(byte)),
+                Coloring::Off => None,
+            };
             match self.style {
                 Style::Bits => {
                     for bit in 0..8 {
@@ -423,7 +455,6 @@ impl Lines {
     }
 }
 
-/// One output line, with an optional color per character.
 struct Cells {
     text: Vec<u8>,
     colors: Vec<Option<Color>>,
@@ -483,12 +514,12 @@ enum LineKind {
 
 /// Folds three or more consecutive zero lines into '*', as `xxd -a` does.
 #[derive(Default)]
-struct Autoskip {
+struct AutoskipWriter {
     zeros_seen: u8,
     second_zero: Vec<u8>,
 }
 
-impl Autoskip {
+impl AutoskipWriter {
     fn write(&mut self, output: &mut impl Write, line: &[u8], kind: LineKind) -> io::Result<()> {
         if kind == LineKind::Zero {
             let prior = self.zeros_seen;
@@ -587,7 +618,6 @@ fn include(
     Ok(())
 }
 
-/// Turns a file name into a C identifier the way xxd does.
 fn variable_name(raw: &[u8]) -> Vec<u8> {
     let mut name = if raw.first().is_some_and(u8::is_ascii_digit) {
         b"__".to_vec()
@@ -611,8 +641,6 @@ enum Revert {
     Bits,
 }
 
-/// Ports xxd's `huntype`: decodes up to `cols` octets per line, seeking (or
-/// zero-filling) `output` to each line's offset plus `base`.
 fn revert<W: Write + Seek>(
     input: impl Read,
     output: &mut W,
@@ -742,16 +770,10 @@ fn bin_digit(byte: u8) -> Option<u8> {
     char::from(byte).to_digit(2).map(|digit| digit as u8)
 }
 
-/// Parses a number the way C's `strtol` does with base 0: `0x` hex, leading `0` octal.
 fn parse_number(value: &str) -> Result<u64, String> {
-    let (digits, radix) = match value
-        .strip_prefix("0x")
-        .or_else(|| value.strip_prefix("0X"))
-    {
-        Some(hex) => (hex, 16),
-        None if value.len() > 1 && value.starts_with('0') => (&value[1..], 8),
-        None => (value, 10),
-    };
+    let Digits { digits, radix } = number_digits
+        .parse(value)
+        .map_err(|error| error.to_string())?;
     u64::from_str_radix(digits, radix).map_err(|error| error.to_string())
 }
 
@@ -760,25 +782,259 @@ fn parse_size(value: &str) -> Result<usize, String> {
 }
 
 fn parse_offset(value: &str) -> Result<u64, String> {
-    let value = value.strip_prefix('+').unwrap_or(value);
-    match value.strip_prefix('-') {
-        Some(amount) => parse_number(amount).map(u64::wrapping_neg),
-        None => parse_number(value),
-    }
+    let Signs { minus, number, .. } = signs.parse(value).map_err(|error| error.to_string())?;
+    let amount = parse_number(number)?;
+    Ok(if minus { amount.wrapping_neg() } else { amount })
 }
 
 fn parse_seek(value: &str) -> Result<SeekOffset, String> {
-    let (relative, value) = match value.strip_prefix('+') {
-        Some(rest) => (true, rest),
-        None => (false, value),
-    };
-    let (from_end, value) = match value.strip_prefix('-') {
-        Some(rest) => (true, rest),
-        None => (false, value),
-    };
+    let Signs {
+        plus,
+        minus,
+        number,
+    } = signs.parse(value).map_err(|error| error.to_string())?;
     Ok(SeekOffset {
-        relative,
-        from_end,
-        amount: parse_number(value)?,
+        relative: plus,
+        from_end: minus,
+        amount: parse_number(number)?,
     })
+}
+
+struct Digits<'i> {
+    digits: &'i str,
+    radix: u32,
+}
+
+struct Signs<'i> {
+    plus: bool,
+    minus: bool,
+    number: &'i str,
+}
+
+fn signs<'i>(input: &mut &'i str) -> winnow::Result<Signs<'i>, EmptyError> {
+    (opt('+'), opt('-'), rest)
+        .map(
+            |(plus, minus, number): (Option<char>, Option<char>, &'i str)| Signs {
+                plus: plus.is_some(),
+                minus: minus.is_some(),
+                number,
+            },
+        )
+        .parse_next(input)
+}
+
+fn number_digits<'i>(input: &mut &'i str) -> winnow::Result<Digits<'i>, EmptyError> {
+    alt((hex_digits, octal_digits, decimal_digits)).parse_next(input)
+}
+
+fn hex_digits<'i>(input: &mut &'i str) -> winnow::Result<Digits<'i>, EmptyError> {
+    preceded(alt(("0x", "0X")), rest)
+        .map(|digits| Digits { digits, radix: 16 })
+        .parse_next(input)
+}
+
+fn octal_digits<'i>(input: &mut &'i str) -> winnow::Result<Digits<'i>, EmptyError> {
+    preceded('0', rest)
+        .verify(|digits: &str| !digits.is_empty())
+        .map(|digits| Digits { digits, radix: 8 })
+        .parse_next(input)
+}
+
+fn decimal_digits<'i>(input: &mut &'i str) -> winnow::Result<Digits<'i>, EmptyError> {
+    rest.map(|digits| Digits { digits, radix: 10 })
+        .parse_next(input)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EMPTY: &str = "cannot parse integer from empty string";
+    const INVALID_DIGIT: &str = "invalid digit found in string";
+    const TOO_LARGE: &str = "number too large to fit in target type";
+
+    fn error(message: &str) -> Result<u64, String> {
+        Err(message.to_owned())
+    }
+
+    fn seek(value: &str) -> Result<(bool, bool, u64), String> {
+        parse_seek(value).map(|seek| (seek.relative, seek.from_end, seek.amount))
+    }
+
+    #[test]
+    fn decimal() {
+        assert_eq!(parse_number("42"), Ok(42));
+    }
+
+    #[test]
+    fn lone_zero_is_decimal() {
+        assert_eq!(parse_number("0"), Ok(0));
+    }
+
+    #[test]
+    fn hex_after_lowercase_prefix() {
+        assert_eq!(parse_number("0x1f"), Ok(31));
+    }
+
+    #[test]
+    fn hex_after_uppercase_prefix() {
+        assert_eq!(parse_number("0X1F"), Ok(31));
+    }
+
+    #[test]
+    fn prefix_without_hex_digits() {
+        assert_eq!(parse_number("0x"), error(EMPTY));
+    }
+
+    #[test]
+    fn octal_after_leading_zero() {
+        assert_eq!(parse_number("017"), Ok(15));
+    }
+
+    #[test]
+    fn double_zero_is_octal_zero() {
+        assert_eq!(parse_number("00"), Ok(0));
+    }
+
+    #[test]
+    fn non_octal_digit_after_leading_zero() {
+        assert_eq!(parse_number("08"), error(INVALID_DIGIT));
+    }
+
+    // `u64::from_str_radix` takes one leading `+`, after any prefix.
+    #[test]
+    fn plus_before_decimal() {
+        assert_eq!(parse_number("+5"), Ok(5));
+    }
+
+    #[test]
+    fn plus_after_hex_prefix() {
+        assert_eq!(parse_number("0x+a"), Ok(10));
+    }
+
+    #[test]
+    fn minus_is_not_a_digit() {
+        assert_eq!(parse_number("-5"), error(INVALID_DIGIT));
+    }
+
+    #[test]
+    fn empty() {
+        assert_eq!(parse_number(""), error(EMPTY));
+    }
+
+    #[test]
+    fn bad_digit() {
+        assert_eq!(parse_number("12z"), error(INVALID_DIGIT));
+    }
+
+    #[test]
+    fn overflow() {
+        assert_eq!(parse_number("18446744073709551616"), error(TOO_LARGE));
+    }
+
+    #[test]
+    fn largest_number() {
+        assert_eq!(parse_number("0xffffffffffffffff"), Ok(u64::MAX));
+    }
+
+    #[test]
+    fn size() {
+        assert_eq!(parse_size("0x10"), Ok(16));
+    }
+
+    #[test]
+    fn size_with_bad_digit() {
+        assert_eq!(parse_size("1z"), Err(INVALID_DIGIT.to_owned()));
+    }
+
+    #[test]
+    fn offset_without_signs() {
+        assert_eq!(parse_offset("0x10"), Ok(16));
+    }
+
+    #[test]
+    fn offset_after_plus() {
+        assert_eq!(parse_offset("+5"), Ok(5));
+    }
+
+    #[test]
+    fn offset_after_minus_wraps() {
+        assert_eq!(parse_offset("-5"), Ok(5u64.wrapping_neg()));
+    }
+
+    #[test]
+    fn offset_after_plus_minus_wraps() {
+        assert_eq!(parse_offset("+-5"), Ok(5u64.wrapping_neg()));
+    }
+
+    // The `+` after a `-` is left for `u64::from_str_radix`, which takes it.
+    #[test]
+    fn offset_after_minus_plus_wraps() {
+        assert_eq!(parse_offset("-+5"), Ok(5u64.wrapping_neg()));
+    }
+
+    #[test]
+    fn offset_after_two_minuses() {
+        assert_eq!(parse_offset("--5"), error(INVALID_DIGIT));
+    }
+
+    #[test]
+    fn offset_of_plus_alone() {
+        assert_eq!(parse_offset("+"), error(EMPTY));
+    }
+
+    #[test]
+    fn offset_of_minus_alone() {
+        assert_eq!(parse_offset("-"), error(EMPTY));
+    }
+
+    #[test]
+    fn empty_offset() {
+        assert_eq!(parse_offset(""), error(EMPTY));
+    }
+
+    #[test]
+    fn seek_without_signs_is_absolute() {
+        assert_eq!(seek("0x10"), Ok((false, false, 16)));
+    }
+
+    #[test]
+    fn seek_after_plus_is_relative() {
+        assert_eq!(seek("+5"), Ok((true, false, 5)));
+    }
+
+    #[test]
+    fn seek_after_minus_is_from_end() {
+        assert_eq!(seek("-5"), Ok((false, true, 5)));
+    }
+
+    #[test]
+    fn seek_after_plus_minus_is_relative_from_end() {
+        assert_eq!(seek("+-5"), Ok((true, true, 5)));
+    }
+
+    #[test]
+    fn seek_after_minus_plus_is_from_end() {
+        assert_eq!(seek("-+5"), Ok((false, true, 5)));
+    }
+
+    #[test]
+    fn seek_after_two_minuses() {
+        assert_eq!(seek("--5"), Err(INVALID_DIGIT.to_owned()));
+    }
+
+    #[test]
+    fn seek_of_plus_alone() {
+        assert_eq!(seek("+"), Err(EMPTY.to_owned()));
+    }
+
+    #[test]
+    fn seek_of_minus_alone() {
+        assert_eq!(seek("-"), Err(EMPTY.to_owned()));
+    }
+
+    #[test]
+    fn empty_seek() {
+        assert_eq!(seek(""), Err(EMPTY.to_owned()));
+    }
 }
