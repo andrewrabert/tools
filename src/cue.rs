@@ -14,6 +14,7 @@ use winnow::token::{take_till, take_while};
 
 pub const EXTENSION: &str = "cue";
 
+#[derive(Clone, Copy, PartialEq)]
 enum Command {
     Catalog,
     Cdtextfile,
@@ -53,8 +54,40 @@ impl TryFrom<&str> for Command {
     }
 }
 
+impl Command {
+    fn as_str(self) -> &'static str {
+        match self {
+            Command::Catalog => "CATALOG",
+            Command::Cdtextfile => "CDTEXTFILE",
+            Command::File => "FILE",
+            Command::Flags => "FLAGS",
+            Command::Index => "INDEX",
+            Command::Isrc => "ISRC",
+            Command::Performer => "PERFORMER",
+            Command::Postgap => "POSTGAP",
+            Command::Pregap => "PREGAP",
+            Command::Rem => "REM",
+            Command::Songwriter => "SONGWRITER",
+            Command::Title => "TITLE",
+            Command::Track => "TRACK",
+        }
+    }
+}
+
+#[derive(PartialEq)]
+pub struct Line {
+    command: Command,
+    arguments: Vec<String>,
+}
+
+impl Line {
+    pub fn tokens(&self) -> impl Iterator<Item = &str> {
+        iter::once(self.command.as_str()).chain(self.arguments.iter().map(String::as_str))
+    }
+}
+
 pub struct CueSheet {
-    tokens: Vec<Vec<String>>,
+    lines: Vec<Line>,
     files: Vec<File>,
     tracks: Vec<Track>,
 }
@@ -65,7 +98,7 @@ impl CueSheet {
         if text.as_bytes() != data {
             return Err(CueSheetError::CharacterEncoding(text.into_owned()));
         }
-        let mut tokens = Vec::new();
+        let mut lines = Vec::new();
         let mut files = Vec::new();
         let mut tracks = Vec::new();
         for raw in text.lines() {
@@ -73,11 +106,10 @@ impl CueSheet {
             if line.is_empty() {
                 continue;
             }
-            let (command, line_tokens) = command_and_tokens(line)?;
-            let arguments = &line_tokens[1..];
+            let (command, arguments) = command_and_arguments(line)?;
             match command {
                 Command::File => {
-                    let &[filename, filetype] = arguments else {
+                    let &[filename, filetype] = arguments.as_slice() else {
                         return Err(CueSheetError::ParseFileCommand(raw.to_owned()));
                     };
                     if Path::new(filename).file_name() != Some(OsStr::new(filename)) {
@@ -89,18 +121,30 @@ impl CueSheet {
                     });
                 }
                 Command::Track => {
-                    let &[number, datatype] = arguments else {
+                    let &[number, datatype] = arguments.as_slice() else {
                         return Err(CueSheetError::ParseTrackCommand(raw.to_owned()));
                     };
                     tracks.push(Track {
-                        number: number.to_owned(),
-                        datatype: Datatype::from(datatype),
+                        number: TrackNumber::try_from(number)?,
+                        datatype: Datatype::try_from(datatype)?,
+                        indexes: Vec::new(),
+                    });
+                }
+                Command::Index => {
+                    let &[number, time] = arguments.as_slice() else {
+                        return Err(CueSheetError::ParseIndexCommand(raw.to_owned()));
+                    };
+                    let Some(track) = tracks.last_mut() else {
+                        return Err(CueSheetError::IndexOutsideTrack(raw.to_owned()));
+                    };
+                    track.indexes.push(Index {
+                        number: IndexNumber::try_from(number)?,
+                        time: Time::try_from(time)?,
                     });
                 }
                 Command::Catalog
                 | Command::Cdtextfile
                 | Command::Flags
-                | Command::Index
                 | Command::Isrc
                 | Command::Performer
                 | Command::Postgap
@@ -109,21 +153,23 @@ impl CueSheet {
                 | Command::Songwriter
                 | Command::Title => {}
             }
-            tokens.push(line_tokens.into_iter().map(str::to_owned).collect());
+            lines.push(Line {
+                command,
+                arguments: arguments.into_iter().map(str::to_owned).collect(),
+            });
         }
         if tracks.is_empty() {
             return Err(CueSheetError::NoTracks);
         }
         Ok(Self {
-            tokens,
+            lines,
             files,
             tracks,
         })
     }
 
-    /// The tokens of each line, command first, in sheet order.
-    pub fn tokens(&self) -> &[Vec<String>] {
-        &self.tokens
+    pub fn lines(&self) -> &[Line] {
+        &self.lines
     }
 
     pub fn files(&self) -> &[File] {
@@ -140,29 +186,25 @@ impl CueSheet {
     fn indents(&self) -> Vec<usize> {
         let mut in_track = false;
         let mut indents: Vec<(bool, usize)> = self
-            .tokens
+            .lines
             .iter()
-            .map(|line| {
-                let command =
-                    Command::try_from(line[0].as_str()).expect("each line starts with a command");
-                match command {
-                    Command::File => (false, 0),
-                    Command::Track => {
-                        in_track = true;
-                        (false, 2)
-                    }
-                    Command::Rem => (true, 0),
-                    Command::Catalog
-                    | Command::Cdtextfile
-                    | Command::Flags
-                    | Command::Index
-                    | Command::Isrc
-                    | Command::Performer
-                    | Command::Postgap
-                    | Command::Pregap
-                    | Command::Songwriter
-                    | Command::Title => (false, if in_track { 4 } else { 0 }),
+            .map(|line| match line.command {
+                Command::File => (false, 0),
+                Command::Track => {
+                    in_track = true;
+                    (false, 2)
                 }
+                Command::Rem => (true, 0),
+                Command::Catalog
+                | Command::Cdtextfile
+                | Command::Flags
+                | Command::Index
+                | Command::Isrc
+                | Command::Performer
+                | Command::Postgap
+                | Command::Pregap
+                | Command::Songwriter
+                | Command::Title => (false, if in_track { 4 } else { 0 }),
             })
             .collect();
         let mut next = 0;
@@ -180,10 +222,9 @@ impl CueSheet {
 /// The sheet's lines, indented, one space between tokens, each line ending in `\n`.
 impl fmt::Display for CueSheet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (line, indent) in self.tokens.iter().zip(self.indents()) {
-            let (command, arguments) = line.split_first().expect("a line has a command");
-            write!(f, "{:indent$}{command}", "")?;
-            for argument in arguments {
+        for (line, indent) in self.lines.iter().zip(self.indents()) {
+            write!(f, "{:indent$}{}", "", line.command.as_str())?;
+            for argument in &line.arguments {
                 write!(f, " {}", quote(argument))?;
             }
             writeln!(f)?;
@@ -192,7 +233,6 @@ impl fmt::Display for CueSheet {
     }
 }
 
-/// The token, quoted when it is empty or has whitespace or a quotation mark.
 fn quote(token: &str) -> Cow<'_, str> {
     if token.is_empty() || token.contains(|c: char| c.is_whitespace() || c == '"') {
         Cow::Owned(format!("\"{token}\""))
@@ -201,16 +241,12 @@ fn quote(token: &str) -> Cow<'_, str> {
     }
 }
 
-/// The line's command and its tokens, the command's word first.
-fn command_and_tokens(line: &str) -> Result<(Command, Vec<&str>), CueSheetError> {
+fn command_and_arguments(line: &str) -> Result<(Command, Vec<&str>), CueSheetError> {
     let (command, arguments): (&str, Vec<&str>) =
         (word, repeat(0.., preceded(whitespace, argument)))
             .parse(line)
             .map_err(|_: ParseError<&str, EmptyError>| CueSheetError::UnmatchedQuote)?;
-    Ok((
-        Command::try_from(command)?,
-        iter::once(command).chain(arguments).collect(),
-    ))
+    Ok((Command::try_from(command)?, arguments))
 }
 
 fn word<'i>(input: &mut &'i str) -> winnow::Result<&'i str, EmptyError> {
@@ -237,7 +273,7 @@ fn bare<'i>(input: &mut &'i str) -> winnow::Result<&'i str, EmptyError> {
     take_till(1.., |c: char| c.is_whitespace() || c == '"').parse_next(input)
 }
 
-#[expect(dead_code, reason = "parsed from the sheet ahead of any reader")]
+#[expect(dead_code, reason = "validated CUE spec: FILE fields")]
 pub struct File {
     filename: String,
     filetype: Filetype,
@@ -249,7 +285,7 @@ impl File {
     }
 }
 
-#[expect(dead_code, reason = "parsed from the sheet ahead of any reader")]
+#[expect(dead_code, reason = "validated CUE spec: FILE types")]
 pub enum Filetype {
     Binary,
     Motorola,
@@ -272,16 +308,102 @@ impl From<&str> for Filetype {
     }
 }
 
-#[expect(dead_code, reason = "parsed from the sheet ahead of any reader")]
+#[expect(dead_code, reason = "validated CUE spec: TRACK fields")]
 pub struct Track {
-    number: String,
+    number: TrackNumber,
     datatype: Datatype,
+    indexes: Vec<Index>,
+}
+
+struct TrackNumber(u8);
+
+impl TryFrom<&str> for TrackNumber {
+    type Error = CueSheetError;
+
+    fn try_from(text: &str) -> Result<Self, Self::Error> {
+        match text.parse() {
+            Ok(number @ 1..=99) => Ok(TrackNumber(number)),
+            _ => Err(CueSheetError::TrackNumber(text.to_owned())),
+        }
+    }
+}
+
+impl fmt::Display for TrackNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:02}", self.0)
+    }
 }
 
 impl Track {
     pub fn datatype(&self) -> &Datatype {
         &self.datatype
     }
+}
+
+#[expect(dead_code, reason = "validated CUE spec: INDEX fields")]
+pub struct Index {
+    number: IndexNumber,
+    time: Time,
+}
+
+struct IndexNumber(u8);
+
+impl TryFrom<&str> for IndexNumber {
+    type Error = CueSheetError;
+
+    fn try_from(text: &str) -> Result<Self, Self::Error> {
+        two_digits
+            .parse(text)
+            .map(IndexNumber)
+            .map_err(|_: ParseError<&str, EmptyError>| CueSheetError::IndexNumber(text.to_owned()))
+    }
+}
+
+impl fmt::Display for IndexNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:02}", self.0)
+    }
+}
+
+struct Time {
+    minutes: u8,
+    seconds: u8,
+    frames: u8,
+}
+
+impl TryFrom<&str> for Time {
+    type Error = CueSheetError;
+
+    fn try_from(text: &str) -> Result<Self, Self::Error> {
+        let (minutes, seconds, frames) = (
+            two_digits,
+            preceded(':', two_digits.verify(|seconds: &u8| *seconds <= 59)),
+            preceded(':', two_digits.verify(|frames: &u8| *frames <= 74)),
+        )
+            .parse(text)
+            .map_err(|_: ParseError<&str, EmptyError>| CueSheetError::Time(text.to_owned()))?;
+        Ok(Time {
+            minutes,
+            seconds,
+            frames,
+        })
+    }
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:02}:{:02}:{:02}",
+            self.minutes, self.seconds, self.frames
+        )
+    }
+}
+
+fn two_digits(input: &mut &str) -> winnow::Result<u8, EmptyError> {
+    take_while(2, |c: char| c.is_ascii_digit())
+        .parse_to()
+        .parse_next(input)
 }
 
 pub enum Datatype {
@@ -293,21 +415,22 @@ pub enum Datatype {
     Mode2_2352,
     Cdi2336,
     Cdi2352,
-    Other(String),
 }
 
-impl From<&str> for Datatype {
-    fn from(text: &str) -> Self {
+impl TryFrom<&str> for Datatype {
+    type Error = CueSheetError;
+
+    fn try_from(text: &str) -> Result<Self, Self::Error> {
         match text {
-            "AUDIO" => Datatype::Audio,
-            "CDG" => Datatype::Cdg,
-            "MODE1/2048" => Datatype::Mode1_2048,
-            "MODE1/2352" => Datatype::Mode1_2352,
-            "MODE2/2336" => Datatype::Mode2_2336,
-            "MODE2/2352" => Datatype::Mode2_2352,
-            "CDI/2336" => Datatype::Cdi2336,
-            "CDI/2352" => Datatype::Cdi2352,
-            other => Datatype::Other(other.to_owned()),
+            "AUDIO" => Ok(Datatype::Audio),
+            "CDG" => Ok(Datatype::Cdg),
+            "MODE1/2048" => Ok(Datatype::Mode1_2048),
+            "MODE1/2352" => Ok(Datatype::Mode1_2352),
+            "MODE2/2336" => Ok(Datatype::Mode2_2336),
+            "MODE2/2352" => Ok(Datatype::Mode2_2352),
+            "CDI/2336" => Ok(Datatype::Cdi2336),
+            "CDI/2352" => Ok(Datatype::Cdi2352),
+            other => Err(CueSheetError::Datatype(other.to_owned())),
         }
     }
 }
@@ -323,7 +446,6 @@ impl fmt::Display for Datatype {
             Datatype::Mode2_2352 => "MODE2/2352",
             Datatype::Cdi2336 => "CDI/2336",
             Datatype::Cdi2352 => "CDI/2352",
-            Datatype::Other(other) => other,
         })
     }
 }
@@ -337,6 +459,12 @@ pub enum CueSheetError {
     UnmatchedQuote,
     ParseFileCommand(String),
     ParseTrackCommand(String),
+    ParseIndexCommand(String),
+    TrackNumber(String),
+    Datatype(String),
+    IndexNumber(String),
+    Time(String),
+    IndexOutsideTrack(String),
     Filename(String),
 }
 
@@ -352,8 +480,24 @@ impl fmt::Display for CueSheetError {
                 write!(f, "{command:?} is not a command")
             }
             CueSheetError::UnmatchedQuote => f.write_str("a quotation mark has no partner"),
-            CueSheetError::ParseFileCommand(line) | CueSheetError::ParseTrackCommand(line) => {
-                write!(f, "{line:?}")
+            CueSheetError::ParseFileCommand(line)
+            | CueSheetError::ParseTrackCommand(line)
+            | CueSheetError::ParseIndexCommand(line) => write!(f, "{line:?}"),
+            CueSheetError::TrackNumber(number) => {
+                write!(f, "{number:?} is not a track number from 1 to 99")
+            }
+            CueSheetError::Datatype(datatype) => {
+                write!(f, "{datatype:?} is not a track datatype")
+            }
+            CueSheetError::IndexNumber(number) => {
+                write!(f, "{number:?} is not an index number from 00 to 99")
+            }
+            CueSheetError::Time(time) => write!(
+                f,
+                "{time:?} is not a time mm:ss:ff with seconds up to 59 and frames up to 74"
+            ),
+            CueSheetError::IndexOutsideTrack(line) => {
+                write!(f, "{line:?} comes before any TRACK")
             }
             CueSheetError::Filename(line) => {
                 write!(f, "{line:?} must name a file in the cue sheet's directory")

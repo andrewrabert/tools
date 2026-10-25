@@ -34,7 +34,6 @@ impl Db {
         })
     }
 
-    /// Closes the database, returning any close error.
     pub fn close(self) -> Result<()> {
         self.connection
             .close()
@@ -43,7 +42,6 @@ impl Db {
     }
 }
 
-/// Combines a scoped body's result with its close result so neither error is lost.
 pub fn finish<R>(body: Result<R>, close: Result<()>) -> Result<R> {
     match (body, close) {
         (Ok(value), Ok(())) => Ok(value),

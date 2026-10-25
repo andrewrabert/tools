@@ -44,7 +44,7 @@ fn run() -> Result<()> {
 
     println!();
     heading("All Branch");
-    git.run(["branch", "-vv"])?;
+    git::run(&mut git.command(["branch", "-vv"]))?;
 
     let stash = git.capture(["stash", "list"])?;
     let stash = stash.trim_end_matches('\n');

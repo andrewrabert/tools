@@ -104,7 +104,7 @@ fn run(args: Web) -> Result<()> {
         Some(path) => {
             path::absolute(&path).with_context(|| format!("resolving {}", path.display()))?
         }
-        None => PathBuf::from(Git::cwd().toplevel()?),
+        None => Git::cwd().toplevel()?,
     };
     let dir = if path.is_file() {
         path.parent().unwrap_or(&path)
@@ -116,7 +116,7 @@ fn run(args: Web) -> Result<()> {
     let (remote, remote_url) = remote(git)?;
     let base = remote_url.parse::<RemoteUrl>()?.web(&ssh_hostnames()?);
 
-    let toplevel = PathBuf::from(git.toplevel()?);
+    let toplevel = git.toplevel()?;
     let relative = path
         .strip_prefix(&toplevel)
         .with_context(|| format!("{} is outside of {}", path.display(), toplevel.display()))?;

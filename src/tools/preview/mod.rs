@@ -1,7 +1,7 @@
 mod cli;
 mod config;
-mod kind;
 mod mime;
+mod previewer;
 mod render;
 
 use std::io::{self, Write};

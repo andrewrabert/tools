@@ -441,7 +441,7 @@ pub fn convert(
     }
 
     let settings = &options.settings;
-    let tmp = atomic_write::sibling(dest_dir, TEMP_PREFIX, path).create()?;
+    let tmp = atomic_write::sibling(TEMP_PREFIX, &dest)?;
     let png_temp = || temp::with_suffix(dest_dir, TEMP_PREFIX, ".png");
     let produced: TempPath = match (target, source) {
         (Mime::Png, Mime::Svg) => {
@@ -479,7 +479,7 @@ pub fn convert(
             tmp
         }
         (Mime::Jxl, Mime::Heif) => {
-            let ppm = atomic_write::sibling(dest_dir, TEMP_PREFIX, path).create()?;
+            let ppm = atomic_write::sibling(TEMP_PREFIX, &dest)?;
             encode::to_ppm(path, &ppm)?;
             encode::to_jxl(&ppm, &tmp, settings)?;
             tmp
@@ -503,7 +503,7 @@ pub fn convert(
                     tmp
                 }
                 Mime::Heif | Mime::Tiff | Mime::Webp | Mime::Jpeg => {
-                    let ppm = atomic_write::sibling(dest_dir, TEMP_PREFIX, path).create()?;
+                    let ppm = atomic_write::sibling(TEMP_PREFIX, &dest)?;
                     encode::to_ppm(path, &ppm)?;
                     encode::to_jpeg(&ppm, &tmp, settings)?;
                     tmp

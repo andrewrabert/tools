@@ -24,8 +24,7 @@ fn suffix(datatype: &Datatype) -> Result<&'static str> {
         | Datatype::Mode1_2048
         | Datatype::Mode2_2336
         | Datatype::Cdi2336
-        | Datatype::Cdi2352
-        | Datatype::Other(_) => bail!("unsupported track type {datatype}"),
+        | Datatype::Cdi2352 => bail!("unsupported track type {datatype}"),
     }
 }
 

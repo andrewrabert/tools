@@ -17,7 +17,7 @@ pub fn run(args: &Fmt) -> ExitCode {
     super::for_each(&args.input, |source| {
         let sheet = super::parse(source)?;
         let text = sheet.to_string();
-        if CueSheet::new(text.as_bytes())?.tokens() != sheet.tokens() {
+        if CueSheet::new(text.as_bytes())?.lines() != sheet.lines() {
             bail!(
                 "{}: formatting would change its tokens",
                 super::name(source)
@@ -38,11 +38,7 @@ fn rewrite(path: &Path, text: &str) -> Result<()> {
     if fs::read(path).is_ok_and(|data| data == text.as_bytes()) {
         return Ok(());
     }
-    let dir = path
-        .parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let temp = atomic_write::sibling(dir, TEMP_PREFIX, path).create()?;
+    let temp = atomic_write::sibling(TEMP_PREFIX, path)?;
     fs::write(&temp, text)?;
     atomic_write::replace(temp, path)
 }

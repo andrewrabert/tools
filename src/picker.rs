@@ -54,7 +54,6 @@ struct Picker<'a> {
     matching: Matching,
     matcher: Matcher,
     query: String,
-    /// The query as the matcher takes it.
     pattern: Pattern,
     /// The indices of the matching items, in the order listed.
     matches: Vec<usize>,
@@ -158,7 +157,6 @@ impl<'a> Picker<'a> {
         }
     }
 
-    /// Rematches every item against the query and highlights the first match.
     fn refilter(&mut self) {
         match self.matching {
             Matching::Fuzzy => {

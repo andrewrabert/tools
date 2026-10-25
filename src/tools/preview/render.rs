@@ -11,8 +11,8 @@ use crate::tools::archive::{Names, extract_member, list};
 use crate::tools::hexd;
 use crate::tools::mkv_preview;
 use crate::tools::preview::config::Color;
-use crate::tools::preview::kind::Kind;
 use crate::tools::preview::mime::MimeType;
+use crate::tools::preview::previewer::Previewer;
 
 const TEXT_LINE_LIMIT: usize = 1024;
 const BINARY_BYTE_LIMIT: u64 = 65536;
@@ -47,9 +47,9 @@ pub fn file(file: &Path, color: &Color) -> Result<Vec<u8>, Failure> {
             bail!("{} is a directory", file.display());
         }
         let mime = MimeType::detect(file)?;
-        match Kind::of(&mime, file) {
-            Kind::Archive => push(list_archive(file)),
-            Kind::CueSheet => {
+        match Previewer::for_file(&mime, file) {
+            Previewer::Archive => push(list_archive(file)),
+            Previewer::CueSheet => {
                 if let Ok(contents) = list(file) {
                     push(Ok(contents.lines(&Names::Raw)))?;
                 }
@@ -64,7 +64,7 @@ pub fn file(file: &Path, color: &Color) -> Result<Vec<u8>, Failure> {
                 copied?;
                 Ok(())
             }
-            Kind::JavaArchive => {
+            Previewer::JavaArchive => {
                 // A temporary file avoids deadlocking on a pipe the extraction fills.
                 let mut scratch = tempfile::tempfile().context("creating a temporary file")?;
                 extract_member(file, "META-INF/MANIFEST.MF", scratch.try_clone()?.into())?;
@@ -75,9 +75,9 @@ pub fn file(file: &Path, color: &Color) -> Result<Vec<u8>, Failure> {
                     .context("reading the manifest")?;
                 push(Ok(manifest))
             }
-            Kind::Text => push(highlight(file, color)),
-            Kind::Matroska => push(Ok(mkv_preview::summary(file)?)),
-            Kind::Media => {
+            Previewer::Text => push(highlight(file, color)),
+            Previewer::Matroska => push(Ok(mkv_preview::summary(file)?)),
+            Previewer::Media => {
                 let output = Command::new("ffprobe")
                     .args(["-hide_banner", "--"])
                     .arg(file)
@@ -91,8 +91,8 @@ pub fn file(file: &Path, color: &Color) -> Result<Vec<u8>, Failure> {
                 }
                 Ok(())
             }
-            Kind::Epub => push(run(Command::new("epubmeta").arg("--").arg(file))),
-            Kind::Executable => {
+            Previewer::Epub => push(run(Command::new("epubmeta").arg("--").arg(file))),
+            Previewer::Executable => {
                 if let Ok(output) = exiftool(file)
                     .stdin(Stdio::inherit())
                     .stderr(Stdio::inherit())
@@ -102,20 +102,22 @@ pub fn file(file: &Path, color: &Color) -> Result<Vec<u8>, Failure> {
                 }
                 push(list_archive(file))
             }
-            Kind::Exif => push(run(&mut exiftool(file))),
-            Kind::IccProfile => push(run(Command::new("iccdump").args(["-t", "desc"]).arg(file))),
-            Kind::Jxl => {
+            Previewer::Exif => push(run(&mut exiftool(file))),
+            Previewer::IccProfile => {
+                push(run(Command::new("iccdump").args(["-t", "desc"]).arg(file)))
+            }
+            Previewer::Jxl => {
                 push(identify(file))?;
                 push(Ok(exiv2(file)?))?;
                 push(run(Command::new("jxlinfo").arg("--verbose").arg(file)))
             }
-            Kind::Tiff => push(run(Command::new("tiffinfo").arg("--").arg(file))),
-            Kind::BareImage => push(identify(file)),
-            Kind::Image => {
+            Previewer::Tiff => push(run(Command::new("tiffinfo").arg("--").arg(file))),
+            Previewer::BareImage => push(identify(file)),
+            Previewer::Image => {
                 push(identify(file))?;
                 push(Ok(exiv2(file)?))
             }
-            Kind::Binary => {
+            Previewer::Binary => {
                 push(Ok(format!("binary file {}\n", file.display()).into_bytes()))?;
                 push(hex_dump(file))
             }

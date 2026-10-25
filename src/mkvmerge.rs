@@ -9,12 +9,10 @@ use crate::walk;
 
 pub const EXTENSION: &str = "mkv";
 
-/// An ISO 639-2 language of a track.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Language {
     English,
     Undetermined,
-    /// E.g. instrumental.
     NonLinguistic,
 }
 
@@ -28,7 +26,6 @@ impl Language {
     }
 }
 
-/// The output of `mkvmerge -J`.
 #[derive(Deserialize)]
 pub struct Identify {
     pub container: Container,
@@ -76,7 +73,6 @@ pub struct TrackProperties {
 }
 
 impl Track {
-    /// The ISO 639-2 language. An error when mkvmerge reported none.
     pub fn language(&self) -> Result<&str> {
         self.properties
             .language
@@ -89,7 +85,6 @@ pub fn identify(path: &Path) -> Result<Identify> {
     parse_identify(&identify_json(path)?)
 }
 
-/// The output of `mkvmerge -J`, unparsed.
 pub fn identify_json(path: &Path) -> Result<String> {
     let output = Command::new("mkvmerge")
         .arg("-J")

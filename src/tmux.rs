@@ -4,15 +4,17 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use std::process::{self, Command, Stdio};
 
-pub fn current_socket() -> Result<PathBuf, &'static str> {
-    let value = env::var_os("TMUX").ok_or("TMUX is not set")?;
+pub fn current_socket() -> Result<Option<PathBuf>, &'static str> {
+    let Some(value) = env::var_os("TMUX").filter(|value| !value.is_empty()) else {
+        return Ok(None);
+    };
     let socket = value
         .as_bytes()
         .split(|&byte| byte == b',')
         .next()
         .filter(|path| !path.is_empty())
         .ok_or("TMUX has no socket path")?;
-    Ok(PathBuf::from(OsStr::from_bytes(socket)))
+    Ok(Some(PathBuf::from(OsStr::from_bytes(socket))))
 }
 
 pub fn command<I, S>(args: I) -> Command

@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result, bail};
 use clap::Args as ClapArgs;
 
-use crate::git::Git;
+use crate::git::{self, Git};
 use crate::tools::Tool;
 use crate::tools::git::exit_code;
 
@@ -119,7 +119,7 @@ fn run(args: Undelete) -> Result<()> {
         Some(dir) => Git::at(dir),
         None => Git::cwd(),
     };
-    let root = PathBuf::from(start.toplevel()?);
+    let root = start.toplevel()?;
     let git = Git::at(&root);
 
     let cwd = env::current_dir().context("locating the current directory")?;
@@ -175,7 +175,7 @@ fn run(args: Undelete) -> Result<()> {
         }
         println!("{path}");
         if let Some(revision) = revision {
-            git.run(["checkout", &revision.to_string(), "--", path])?;
+            git::run(&mut git.command(["checkout", &revision.to_string(), "--", path]))?;
         }
     }
     Ok(())

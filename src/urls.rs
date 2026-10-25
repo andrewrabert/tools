@@ -73,7 +73,6 @@ impl Deref for Url<'_> {
     }
 }
 
-/// URLs in `text`, in order of first appearance, each once.
 pub fn unique_urls(text: &str) -> impl Iterator<Item = Result<Url<'_>>> {
     let mut finder = LinkFinder::new();
     finder.kinds(&[LinkKind::Url]);

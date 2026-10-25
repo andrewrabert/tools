@@ -231,7 +231,7 @@ pub fn convert(rom: &mut RomReader, config: &Config) -> Result<()> {
 
     fs::create_dir_all(&config.output)
         .with_context(|| format!("creating {}", config.output.display()))?;
-    let temp = atomic_write::sibling(&config.output, TEMP_PREFIX, &cia_path).create()?;
+    let temp = atomic_write::sibling(TEMP_PREFIX, &cia_path)?;
     let mut cia = File::create(&temp).with_context(|| format!("creating {}", temp.display()))?;
     cia.write_all(&head)?;
 

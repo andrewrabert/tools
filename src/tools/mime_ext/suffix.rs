@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::mime::TEXT;
+use crate::mime::MimeType;
 
 const TEXT_SUFFIX: &str = ".txt";
 const UNKNOWN_SUFFIX: &str = ".unknown";
@@ -37,50 +37,52 @@ const SUFFIXES: &[(&str, &[&str])] = &[
     ("video/x-m4v", &[".m4v"]),
 ];
 
-pub enum Kind {
-    Known(&'static [&'static str]),
+pub enum Expected {
+    Suffixes(&'static [&'static str]),
     Text,
-    Unknown,
+    Unrecognized,
 }
 
-pub enum Verdict {
-    Fits,
-    /// The suffix to append.
-    Wrong(&'static str),
+pub enum Fix {
+    Keep,
+    Append(&'static str),
     /// Plain text under a suffix that belongs to another type; only `--force-fix` renames it.
     Unfixable,
 }
 
-impl Kind {
-    pub fn of(mime: &str) -> Kind {
-        if mime == TEXT {
-            return Kind::Text;
+impl Expected {
+    pub fn of(mime: &MimeType) -> Expected {
+        match mime {
+            MimeType::Text => Expected::Text,
+            MimeType::Binary => Expected::Unrecognized,
+            MimeType::Other(name) => SUFFIXES
+                .iter()
+                .find(|(known, _)| *known == name.as_str())
+                .map_or(Expected::Unrecognized, |(_, suffixes)| {
+                    Expected::Suffixes(suffixes)
+                }),
         }
-        SUFFIXES
-            .iter()
-            .find(|(known, _)| *known == mime)
-            .map_or(Kind::Unknown, |(_, suffixes)| Kind::Known(suffixes))
     }
 
-    /// Whether a lowercased suffix fits this kind.
-    pub fn judge(&self, suffix: &str, force: bool) -> Verdict {
+    /// `suffix` is lowercased.
+    pub fn fix(&self, suffix: &str, force: bool) -> Fix {
         match self {
-            Kind::Known(suffixes) if suffixes.contains(&suffix) => Verdict::Fits,
-            Kind::Known(suffixes) => Verdict::Wrong(suffixes[0]),
-            Kind::Text if force => expect(suffix, TEXT_SUFFIX),
-            Kind::Text if belongs_to_any(suffix) => Verdict::Unfixable,
-            Kind::Text => Verdict::Fits,
-            Kind::Unknown if force => expect(suffix, UNKNOWN_SUFFIX),
-            Kind::Unknown => Verdict::Fits,
+            Expected::Suffixes(suffixes) if suffixes.contains(&suffix) => Fix::Keep,
+            Expected::Suffixes(suffixes) => Fix::Append(suffixes[0]),
+            Expected::Text if force => append_unless(suffix, TEXT_SUFFIX),
+            Expected::Text if belongs_to_any(suffix) => Fix::Unfixable,
+            Expected::Text => Fix::Keep,
+            Expected::Unrecognized if force => append_unless(suffix, UNKNOWN_SUFFIX),
+            Expected::Unrecognized => Fix::Keep,
         }
     }
 }
 
-fn expect(suffix: &str, wanted: &'static str) -> Verdict {
+fn append_unless(suffix: &str, wanted: &'static str) -> Fix {
     if suffix == wanted {
-        Verdict::Fits
+        Fix::Keep
     } else {
-        Verdict::Wrong(wanted)
+        Fix::Append(wanted)
     }
 }
 

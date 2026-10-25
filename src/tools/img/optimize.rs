@@ -59,13 +59,9 @@ pub fn in_place(
 ) -> Result<Optimized> {
     let optimize =
         optimizer(mime).with_context(|| format!("no optimizer for {}", mime.as_str()))?;
-    let dir = path
-        .parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
     let before = size_of(path)?;
 
-    let tmp = atomic_write::sibling(dir, TEMP_PREFIX, path).create()?;
+    let tmp = atomic_write::sibling(TEMP_PREFIX, path)?;
     optimize(path, &tmp, options)?;
     let after = size_of(&tmp)?;
     let after = if after < before {

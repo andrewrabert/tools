@@ -22,11 +22,13 @@ enum Backend {
 impl Backend {
     const ALL: [Self; 4] = [Self::Termux, Self::Wayland, Self::Macos, Self::Tmux];
 
-    fn enabled(self) -> bool {
+    fn enabled(self) -> Result<bool> {
         match self {
-            Self::Termux | Self::Macos => true,
-            Self::Wayland => is_set("WAYLAND_DISPLAY"),
-            Self::Tmux => tmux::current_socket().is_ok(),
+            Self::Termux | Self::Macos => Ok(true),
+            Self::Wayland => Ok(is_set("WAYLAND_DISPLAY")),
+            Self::Tmux => Ok(tmux::current_socket()
+                .map_err(anyhow::Error::msg)?
+                .is_some()),
         }
     }
 
@@ -55,44 +57,65 @@ fn is_set(variable: &str) -> bool {
 
 fn try_paste(backend: Backend) -> Result<Vec<u8>> {
     if let Backend::Tmux = backend {
-        // A failed refresh only means a stale buffer; save-buffer decides.
-        let _ = tmux::command(["refresh-client", "-l"]).status();
+        tmux::run(["refresh-client", "-l"])
+            .map_err(anyhow::Error::msg)
+            .context("requesting the terminal's clipboard")?;
         thread::sleep(TMUX_REFRESH_WAIT);
     }
-    let output = backend.paste().stderr(Stdio::inherit()).output()?;
+    let mut command = backend.paste();
+    let output = command
+        .stderr(Stdio::inherit())
+        .output()
+        .with_context(|| format!("running {command:?}"))?;
     if !output.status.success() {
-        bail!("{}", output.status);
+        bail!("{command:?} failed: {}", output.status);
     }
     Ok(output.stdout)
 }
 
 fn try_copy(backend: Backend, data: &[u8]) -> Result<()> {
-    let mut child = backend.copy().stdin(Stdio::piped()).spawn()?;
+    let mut command = backend.copy();
+    let mut child = command
+        .stdin(Stdio::piped())
+        .spawn()
+        .with_context(|| format!("running {command:?}"))?;
     // Dropping stdin closes the pipe so the command sees end of input.
     let mut stdin = child.stdin.take().context("opening stdin")?;
     let written = stdin.write_all(data);
     drop(stdin);
-    let status = child.wait()?;
-    written?;
+    let status = child
+        .wait()
+        .with_context(|| format!("waiting for {command:?}"))?;
+    written.with_context(|| format!("writing to {command:?}"))?;
     if !status.success() {
-        bail!("{status}");
+        bail!("{command:?} failed: {status}");
     }
     Ok(())
 }
 
-// Any failure moves on to the next backend, as the shell version did.
+fn first_success<T>(mut attempt: impl FnMut(Backend) -> Result<T>) -> Result<T> {
+    let mut failures = Vec::new();
+    for backend in Backend::ALL {
+        let result = match backend.enabled() {
+            Ok(false) => continue,
+            Ok(true) => attempt(backend),
+            Err(error) => Err(error),
+        };
+        match result {
+            Ok(value) => return Ok(value),
+            Err(error) => failures.push(format!("{error:#}")),
+        }
+    }
+    if failures.is_empty() {
+        bail!("no suitable clipboard command detected");
+    }
+    bail!("every clipboard command failed: {}", failures.join("; "))
+}
+
 pub fn paste() -> Result<Vec<u8>> {
-    Backend::ALL
-        .into_iter()
-        .filter(|backend| backend.enabled())
-        .find_map(|backend| try_paste(backend).ok())
-        .context("no suitable clipboard command detected")
+    first_success(try_paste)
 }
 
 pub fn copy(data: &[u8]) -> Result<()> {
-    Backend::ALL
-        .into_iter()
-        .filter(|backend| backend.enabled())
-        .find_map(|backend| try_copy(backend, data).ok())
-        .context("no suitable clipboard command detected")
+    first_success(|backend| try_copy(backend, data))
 }

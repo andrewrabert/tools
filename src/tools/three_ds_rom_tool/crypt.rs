@@ -72,11 +72,7 @@ pub fn run(
     }
     println!("{} -> {}", rom.path().display(), output.display());
 
-    let parent = match output.parent() {
-        Some(parent) if !parent.as_os_str().is_empty() => parent,
-        _ => Path::new("."),
-    };
-    let temp = atomic_write::sibling(parent, TEMP_PREFIX, &output).create()?;
+    let temp = atomic_write::sibling(TEMP_PREFIX, &output)?;
     let mut file = File::create(&temp).with_context(|| format!("opening {}", temp.display()))?;
     crypt_rom(rom, &mut file, direction, keyset)?;
     atomic_write::replace(temp, &output)

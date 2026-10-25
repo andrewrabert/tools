@@ -31,7 +31,6 @@ use crate::tools::Tool;
 pub const APP_NAME: &str = env!("CARGO_CRATE_NAME");
 pub const APP_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), env!("VERSION_SUFFIX"));
 
-/// A section of related tools in the help.
 struct Group {
     heading: &'static str,
     description: Option<&'static str>,
@@ -71,20 +70,6 @@ macro_rules! tool_groups {
     };
 }
 
-/// Tools that also run under their own name.
-macro_rules! tools {
-    ($($groups:tt)*) => {
-        tool_groups! { Tools, standalone_aliases; $($groups)* }
-    };
-}
-
-/// Tools that only run through the binary itself, never under their own name.
-macro_rules! internal_tools {
-    ($($groups:tt)*) => {
-        tool_groups! { InternalTools, no_aliases; $($groups)* }
-    };
-}
-
 fn standalone_aliases(name: &str) -> Vec<String> {
     vec![format!("{APP_NAME}-{name}")]
 }
@@ -93,7 +78,9 @@ fn no_aliases(_name: &str) -> Vec<String> {
     Vec::new()
 }
 
-tools! {
+// Tools that also run under their own name.
+tool_groups! {
+    Tools, standalone_aliases;
     "Archive": "Create and unpack archives" {
         "archive" => archive::Archive,
         "extract" => archive::Extract,
@@ -223,7 +210,9 @@ tools! {
     }
 }
 
-internal_tools! {
+// Tools that only run through the binary itself, never under their own name.
+tool_groups! {
+    InternalTools, no_aliases;
     "Bertbox": "Set up and inspect bertbox itself" {
         "completions" => bertbox::Completions,
         "install" => bertbox::Install,
@@ -231,7 +220,6 @@ internal_tools! {
     }
 }
 
-/// Every tool the binary itself answers to.
 #[derive(Subcommand)]
 enum AnyTool {
     #[command(flatten)]
@@ -253,7 +241,6 @@ impl AnyTool {
     }
 }
 
-/// Help with one section per tool group in place of clap's single tool list.
 fn help_template() -> String {
     let tools = AnyTool::augment_subcommands(Command::new(APP_NAME));
     let styles = Styles::default();

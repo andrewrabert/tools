@@ -201,7 +201,7 @@ fn fetch_all() -> Result<()> {
     let cwd = env::current_dir().context("locating the current directory")?;
     for repo in discover::repos(&cwd) {
         println!("{}", repo.display());
-        Git::at(&repo).run(["fetch", "--all"])?;
+        git::run(&mut Git::at(&repo).command(["fetch", "--all"]))?;
     }
     Ok(())
 }

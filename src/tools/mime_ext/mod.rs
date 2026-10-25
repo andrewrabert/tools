@@ -7,17 +7,17 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
-use crate::mime;
+use crate::mime::{self, MimeType};
 use crate::tools::Tool;
 use crate::tools::find_file_exts::walk;
 pub use crate::tools::mime_ext::cli::MimeExt;
 use crate::tools::mime_ext::config::{Config, Mode};
-use crate::tools::mime_ext::suffix::{Kind, Verdict};
+use crate::tools::mime_ext::suffix::{Expected, Fix};
 
-type ByType = BTreeMap<String, Vec<PathBuf>>;
+type ByType = BTreeMap<MimeType, Vec<PathBuf>>;
 
 enum Outcome {
     Clean,
@@ -61,7 +61,7 @@ fn run(args: MimeExt) -> Result<Outcome> {
                 Outcome::Wrong
             })
         }
-        Mode::Fix { force } => Ok(fix(&by_type, force)),
+        Mode::Fix { force } => fix(&by_type, force),
     }
 }
 
@@ -73,7 +73,7 @@ fn print_json(by_type: &ByType) -> Result<()> {
                 .iter()
                 .map(|path| Value::from(path.to_string_lossy()))
                 .collect();
-            (mime.clone(), Value::Array(paths))
+            (mime.to_string(), Value::Array(paths))
         })
         .collect();
     println!("{}", serde_json::to_string_pretty(&object)?);
@@ -84,10 +84,10 @@ fn print_json(by_type: &ByType) -> Result<()> {
 fn check(by_type: &ByType) -> ByType {
     let mut wrong = ByType::new();
     for (mime, paths) in by_type {
-        let kind = Kind::of(mime);
-        warn_unknown(&kind, mime);
+        let expected = Expected::of(mime);
+        warn_unrecognized(&expected, mime);
         for path in paths {
-            if !matches!(kind.judge(&suffix::of(path), false), Verdict::Fits) {
+            if !matches!(expected.fix(&suffix::of(path), false), Fix::Keep) {
                 wrong.entry(mime.clone()).or_default().push(path.clone());
             }
         }
@@ -95,22 +95,18 @@ fn check(by_type: &ByType) -> ByType {
     wrong
 }
 
-fn fix(by_type: &ByType, force: bool) -> Outcome {
+fn fix(by_type: &ByType, force: bool) -> Result<Outcome> {
     let mut outcome = Outcome::Clean;
     for (mime, paths) in by_type {
-        let kind = Kind::of(mime);
+        let expected = Expected::of(mime);
         if !force {
-            warn_unknown(&kind, mime);
+            warn_unrecognized(&expected, mime);
         }
         for path in paths {
-            match kind.judge(&suffix::of(path), force) {
-                Verdict::Fits => {}
-                Verdict::Wrong(suffix) => {
-                    if !rename(path, suffix) {
-                        outcome = Outcome::Wrong;
-                    }
-                }
-                Verdict::Unfixable => {
+            match expected.fix(&suffix::of(path), force) {
+                Fix::Keep => {}
+                Fix::Append(suffix) => rename(path, suffix)?,
+                Fix::Unfixable => {
                     eprintln!(
                         "warning: {mime} under a suffix of another type: {}",
                         path.display()
@@ -120,17 +116,17 @@ fn fix(by_type: &ByType, force: bool) -> Outcome {
             }
         }
     }
-    outcome
+    Ok(outcome)
 }
 
-fn warn_unknown(kind: &Kind, mime: &str) {
-    if matches!(kind, Kind::Unknown) {
+fn warn_unrecognized(expected: &Expected, mime: &MimeType) {
+    if matches!(expected, Expected::Unrecognized) {
         eprintln!("warning: suffix unknown for \"{mime}\"");
     }
 }
 
 /// Appends `suffix` to the file's name, padding with underscores past any name already taken.
-fn rename(path: &Path, suffix: &str) -> bool {
+fn rename(path: &Path, suffix: &str) -> Result<()> {
     let name = path.file_name().unwrap_or_default();
     let target = (0..)
         .map(|underscores| {
@@ -141,14 +137,7 @@ fn rename(path: &Path, suffix: &str) -> bool {
         })
         .find(|target| fs::symlink_metadata(target).is_err())
         .expect("some padded name is free");
-    match fs::rename(path, &target) {
-        Ok(()) => {
-            println!("\"{}\" -> \"{}\"", path.display(), target.display());
-            true
-        }
-        Err(error) => {
-            eprintln!("error: rename failed for \"{}\": {error}", path.display());
-            false
-        }
-    }
+    fs::rename(path, &target).with_context(|| format!("renaming {}", path.display()))?;
+    println!("\"{}\" -> \"{}\"", path.display(), target.display());
+    Ok(())
 }

@@ -186,6 +186,12 @@ pub fn check_cue_files(log: &mut Log, dir: &Path, dry_run: bool) -> Result<()> {
                 | CueSheetError::UnmatchedQuote
                 | CueSheetError::ParseFileCommand(_)
                 | CueSheetError::ParseTrackCommand(_)
+                | CueSheetError::ParseIndexCommand(_)
+                | CueSheetError::TrackNumber(_)
+                | CueSheetError::Datatype(_)
+                | CueSheetError::IndexNumber(_)
+                | CueSheetError::Time(_)
+                | CueSheetError::IndexOutsideTrack(_)
                 | CueSheetError::Filename(_),
             ) => {
                 log.error(format!("Bad cue file: {}", cue.display()));

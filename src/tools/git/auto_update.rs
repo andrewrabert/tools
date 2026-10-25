@@ -48,9 +48,9 @@ fn run(args: AutoUpdate) -> Result<()> {
 
 fn update(dir: &Path, staged: bool, no_push: bool) -> Result<()> {
     let git = Git::at(dir);
-    git.run(["fetch"])?;
+    git::run(&mut git.command(["fetch"]))?;
     if git.capture(["rev-parse", "HEAD"])? != git.capture(["rev-parse", "@{u}"])? {
-        git.run(["merge"])?;
+        git::run(&mut git.command(["merge"]))?;
     }
 
     if !git.capture(["status", "--porcelain"])?.is_empty() {
@@ -58,7 +58,7 @@ fn update(dir: &Path, staged: bool, no_push: bool) -> Result<()> {
             eprintln!("warning: uncommitted changes");
         } else {
             if !staged {
-                git.run(["add", "-A"])?;
+                git::run(&mut git.command(["add", "-A"]))?;
             }
             let now = Timestamp::now().to_zoned(TimeZone::UTC);
             let message = format!("git-auto-update {}", now.strftime("%Y-%m-%dT%H:%M:%S%:z"));
@@ -75,7 +75,7 @@ fn update(dir: &Path, staged: bool, no_push: bool) -> Result<()> {
         if no_push {
             eprintln!("warning: local changes exist, but push is disabled");
         } else {
-            git.run(["push"])?;
+            git::run(&mut git.command(["push"]))?;
         }
     }
     Ok(())

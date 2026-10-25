@@ -2,7 +2,7 @@ use std::process::ExitCode;
 
 use clap::Args as ClapArgs;
 
-use crate::git::Git;
+use crate::git::{self, Git};
 use crate::tools::Tool;
 use crate::tools::git::exit_code;
 
@@ -12,10 +12,10 @@ pub struct TagTimestamp {}
 
 impl Tool for TagTimestamp {
     fn run(self) -> ExitCode {
-        exit_code(Git::cwd().run([
+        exit_code(git::run(&mut Git::cwd().command([
             "tag",
             "-l",
             "--format=%(refname:short) %(creatordate:iso8601)",
-        ]))
+        ])))
     }
 }

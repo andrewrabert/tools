@@ -1,5 +1,7 @@
 //! MIME type detection from file content.
 
+use std::cmp::Ordering;
+use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -8,13 +10,11 @@ use std::sync::LazyLock;
 use anyhow::{Context, Result};
 use infer::Infer;
 
-pub const TEXT: &str = "text/plain";
-pub const BINARY: &str = "application/octet-stream";
+const TEXT: &str = "text/plain";
+const BINARY: &str = "application/octet-stream";
 
-/// Bytes read from the head of a file; what `infer` looks at.
 const HEAD: u64 = 8192;
 
-/// The built-in matchers plus those for types `infer` lacks, which it tries first.
 static INFER: LazyLock<Infer> = LazyLock::new(|| {
     let mut infer = Infer::new();
     infer.add("application/x-ace-compressed", "ace", is_ace);
@@ -28,7 +28,6 @@ fn is_ace(head: &[u8]) -> bool {
     head.get(7..14) == Some(b"**ACE**")
 }
 
-/// A bencoded dictionary whose first key is one a torrent file starts with.
 fn is_torrent(head: &[u8]) -> bool {
     const FIRST_KEYS: [&[u8]; 6] = [
         b"d8:announce",
@@ -41,32 +40,79 @@ fn is_torrent(head: &[u8]) -> bool {
     FIRST_KEYS.iter().any(|key| head.starts_with(key))
 }
 
-/// An ISO base media file whose major brand is Canon's `crx `.
 fn is_cr3(head: &[u8]) -> bool {
-    head.get(4..12) == Some(b"ftypcrx ")
+    const FTYP_CANON_BRAND: &[u8] = b"ftypcrx ";
+    head.get(4..4 + FTYP_CANON_BRAND.len()) == Some(FTYP_CANON_BRAND)
 }
 
-/// A sync byte at the start of each of the first three 188-byte packets.
 fn is_mpeg_ts(head: &[u8]) -> bool {
     const PACKET: usize = 188;
     const SYNC: u8 = 0x47;
     head.len() > 2 * PACKET && [0, PACKET, 2 * PACKET].iter().all(|&at| head[at] == SYNC)
 }
 
-/// The lowercased MIME type of the file's content: a type `infer` recognizes by
-/// signature, else `text/plain` for UTF-8 text without NUL bytes, else
-/// `application/octet-stream`. An empty file is plain text.
-pub fn detect(path: &Path) -> Result<String> {
+#[derive(Clone)]
+pub enum MimeType {
+    Text,
+    Binary,
+    Other(String),
+}
+
+impl MimeType {
+    fn named(name: &str) -> Self {
+        let name = name.to_ascii_lowercase();
+        match name.as_str() {
+            TEXT => MimeType::Text,
+            BINARY => MimeType::Binary,
+            _ => MimeType::Other(name),
+        }
+    }
+
+    fn as_str(&self) -> &str {
+        match self {
+            MimeType::Text => TEXT,
+            MimeType::Binary => BINARY,
+            MimeType::Other(name) => name,
+        }
+    }
+}
+
+impl fmt::Display for MimeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl PartialEq for MimeType {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl Eq for MimeType {}
+
+impl Ord for MimeType {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.as_str().cmp(other.as_str())
+    }
+}
+
+impl PartialOrd for MimeType {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+pub fn detect(path: &Path) -> Result<MimeType> {
     let mut head = Vec::new();
     File::open(path)
         .and_then(|file| file.take(HEAD).read_to_end(&mut head))
         .with_context(|| format!("reading {}", path.display()))?;
-    let mime = match INFER.get(&head) {
-        Some(kind) => kind.mime_type(),
-        None if is_text(&head) => TEXT,
-        None => BINARY,
-    };
-    Ok(mime.to_ascii_lowercase())
+    Ok(match INFER.get(&head) {
+        Some(kind) => MimeType::named(kind.mime_type()),
+        None if is_text(&head) => MimeType::Text,
+        None => MimeType::Binary,
+    })
 }
 
 /// Whether the head of a file reads as UTF-8 text; a multi-byte character the

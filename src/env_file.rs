@@ -19,24 +19,29 @@ pub fn with_flag(command: Command) -> Command {
 }
 
 pub fn load(command: &Command) -> Result<()> {
-    for path in env_files(command.clone()) {
+    for path in env_files(command.clone())? {
         dotenvy::from_path_override(&path)
             .with_context(|| format!("loading {}", path.display()))?;
     }
     Ok(())
 }
 
-fn env_files(command: Command) -> Vec<PathBuf> {
+fn env_files(command: Command) -> Result<Vec<PathBuf>> {
+    // The flag is global, so a subcommand has it whenever its parent does;
+    // a command given the flag only on its subcommands lacks it at the top.
+    let mut has_flag = command.get_arguments().any(|arg| arg.get_id() == ID);
     let Ok(mut matches) = command.ignore_errors(true).try_get_matches() else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
     while let Some((_, sub_matches)) = matches.remove_subcommand() {
         matches = sub_matches;
+        has_flag = true;
     }
-    matches
+    if !has_flag {
+        return Ok(Vec::new());
+    }
+    let paths = matches
         .try_remove_many::<PathBuf>(ID)
-        .ok()
-        .flatten()
-        .map(|paths| paths.collect())
-        .unwrap_or_default()
+        .context("reading --env-file")?;
+    Ok(paths.into_iter().flatten().collect())
 }

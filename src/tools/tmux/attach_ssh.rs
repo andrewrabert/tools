@@ -75,7 +75,9 @@ pub enum Placement {
 }
 
 pub fn connect(host: &str, shell: &Shell, placement: Placement) -> Result<()> {
-    let in_tmux = tmux::current_socket().is_ok();
+    let in_tmux = tmux::current_socket()
+        .map_err(anyhow::Error::msg)?
+        .is_some();
     let name = window_name(host);
     match placement {
         Placement::NewWindow if in_tmux => {

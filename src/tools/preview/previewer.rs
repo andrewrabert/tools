@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::tools::preview::mime::MimeType;
 
-pub enum Kind {
+pub enum Previewer {
     Archive,
     CueSheet,
     JavaArchive,
@@ -20,8 +20,8 @@ pub enum Kind {
     Binary,
 }
 
-impl Kind {
-    pub fn of(mime: &MimeType, file: &Path) -> Self {
+impl Previewer {
+    pub fn for_file(mime: &MimeType, file: &Path) -> Self {
         match mime.as_str() {
             "application/gzip"
             | "application/x-rpm"
@@ -48,39 +48,39 @@ impl Kind {
             | "application/x-zstd-compressed-tar"
             | "application/zip"
             | "application/zlib"
-            | "application/zstd" => Kind::Archive,
-            "application/x-cue" => Kind::CueSheet,
-            "application/java-archive" => Kind::JavaArchive,
+            | "application/zstd" => Previewer::Archive,
+            "application/x-cue" => Previewer::CueSheet,
+            "application/java-archive" => Previewer::JavaArchive,
             // xdg-mime reports go.mod files as audio/x-mod
-            "audio/x-mod" | "audio/x-mpegurl" => Kind::Text,
-            "video/matroska" | "video/x-matroska" => Kind::Matroska,
-            "application/epub+zip" => Kind::Epub,
+            "audio/x-mod" | "audio/x-mpegurl" => Previewer::Text,
+            "video/matroska" | "video/x-matroska" => Previewer::Matroska,
+            "application/epub+zip" => Previewer::Epub,
             "application/vnd.microsoft.portable-executable"
             | "application/x-dosexec"
             | "application/x-ms-dos-executable"
-            | "application/x-msdownload" => Kind::Executable,
+            | "application/x-msdownload" => Previewer::Executable,
             "application/pdf" | "image/gif" | "image/x-canon-cr2" | "image/x-canon-cr3" => {
-                Kind::Exif
+                Previewer::Exif
             }
-            "application/vnd.iccprofile" => Kind::IccProfile,
-            "image/jxl" => Kind::Jxl,
-            "image/tiff" => Kind::Tiff,
-            "image/x-portable-pixmap" | "image/vnd.microsoft.icon" => Kind::BareImage,
-            "application/octet-stream" | "" => Kind::of_unrecognized(file),
-            other if other.starts_with("audio/") || other.starts_with("video/") => Kind::Media,
-            other if other.starts_with("image/") => Kind::Image,
-            _ => Kind::Text,
+            "application/vnd.iccprofile" => Previewer::IccProfile,
+            "image/jxl" => Previewer::Jxl,
+            "image/tiff" => Previewer::Tiff,
+            "image/x-portable-pixmap" | "image/vnd.microsoft.icon" => Previewer::BareImage,
+            "application/octet-stream" | "" => Previewer::for_unrecognized(file),
+            other if other.starts_with("audio/") || other.starts_with("video/") => Previewer::Media,
+            other if other.starts_with("image/") => Previewer::Image,
+            _ => Previewer::Text,
         }
     }
 
-    fn of_unrecognized(file: &Path) -> Self {
+    fn for_unrecognized(file: &Path) -> Self {
         let extension = file
             .extension()
             .map(|extension| extension.to_string_lossy().to_lowercase());
         match extension.as_deref() {
-            Some("rvz") => Kind::Archive,
-            Some("umx") => Kind::Media,
-            _ => Kind::Binary,
+            Some("rvz") => Previewer::Archive,
+            Some("umx") => Previewer::Media,
+            _ => Previewer::Binary,
         }
     }
 }

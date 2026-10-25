@@ -1,5 +1,5 @@
 use std::ffi::OsStr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
@@ -31,20 +31,23 @@ impl<'a> Git<'a> {
         command
     }
 
-    pub fn run<I, S>(&self, args: I) -> Result<()>
-    where
-        I: IntoIterator<Item = S>,
-        S: AsRef<OsStr>,
-    {
-        run(&mut self.command(args))
-    }
-
     pub fn capture<I, S>(&self, args: I) -> Result<String>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        capture(&mut self.command(args))
+        let mut command = self.command(args);
+        let output = command
+            .stdout(Stdio::piped())
+            .spawn()
+            .with_context(|| format!("running {command:?}"))?
+            .wait_with_output()
+            .with_context(|| format!("waiting for {command:?}"))?;
+        if !output.status.success() {
+            bail!("{command:?} failed: {}", output.status);
+        }
+        String::from_utf8(output.stdout)
+            .with_context(|| format!("reading the output of {command:?}"))
     }
 
     pub fn succeeds<I, S>(&self, args: I) -> Result<bool>
@@ -61,11 +64,11 @@ impl<'a> Git<'a> {
         Ok(status.success())
     }
 
-    pub fn toplevel(&self) -> Result<String> {
-        Ok(self
-            .capture(["rev-parse", "--show-toplevel"])?
-            .trim_end_matches('\n')
-            .to_owned())
+    pub fn toplevel(&self) -> Result<PathBuf> {
+        Ok(PathBuf::from(
+            self.capture(["rev-parse", "--show-toplevel"])?
+                .trim_end_matches('\n'),
+        ))
     }
 }
 
@@ -77,17 +80,4 @@ pub fn run(command: &mut Command) -> Result<()> {
         bail!("{command:?} failed: {status}");
     }
     Ok(())
-}
-
-pub fn capture(command: &mut Command) -> Result<String> {
-    let output = command
-        .stdout(Stdio::piped())
-        .spawn()
-        .with_context(|| format!("running {command:?}"))?
-        .wait_with_output()
-        .with_context(|| format!("waiting for {command:?}"))?;
-    if !output.status.success() {
-        bail!("{command:?} failed: {}", output.status);
-    }
-    String::from_utf8(output.stdout).with_context(|| format!("reading the output of {command:?}"))
 }

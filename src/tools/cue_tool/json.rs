@@ -9,11 +9,16 @@ pub fn run(args: &Json) -> ExitCode {
     let pretty = !args.input.recursive && io::stdout().is_terminal();
     super::for_each(&args.input, |source| {
         let sheet = super::parse(source)?;
+        let tokens: Vec<Vec<&str>> = sheet
+            .lines()
+            .iter()
+            .map(|line| line.tokens().collect())
+            .collect();
         let mut stdout = io::stdout().lock();
         if pretty {
-            serde_json::to_writer_pretty(&mut stdout, sheet.tokens())?;
+            serde_json::to_writer_pretty(&mut stdout, &tokens)?;
         } else {
-            serde_json::to_writer(&mut stdout, sheet.tokens())?;
+            serde_json::to_writer(&mut stdout, &tokens)?;
         }
         writeln!(stdout)?;
         Ok(())

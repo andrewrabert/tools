@@ -144,7 +144,7 @@ fn capture<const N: usize>(git: Git, args: [&str; N]) -> Result<String> {
 }
 
 fn retime(git: Git, old: &str, date: &str, branch: &str) -> Result<()> {
-    git.run(["checkout", "-q", "--detach", old])?;
+    git::run(&mut git.command(["checkout", "-q", "--detach", old]))?;
     git::run(
         git.command([
             "commit",
@@ -156,8 +156,8 @@ fn retime(git: Git, old: &str, date: &str, branch: &str) -> Result<()> {
         .env("GIT_COMMITTER_DATE", date),
     )?;
     let new = capture(git, ["rev-parse", "HEAD"])?;
-    git.run(["checkout", "-q", branch])?;
-    git.run(["rebase", "-q", "--onto", &new, old, branch])
+    git::run(&mut git.command(["checkout", "-q", branch]))?;
+    git::run(&mut git.command(["rebase", "-q", "--onto", &new, old, branch]))
 }
 
 fn run(args: Retime) -> Result<()> {
