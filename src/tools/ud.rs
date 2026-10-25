@@ -4,16 +4,19 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitCode, Output, Stdio};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::Args as ClapArgs;
 use ratatui::text::Line;
+use winnow::Parser;
+use winnow::combinator::{alt, preceded, repeat};
+use winnow::error::EmptyError;
+use winnow::token::{any, take};
 
 use crate::cue;
 use crate::picker::{self, Matching};
 use crate::tools::Tool;
 use crate::tools::cdemu_tool::{self, Device, ImagePath, Images, SrDevice};
 
-/// The width of the action column in the picker.
 const ACTION_WIDTH: usize = 8;
 const CDEMU_EXTENSIONS: [&str; 7] = ["ccd", cue::EXTENSION, "iso", "mds", "mdf", "nrg", "toc"];
 const TOC_EXTENSION: &str = "toc";
@@ -307,42 +310,39 @@ fn cdemu_load(images: &[PathBuf]) -> Result<()> {
     Ok(())
 }
 
-/// The sshfs mount points in `/proc/mounts`.
 fn sshfs_mount_points() -> Result<Vec<String>> {
     let mounts = fs::read_to_string(MOUNTS).with_context(|| format!("reading {MOUNTS}"))?;
-    Ok(mounts
+    mounts
         .lines()
         .filter_map(|line| {
             let mut fields = line.split_whitespace();
             let (_, mount_point, kind) = (fields.next()?, fields.next()?, fields.next()?);
             (kind == SSHFS_TYPE).then(|| unescape_mount_field(mount_point))
         })
-        .collect())
+        .collect()
 }
 
-/// Undoes the octal escapes (`\040` for a space) of a `/proc/mounts` field.
-fn unescape_mount_field(field: &str) -> String {
-    let bytes = field.as_bytes();
-    let mut unescaped = Vec::with_capacity(bytes.len());
-    let mut index = 0;
-    while index < bytes.len() {
-        let octal = bytes
-            .get(index + 1..index + 4)
-            .filter(|_| bytes[index] == b'\\')
-            .and_then(|digits| std::str::from_utf8(digits).ok())
-            .and_then(|digits| u8::from_str_radix(digits, 8).ok());
-        match octal {
-            Some(byte) => {
-                unescaped.push(byte);
-                index += 4;
-            }
-            None => {
-                unescaped.push(bytes[index]);
-                index += 1;
-            }
-        }
-    }
-    String::from_utf8_lossy(&unescaped).into_owned()
+fn unescape_mount_field(field: &str) -> Result<String> {
+    let unescaped: Vec<u8> = repeat(0.., mount_field_byte)
+        .parse(field.as_bytes())
+        .map_err(|_| anyhow!("unescaping mount field {field:?}"))?;
+    Ok(String::from_utf8_lossy(&unescaped).into_owned())
+}
+
+fn mount_field_byte(input: &mut &[u8]) -> winnow::Result<u8, EmptyError> {
+    alt((octal_escape, any)).parse_next(input)
+}
+
+fn octal_escape(input: &mut &[u8]) -> winnow::Result<u8, EmptyError> {
+    preceded(
+        b'\\',
+        take(3usize).verify_map(|digits: &[u8]| {
+            std::str::from_utf8(digits)
+                .ok()
+                .and_then(|digits| u8::from_str_radix(digits, 8).ok())
+        }),
+    )
+    .parse_next(input)
 }
 
 /// The line of an item in the picker, with the labels in one column.
@@ -375,4 +375,67 @@ fn status(command: &mut Command, name: &str) -> Result<()> {
         bail!("{name} failed: {status}");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn field_without_escapes_is_unchanged() -> Result<()> {
+        assert_eq!(unescape_mount_field("/mnt/remote")?, "/mnt/remote");
+        Ok(())
+    }
+
+    #[test]
+    fn octal_escape_is_its_byte() -> Result<()> {
+        assert_eq!(
+            unescape_mount_field(r"/mnt/my\040remote")?,
+            "/mnt/my remote"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn escaped_backslash() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\134b")?, r"a\b");
+        Ok(())
+    }
+
+    #[test]
+    fn adjacent_escapes() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"\040\011\012")?, " \t\n");
+        Ok(())
+    }
+
+    #[test]
+    fn non_octal_escape_is_copied() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\9ab")?, r"a\9ab");
+        Ok(())
+    }
+
+    // 0o400 does not fit in a byte.
+    #[test]
+    fn out_of_range_escape_is_copied() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\400")?, r"a\400");
+        Ok(())
+    }
+
+    #[test]
+    fn short_escape_is_copied() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\04")?, r"a\04");
+        Ok(())
+    }
+
+    #[test]
+    fn trailing_backslash_is_copied() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\")?, r"a\");
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_utf8_is_replaced() -> Result<()> {
+        assert_eq!(unescape_mount_field(r"a\377")?, "a\u{FFFD}");
+        Ok(())
+    }
 }
