@@ -29,6 +29,10 @@ clippy *args:
 fmt:
     cargo fmt
 
+[positional-arguments]
+test *args:
+    cargo test "$@"
+
 # List outdated dependencies
 outdated:
     @cargo outdated --manifest-path {{justfile_directory()}}/Cargo.toml --workspace --root-deps-only

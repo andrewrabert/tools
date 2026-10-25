@@ -1,0 +1,20 @@
+Path = dir
+Size = 0
+Packed Size = 0
+Modified = 2026-10-25 01:46:08.1137229
+Attributes = HD
+CRC = 
+Encrypted = -
+Method = 
+Block = 
+
+Path = dir/file
+Size = 42
+Packed Size = 14
+Modified = 2026-10-25 01:46:08.1137229
+Attributes = A -rw-r--r--
+CRC = E46F28FB
+Encrypted = -
+Method = LZMA2:12
+Block = 0
+

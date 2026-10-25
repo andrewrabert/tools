@@ -87,10 +87,13 @@ pub fn contents(archive: &Path) -> Result<Contents> {
             .arg(archive)
             .stdin(Stdio::null()),
     )?;
+    parse_listing(&output)
+}
 
+fn parse_listing(output: &[u8]) -> Result<Contents> {
     let mut contents = Contents::default();
     let mut block = Block::default();
-    let mut lines = listing::lines(&output);
+    let mut lines = listing::lines(output);
     lines.push(b"");
     for line in lines {
         if line.is_empty() {
@@ -198,4 +201,176 @@ pub fn volumes(archive: &Path, password: Option<&Password>) -> Result<Vec<PathBu
         volumes.push(volume);
     }
     Ok(volumes)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+
+    // `7z -ba l -slt` output from 7-Zip 26.04. Fixtures that 7z cannot produce on Linux are
+    // hand-edited copies of a real one; each test using one says what was edited.
+    macro_rules! fixture {
+        ($name:literal) => {
+            include_bytes!(concat!("testdata/seven_zip/", $name, ".bin"))
+        };
+    }
+
+    fn entries(output: &[u8]) -> BTreeMap<Vec<u8>, Entry> {
+        parse_listing(output)
+            .expect("valid listing")
+            .into_iter()
+            .collect()
+    }
+
+    fn file_entry(output: &[u8]) -> Entry {
+        entries(output)
+            .remove(b"file".as_slice())
+            .expect("file is listed")
+    }
+
+    // Each fixture lists `dir` and `dir/file`.
+    fn assert_directory(output: &[u8]) {
+        let entries = entries(output);
+        assert!(entries.contains_key(b"dir/file".as_slice()));
+        assert!(!entries.contains_key(b"dir".as_slice()));
+    }
+
+    fn assert_close(actual: f64, expected: f64) {
+        assert!(
+            (actual - expected).abs() < 1e-6,
+            "{actual} is not {expected}"
+        );
+    }
+
+    #[test]
+    fn read_only_directory() {
+        assert_directory(fixture!("read_only_directory"));
+    }
+
+    // plain_directory with Attributes edited to HD.
+    #[test]
+    fn hidden_directory() {
+        assert_directory(fixture!("hidden_directory"));
+    }
+
+    // plain_directory with Attributes edited to DA.
+    #[test]
+    fn archive_bit_directory() {
+        assert_directory(fixture!("archive_bit_directory"));
+    }
+
+    #[test]
+    fn plain_directory() {
+        assert_directory(fixture!("plain_directory"));
+    }
+
+    // plain_directory with Attributes edited to D, as for an archive made on Windows.
+    #[test]
+    fn windows_directory() {
+        assert_directory(fixture!("windows_directory"));
+    }
+
+    // The directory's Attributes are edited to be empty, leaving only Folder to mark it.
+    #[test]
+    fn zip_folder_is_a_directory() {
+        assert_directory(fixture!("zip_folder_is_a_directory"));
+    }
+
+    #[test]
+    fn zip_file_without_windows_attributes() {
+        let entries = entries(fixture!("zip_file_without_windows_attributes"));
+        assert!(entries.contains_key(b"dir/file".as_slice()));
+    }
+
+    #[test]
+    fn file_is_listed() {
+        let entries = entries(fixture!("file"));
+        assert_eq!(entries.len(), 1);
+        assert!(entries.contains_key(b"file".as_slice()));
+    }
+
+    #[test]
+    fn path_containing_separator() {
+        let entries = entries(fixture!("path_containing_separator"));
+        assert!(entries.contains_key(b"dir/a = b".as_slice()));
+    }
+
+    #[test]
+    fn size() {
+        assert_eq!(file_entry(fixture!("file")).size, Some(42));
+    }
+
+    // file with Size edited to be empty, as for .dmg entries.
+    #[test]
+    fn empty_size() {
+        assert_eq!(file_entry(fixture!("empty_size")).size, None);
+    }
+
+    // file with Modified edited to be empty.
+    #[test]
+    fn empty_modified() {
+        assert_eq!(file_entry(fixture!("empty_modified")).mtime, None);
+    }
+
+    #[test]
+    fn modified() {
+        let expected = mtime("2026-10-25 01:46:08").expect("valid time") + 0.1137229;
+        let actual = file_entry(fixture!("file")).mtime.expect("mtime");
+        assert_close(actual, expected);
+    }
+
+    // The fraction's leading zeros are dropped on purpose; see `mtime`.
+    #[test]
+    fn modified_fraction_drops_leading_zeros() {
+        let seconds = mtime("2026-10-25 01:46:08").expect("valid time");
+        assert_close(
+            mtime("2026-10-25 01:46:08.05").expect("valid time"),
+            seconds + 0.5,
+        );
+    }
+
+    // file without its final blank line.
+    #[test]
+    fn last_record_without_blank_line() {
+        let entries = entries(fixture!("last_record_without_blank_line"));
+        assert!(entries.contains_key(b"file".as_slice()));
+    }
+
+    // file with CRLF line endings.
+    #[test]
+    fn crlf_line_endings() {
+        let entries = entries(fixture!("crlf_line_endings"));
+        assert!(entries.contains_key(b"file".as_slice()));
+    }
+
+    #[test]
+    fn empty_output() {
+        assert!(parse_listing(b"").expect("valid listing").is_empty());
+    }
+
+    // file without its Path line.
+    #[test]
+    fn record_without_path_is_skipped() {
+        assert!(entries(fixture!("record_without_path")).is_empty());
+    }
+
+    // file with its Encrypted line replaced by `garbage`.
+    #[test]
+    fn line_without_separator_is_an_error() {
+        assert!(parse_listing(fixture!("line_without_separator")).is_err());
+    }
+
+    // file with Size edited to `x`.
+    #[test]
+    fn unparseable_size_is_an_error() {
+        assert!(parse_listing(fixture!("unparseable_size")).is_err());
+    }
+
+    // file with Modified edited to `soon`.
+    #[test]
+    fn unparseable_modified_is_an_error() {
+        assert!(parse_listing(fixture!("unparseable_modified")).is_err());
+    }
 }
