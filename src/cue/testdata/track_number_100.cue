@@ -1,0 +1,3 @@
+FILE album.wav WAVE
+  TRACK 100 AUDIO
+    INDEX 01 00:00:00

@@ -3,10 +3,9 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::ExitCode;
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 
 use crate::atomic_write;
-use crate::cue::CueSheet;
 use crate::source::Source;
 use crate::tools::cue_tool::cli::Fmt;
 
@@ -17,12 +16,6 @@ pub fn run(args: &Fmt) -> ExitCode {
     super::for_each(&args.input, |source| {
         let sheet = super::parse(source)?;
         let text = sheet.to_string();
-        if CueSheet::new(text.as_bytes())?.lines() != sheet.lines() {
-            bail!(
-                "{}: formatting would change its tokens",
-                super::name(source)
-            );
-        }
         match (source, args.in_place) {
             (Source::File(path), true) => rewrite(path, &text),
             (Source::File(_), false) | (Source::Stdin, _) => {

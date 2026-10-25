@@ -1,0 +1,3 @@
+FILE album.wav WAVE
+  TRACK 01 MODEx/2xxx
+    INDEX 01 00:00:00

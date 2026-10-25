@@ -184,10 +184,9 @@ pub fn check_cue_files(log: &mut Log, dir: &Path, dry_run: bool) -> Result<()> {
                 | CueSheetError::NoTracks
                 | CueSheetError::UnknownCommand(_)
                 | CueSheetError::UnmatchedQuote
-                | CueSheetError::ParseFileCommand(_)
-                | CueSheetError::ParseTrackCommand(_)
-                | CueSheetError::ParseIndexCommand(_)
+                | CueSheetError::ParseCommand(_)
                 | CueSheetError::TrackNumber(_)
+                | CueSheetError::SessionNumber(_)
                 | CueSheetError::Datatype(_)
                 | CueSheetError::IndexNumber(_)
                 | CueSheetError::Time(_)

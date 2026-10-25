@@ -1,6 +1,8 @@
 use std::io::{self, IsTerminal, Write};
+use std::iter;
 use std::process::ExitCode;
 
+use crate::cue::Parameter;
 use crate::tools::cue_tool::cli::Json;
 
 /// Prints the tokens of each cue sheet as JSON: pretty-printed for one sheet on a terminal, and
@@ -10,9 +12,13 @@ pub fn run(args: &Json) -> ExitCode {
     super::for_each(&args.input, |source| {
         let sheet = super::parse(source)?;
         let tokens: Vec<Vec<&str>> = sheet
-            .lines()
+            .commands()
             .iter()
-            .map(|line| line.tokens().collect())
+            .map(|(command, parameters)| {
+                iter::once(command.as_str())
+                    .chain(parameters.iter().map(Parameter::as_str))
+                    .collect::<Vec<&str>>()
+            })
             .collect();
         let mut stdout = io::stdout().lock();
         if pretty {
