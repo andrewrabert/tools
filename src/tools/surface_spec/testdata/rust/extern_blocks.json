@@ -1,0 +1,363 @@
+{
+  "files": [
+    {
+      "language": "rust",
+      "path": "extern_blocks.rs",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 2,
+              "column": 4
+            },
+            "end": {
+              "line": 2,
+              "column": 30
+            }
+          },
+          "foreign_mod": {
+            "id": 0,
+            "unsafe": true,
+            "abi": {
+              "name": "\"C\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "abs",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "x"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "i32"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "i32"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 3,
+              "column": 4
+            },
+            "end": {
+              "line": 3,
+              "column": 27
+            }
+          },
+          "foreign_mod": {
+            "id": 0,
+            "unsafe": true,
+            "abi": {
+              "name": "\"C\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "labs",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "x"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "i64"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "i64"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 5,
+              "column": 4
+            },
+            "end": {
+              "line": 5,
+              "column": 45
+            }
+          },
+          "foreign_mod": {
+            "id": 0,
+            "unsafe": true,
+            "abi": {
+              "name": "\"C\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "printf",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "format"
+                    }
+                  },
+                  "ty": {
+                    "ptr": {
+                      "const": true,
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "u8"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "variadic": {},
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "i32"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 9,
+              "column": 4
+            },
+            "end": {
+              "line": 9,
+              "column": 14
+            }
+          },
+          "foreign_mod": {
+            "id": 1,
+            "unsafe": false,
+            "abi": {}
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "bare",
+            "inputs": [],
+            "output": null
+          }
+        },
+        {
+          "id": 4,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 13,
+              "column": 4
+            },
+            "end": {
+              "line": 13,
+              "column": 29
+            }
+          },
+          "foreign_mod": {
+            "id": 2,
+            "unsafe": false,
+            "abi": {
+              "name": "\"system\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "GetTickCount",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "u32"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 15,
+              "column": 4
+            },
+            "end": {
+              "line": 15,
+              "column": 47
+            }
+          },
+          "foreign_mod": {
+            "id": 2,
+            "unsafe": false,
+            "abi": {
+              "name": "\"system\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "CloseHandle",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "handle"
+                    }
+                  },
+                  "ty": {
+                    "ptr": {
+                      "mut": true,
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Handle"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "i32"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 18,
+              "column": 0
+            },
+            "end": {
+              "line": 18,
+              "column": 19
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "between",
+            "inputs": [],
+            "output": null,
+            "stmts": []
+          }
+        },
+        {
+          "id": 7,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 21,
+              "column": 23
+            }
+          },
+          "foreign_mod": {
+            "id": 3,
+            "unsafe": true,
+            "abi": {
+              "name": "\"C\""
+            }
+          },
+          "syn": "ForeignItemFn",
+          "node": {
+            "ident": "after_between",
+            "inputs": [],
+            "output": null
+          }
+        }
+      ]
+    }
+  ]
+}

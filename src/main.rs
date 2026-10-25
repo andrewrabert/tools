@@ -123,6 +123,7 @@ tool_groups! {
         "pathcacher" => pathcacher::Pathcacher,
         "preview" => preview::Preview,
         "rerename" => rerename::Rerename,
+        "surface-spec" => surface_spec::SurfaceSpec,
         "syncthing-conflicts" => syncthing_conflicts::SyncthingConflicts,
         "syncthing-stversions" => syncthing_stversions::SyncthingStversions,
     }

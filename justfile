@@ -33,6 +33,27 @@ fmt:
 test *args:
     cargo test "$@"
 
+# Regenerate the surface-spec fixture outputs from their Rust and Python inputs with the debug binary
+surface-spec-fixtures: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bertbox="{{justfile_directory()}}/target/debug/bertbox"
+    for language in rust python; do
+        case "$language" in
+            rust) extension=rs ;;
+            python) extension=py ;;
+        esac
+        cd "{{justfile_directory()}}/src/tools/surface_spec/testdata/$language"
+        for input in *."$extension"; do
+            name="${input%."$extension"}"
+            BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec capture "$input" | jq . > "$name.json"
+            for section in additions deletions; do
+                BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec render "$name.json" "--$section" \
+                    --language "$language" > "$name.$section.md"
+            done
+        done
+    done
+
 # List outdated dependencies
 outdated:
     @cargo outdated --manifest-path {{justfile_directory()}}/Cargo.toml --workspace --root-deps-only

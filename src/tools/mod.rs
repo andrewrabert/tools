@@ -54,6 +54,7 @@ pub mod qr;
 pub mod radix;
 pub mod reencode_lossless;
 pub mod rerename;
+pub mod surface_spec;
 pub mod syncthing_conflicts;
 pub mod syncthing_stversions;
 pub mod three_ds_rom_tool;

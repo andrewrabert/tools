@@ -1,0 +1,773 @@
+{
+  "files": [
+    {
+      "language": "python",
+      "path": "nested.py",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 6,
+              "column": 4
+            },
+            "end": {
+              "line": 6,
+              "column": 53
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "typed_only",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "values",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "Iterator"
+                    },
+                    "slice": {
+                      "type": "name",
+                      "id": "int"
+                    }
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "int"
+            }
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 8,
+              "column": 4
+            },
+            "end": {
+              "line": 9,
+              "column": 18
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "TypedOnly",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": [
+              {
+                "type": "ann_assign",
+                "target": {
+                  "type": "name",
+                  "id": "value"
+                },
+                "annotation": {
+                  "type": "name",
+                  "id": "int"
+                },
+                "value": null
+              }
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 11,
+              "column": 4
+            },
+            "end": {
+              "line": 11,
+              "column": 22
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_elif",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 3,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 13,
+              "column": 4
+            },
+            "end": {
+              "line": 13,
+              "column": 22
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_else",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 4,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 18,
+              "column": 4
+            },
+            "end": {
+              "line": 19,
+              "column": 19
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "accelerated",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "bool"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 22,
+              "column": 20
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "fallback",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "bool"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 24,
+              "column": 4
+            },
+            "end": {
+              "line": 24,
+              "column": 21
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "Loaded",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": []
+          }
+        },
+        {
+          "id": 7,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 22
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "cleanup",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 8,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 29,
+              "column": 0
+            },
+            "end": {
+              "line": 39,
+              "column": 19
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "outer",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "x",
+                  "annotation": {
+                    "type": "name",
+                    "id": "int"
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "int"
+            }
+          }
+        },
+        {
+          "id": 9,
+          "parent": 8,
+          "span": {
+            "start": {
+              "line": 30,
+              "column": 4
+            },
+            "end": {
+              "line": 34,
+              "column": 30
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "inner",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "y",
+                  "annotation": {
+                    "type": "name",
+                    "id": "int"
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "int"
+            }
+          }
+        },
+        {
+          "id": 10,
+          "parent": 9,
+          "span": {
+            "start": {
+              "line": 31,
+              "column": 8
+            },
+            "end": {
+              "line": 32,
+              "column": 20
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "innermost",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "int"
+            }
+          }
+        },
+        {
+          "id": 11,
+          "parent": 8,
+          "span": {
+            "start": {
+              "line": 36,
+              "column": 4
+            },
+            "end": {
+              "line": 37,
+              "column": 29
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "Local",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": []
+          }
+        },
+        {
+          "id": 12,
+          "parent": 11,
+          "span": {
+            "start": {
+              "line": 37,
+              "column": 8
+            },
+            "end": {
+              "line": 37,
+              "column": 29
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "method",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "self",
+                  "annotation": null,
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 13,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 42,
+              "column": 0
+            },
+            "end": {
+              "line": 53,
+              "column": 26
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "Container",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": []
+          }
+        },
+        {
+          "id": 14,
+          "parent": 13,
+          "span": {
+            "start": {
+              "line": 43,
+              "column": 4
+            },
+            "end": {
+              "line": 49,
+              "column": 21
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "method",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "self",
+                  "annotation": null,
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 15,
+          "parent": 14,
+          "span": {
+            "start": {
+              "line": 44,
+              "column": 8
+            },
+            "end": {
+              "line": 44,
+              "column": 25
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "helper",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 16,
+          "parent": 14,
+          "span": {
+            "start": {
+              "line": 46,
+              "column": 8
+            },
+            "end": {
+              "line": 47,
+              "column": 22
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "InMethod",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": [
+              {
+                "type": "ann_assign",
+                "target": {
+                  "type": "name",
+                  "id": "field"
+                },
+                "annotation": {
+                  "type": "name",
+                  "id": "int"
+                },
+                "value": null
+              }
+            ]
+          }
+        },
+        {
+          "id": 17,
+          "parent": 13,
+          "span": {
+            "start": {
+              "line": 51,
+              "column": 4
+            },
+            "end": {
+              "line": 53,
+              "column": 26
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "Nested",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": []
+          }
+        },
+        {
+          "id": 18,
+          "parent": 17,
+          "span": {
+            "start": {
+              "line": 52,
+              "column": 8
+            },
+            "end": {
+              "line": 53,
+              "column": 26
+            }
+          },
+          "kind": "class",
+          "node": {
+            "name": "Deeper",
+            "decorators": [],
+            "type_params": [],
+            "bases": [],
+            "keywords": [],
+            "attributes": [
+              {
+                "type": "ann_assign",
+                "target": {
+                  "type": "name",
+                  "id": "depth"
+                },
+                "annotation": {
+                  "type": "name",
+                  "id": "int"
+                },
+                "value": {
+                  "type": "number_literal",
+                  "value": {
+                    "type": "int",
+                    "value": "2"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": 19,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 57,
+              "column": 4
+            },
+            "end": {
+              "line": 57,
+              "column": 21
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_for",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 20,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 59,
+              "column": 4
+            },
+            "end": {
+              "line": 59,
+              "column": 26
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_for_else",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 21,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 62,
+              "column": 4
+            },
+            "end": {
+              "line": 62,
+              "column": 23
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_while",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 22,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 65,
+              "column": 4
+            },
+            "end": {
+              "line": 65,
+              "column": 22
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_with",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 23,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 69,
+              "column": 8
+            },
+            "end": {
+              "line": 69,
+              "column": 27
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "in_match",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        }
+      ]
+    }
+  ]
+}

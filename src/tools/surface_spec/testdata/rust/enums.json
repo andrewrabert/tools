@@ -1,0 +1,448 @@
+{
+  "files": [
+    {
+      "language": "rust",
+      "path": "enums.rs",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "mod_path": [],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 7,
+              "column": 1
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "attrs": [
+              {
+                "style": "outer",
+                "meta": {
+                  "list": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "derive"
+                        }
+                      ]
+                    },
+                    "delimiter": "paren",
+                    "tokens": [
+                      {
+                        "ident": "Debug"
+                      },
+                      {
+                        "punct": {
+                          "op": ",",
+                          "spacing": "alone"
+                        }
+                      },
+                      {
+                        "ident": "Clone"
+                      },
+                      {
+                        "punct": {
+                          "op": ",",
+                          "spacing": "alone"
+                        }
+                      },
+                      {
+                        "ident": "Copy"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "vis": "pub",
+            "ident": "Direction",
+            "variants": [
+              {
+                "ident": "North",
+                "fields": "unit"
+              },
+              {
+                "ident": "East",
+                "fields": "unit"
+              },
+              {
+                "ident": "South",
+                "fields": "unit"
+              },
+              {
+                "ident": "West",
+                "fields": "unit"
+              }
+            ]
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "mod_path": [],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 9,
+              "column": 0
+            },
+            "end": {
+              "line": 13,
+              "column": 1
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "vis": "pub",
+            "ident": "Shape",
+            "variants": [
+              {
+                "ident": "Circle",
+                "fields": {
+                  "unnamed": [
+                    {
+                      "ty": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "f64"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "ident": "Rectangle",
+                "fields": {
+                  "named": [
+                    {
+                      "ident": "width",
+                      "colon_token": true,
+                      "ty": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "f64"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "ident": "height",
+                      "colon_token": true,
+                      "ty": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "f64"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "ident": "Point",
+                "fields": "unit"
+              }
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "mod_path": [],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 15,
+              "column": 0
+            },
+            "end": {
+              "line": 20,
+              "column": 1
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "attrs": [
+              {
+                "style": "outer",
+                "meta": {
+                  "list": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "repr"
+                        }
+                      ]
+                    },
+                    "delimiter": "paren",
+                    "tokens": [
+                      {
+                        "ident": "u8"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "ident": "Status",
+            "variants": [
+              {
+                "ident": "Ok",
+                "fields": "unit",
+                "discriminant": {
+                  "lit": {
+                    "int": "0"
+                  }
+                }
+              },
+              {
+                "ident": "NotFound",
+                "fields": "unit",
+                "discriminant": {
+                  "lit": {
+                    "int": "4"
+                  }
+                }
+              },
+              {
+                "ident": "Failed",
+                "fields": "unit",
+                "discriminant": {
+                  "binary": {
+                    "left": {
+                      "lit": {
+                        "int": "1"
+                      }
+                    },
+                    "op": "<<",
+                    "right": {
+                      "lit": {
+                        "int": "3"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": 3,
+          "parent": null,
+          "mod_path": [],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 22,
+              "column": 0
+            },
+            "end": {
+              "line": 32,
+              "column": 1
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "vis": "pub",
+            "ident": "Tree",
+            "generics": {
+              "params": [
+                {
+                  "lifetime": {
+                    "lifetime": "a",
+                    "bounds": []
+                  }
+                },
+                {
+                  "type": {
+                    "ident": "T"
+                  }
+                }
+              ],
+              "where_clause": [
+                {
+                  "type": {
+                    "bounded_ty": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "T"
+                          }
+                        ]
+                      }
+                    },
+                    "bounds": [
+                      {
+                        "trait": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "PartialOrd"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "variants": [
+              {
+                "ident": "Leaf",
+                "fields": {
+                  "unnamed": [
+                    {
+                      "ty": {
+                        "reference": {
+                          "lifetime": "a",
+                          "elem": {
+                            "path": {
+                              "segments": [
+                                {
+                                  "ident": "T"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "ident": "Node",
+                "fields": {
+                  "named": [
+                    {
+                      "ident": "left",
+                      "colon_token": true,
+                      "ty": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Box",
+                              "arguments": {
+                                "angle_bracketed": {
+                                  "args": [
+                                    {
+                                      "type": {
+                                        "path": {
+                                          "segments": [
+                                            {
+                                              "ident": "Tree",
+                                              "arguments": {
+                                                "angle_bracketed": {
+                                                  "args": [
+                                                    {
+                                                      "lifetime": "a"
+                                                    },
+                                                    {
+                                                      "type": {
+                                                        "path": {
+                                                          "segments": [
+                                                            {
+                                                              "ident": "T"
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "ident": "right",
+                      "colon_token": true,
+                      "ty": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Box",
+                              "arguments": {
+                                "angle_bracketed": {
+                                  "args": [
+                                    {
+                                      "type": {
+                                        "path": {
+                                          "segments": [
+                                            {
+                                              "ident": "Tree",
+                                              "arguments": {
+                                                "angle_bracketed": {
+                                                  "args": [
+                                                    {
+                                                      "lifetime": "a"
+                                                    },
+                                                    {
+                                                      "type": {
+                                                        "path": {
+                                                          "segments": [
+                                                            {
+                                                              "ident": "T"
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "ident": "Empty",
+                "fields": "unit"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,741 @@
+{
+  "files": [
+    {
+      "language": "rust",
+      "path": "trait_impls.rs",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "mod_path": [],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 3,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 25
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "vis": "pub",
+            "ident": "Wrapper",
+            "generics": {
+              "params": [
+                {
+                  "type": {
+                    "ident": "T"
+                  }
+                }
+              ]
+            },
+            "fields": {
+              "unnamed": [
+                {
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "T"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "mod_path": [],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 5,
+              "column": 24
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "vis": "pub",
+            "ident": "Raw",
+            "fields": {
+              "unnamed": [
+                {
+                  "ty": {
+                    "ptr": {
+                      "mut": true,
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "u8"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 7,
+              "column": 0
+            },
+            "end": {
+              "line": 11,
+              "column": 1
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "generics": {
+              "params": [
+                {
+                  "type": {
+                    "ident": "T",
+                    "colon_token": true,
+                    "bounds": [
+                      {
+                        "trait": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "Display"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "trait": [
+              false,
+              {
+                "segments": [
+                  {
+                    "ident": "Display"
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Wrapper",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "path": {
+                                "segments": [
+                                  {
+                                    "ident": "T"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 3,
+          "parent": 2,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 8,
+              "column": 4
+            },
+            "end": {
+              "line": 10,
+              "column": 5
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "ident": "fmt",
+            "inputs": [
+              {
+                "receiver": {
+                  "ref": true,
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Self"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "f"
+                    }
+                  },
+                  "ty": {
+                    "reference": {
+                      "mut": true,
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Formatter",
+                              "arguments": {
+                                "angle_bracketed": {
+                                  "args": [
+                                    {
+                                      "lifetime": "_"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "fmt"
+                  },
+                  {
+                    "ident": "Result"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 4,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 13,
+              "column": 0
+            },
+            "end": {
+              "line": 13,
+              "column": 27
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "unsafe": true,
+            "trait": [
+              false,
+              {
+                "segments": [
+                  {
+                    "ident": "Send"
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Raw"
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 15,
+              "column": 0
+            },
+            "end": {
+              "line": 15,
+              "column": 21
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "trait": [
+              true,
+              {
+                "segments": [
+                  {
+                    "ident": "Sync"
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Raw"
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 17,
+              "column": 0
+            },
+            "end": {
+              "line": 24,
+              "column": 1
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "generics": {
+              "params": [
+                {
+                  "type": {
+                    "ident": "T"
+                  }
+                }
+              ],
+              "where_clause": [
+                {
+                  "type": {
+                    "bounded_ty": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "T"
+                          }
+                        ]
+                      }
+                    },
+                    "bounds": [
+                      {
+                        "trait": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "Clone"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "trait": [
+              false,
+              {
+                "segments": [
+                  {
+                    "ident": "From",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "path": {
+                                "segments": [
+                                  {
+                                    "ident": "T"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Wrapper",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "path": {
+                                "segments": [
+                                  {
+                                    "ident": "T"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 7,
+          "parent": 6,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 4
+            },
+            "end": {
+              "line": 23,
+              "column": 5
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "ident": "from",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "value"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "T"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Self"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 8,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 26,
+              "column": 0
+            },
+            "end": {
+              "line": 34,
+              "column": 1
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "generics": {
+              "params": [
+                {
+                  "lifetime": {
+                    "lifetime": "a",
+                    "bounds": []
+                  }
+                },
+                {
+                  "type": {
+                    "ident": "T"
+                  }
+                }
+              ]
+            },
+            "trait": [
+              false,
+              {
+                "segments": [
+                  {
+                    "ident": "Iterator"
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Wrapper",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "reference": {
+                                "lifetime": "a",
+                                "elem": {
+                                  "slice": {
+                                    "elem": {
+                                      "path": {
+                                        "segments": [
+                                          {
+                                            "ident": "T"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "items": [
+              {
+                "type": {
+                  "ident": "Item",
+                  "ty": {
+                    "reference": {
+                      "lifetime": "a",
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "T"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": 9,
+          "parent": 8,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 29,
+              "column": 4
+            },
+            "end": {
+              "line": 33,
+              "column": 5
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "ident": "next",
+            "inputs": [
+              {
+                "receiver": {
+                  "ref": true,
+                  "mut": true,
+                  "ty": {
+                    "reference": {
+                      "mut": true,
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Self"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Option",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "path": {
+                                "segments": [
+                                  {
+                                    "ident": "Self"
+                                  },
+                                  {
+                                    "ident": "Item"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 10,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 36,
+              "column": 0
+            },
+            "end": {
+              "line": 40,
+              "column": 1
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "trait": [
+              false,
+              {
+                "segments": [
+                  {
+                    "ident": "Default"
+                  }
+                ]
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Raw"
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 11,
+          "parent": 10,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 37,
+              "column": 4
+            },
+            "end": {
+              "line": 39,
+              "column": 5
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "ident": "default",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Self"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        }
+      ]
+    }
+  ]
+}

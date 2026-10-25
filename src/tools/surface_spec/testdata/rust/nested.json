@@ -1,0 +1,710 @@
+{
+  "files": [
+    {
+      "language": "rust",
+      "path": "nested.rs",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 21,
+              "column": 1
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "outer",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "input"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u32"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "u32"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 1,
+          "parent": 0,
+          "mod_path": [],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 2,
+              "column": 4
+            },
+            "end": {
+              "line": 4,
+              "column": 5
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "ident": "Local",
+            "fields": {
+              "named": [
+                {
+                  "ident": "value",
+                  "colon_token": true,
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u32"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 2,
+          "parent": 0,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 6,
+              "column": 4
+            },
+            "end": {
+              "line": 11,
+              "column": 5
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "ident": "helper",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "local"
+                    }
+                  },
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Local"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "u32"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 3,
+          "parent": 2,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 7,
+              "column": 8
+            },
+            "end": {
+              "line": 9,
+              "column": 9
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "ident": "innermost",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "u32"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 4,
+          "parent": 0,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 14,
+              "column": 8
+            },
+            "end": {
+              "line": 16,
+              "column": 9
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "ident": "in_closure",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "x"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u32"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "u32"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "mod_path": [],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 24,
+              "column": 4
+            },
+            "end": {
+              "line": 27,
+              "column": 5
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "ident": "Size",
+            "variants": [
+              {
+                "ident": "Small",
+                "fields": "unit"
+              },
+              {
+                "ident": "Large",
+                "fields": "unit"
+              }
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 29,
+              "column": 4
+            },
+            "end": {
+              "line": 34,
+              "column": 5
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "ident": "pick",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "size"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Size"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "usize"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 7,
+          "parent": null,
+          "mod_path": [],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 39,
+              "column": 0
+            },
+            "end": {
+              "line": 46,
+              "column": 1
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "vis": "pub",
+            "ident": "Buffer",
+            "fields": {
+              "named": [
+                {
+                  "ident": "data",
+                  "colon_token": true,
+                  "ty": {
+                    "array": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "u8"
+                            }
+                          ]
+                        }
+                      },
+                      "len": {
+                        "block": {
+                          "stmts": [
+                            {
+                              "expr": [
+                                {
+                                  "call": {
+                                    "func": {
+                                      "path": {
+                                        "segments": [
+                                          {
+                                            "ident": "length"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "args": []
+                                  }
+                                },
+                                false
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 8,
+          "parent": 7,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 41,
+              "column": 8
+            },
+            "end": {
+              "line": 43,
+              "column": 9
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "const": true,
+            "ident": "length",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "usize"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 9,
+          "parent": null,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 0
+            },
+            "end": {
+              "line": 50,
+              "column": 1
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "sized",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "values"
+                    }
+                  },
+                  "ty": {
+                    "array": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "u8"
+                            }
+                          ]
+                        }
+                      },
+                      "len": {
+                        "block": {
+                          "stmts": [
+                            {
+                              "expr": [
+                                {
+                                  "call": {
+                                    "func": {
+                                      "path": {
+                                        "segments": [
+                                          {
+                                            "ident": "count"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "args": []
+                                  }
+                                },
+                                false
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "usize"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 10,
+          "parent": 9,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 28
+            },
+            "end": {
+              "line": 48,
+              "column": 53
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "ident": "count",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "usize"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 11,
+          "parent": null,
+          "mod_path": [
+            "outer_mod"
+          ],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 53,
+              "column": 4
+            },
+            "end": {
+              "line": 53,
+              "column": 22
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "in_mod",
+            "inputs": [],
+            "output": null,
+            "stmts": []
+          }
+        },
+        {
+          "id": 12,
+          "parent": null,
+          "mod_path": [
+            "outer_mod"
+          ],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 55,
+              "column": 4
+            },
+            "end": {
+              "line": 55,
+              "column": 21
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "vis": "pub",
+            "ident": "InMod",
+            "fields": "unit"
+          }
+        },
+        {
+          "id": 13,
+          "parent": null,
+          "mod_path": [
+            "outer_mod",
+            "inner_mod"
+          ],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 58,
+              "column": 8
+            },
+            "end": {
+              "line": 58,
+              "column": 35
+            }
+          },
+          "syn": "ItemFn",
+          "node": {
+            "vis": {
+              "restricted": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "super"
+                    }
+                  ]
+                }
+              }
+            },
+            "ident": "in_inner",
+            "inputs": [],
+            "output": null,
+            "stmts": []
+          }
+        },
+        {
+          "id": 14,
+          "parent": null,
+          "mod_path": [
+            "outer_mod",
+            "inner_mod",
+            "innermost_mod"
+          ],
+          "kind": "enum",
+          "span": {
+            "start": {
+              "line": 61,
+              "column": 12
+            },
+            "end": {
+              "line": 63,
+              "column": 13
+            }
+          },
+          "syn": "ItemEnum",
+          "node": {
+            "vis": "pub",
+            "ident": "Deep",
+            "variants": [
+              {
+                "ident": "One",
+                "fields": "unit"
+              }
+            ]
+          }
+        },
+        {
+          "id": 15,
+          "parent": null,
+          "mod_path": [
+            "outer_mod",
+            "inner_mod",
+            "innermost_mod"
+          ],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 65,
+              "column": 12
+            },
+            "end": {
+              "line": 69,
+              "column": 13
+            }
+          },
+          "syn": "ItemImpl",
+          "node": {
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Deep"
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 16,
+          "parent": 15,
+          "mod_path": [
+            "outer_mod",
+            "inner_mod",
+            "innermost_mod"
+          ],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 66,
+              "column": 16
+            },
+            "end": {
+              "line": 68,
+              "column": 17
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "get",
+            "inputs": [],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Self"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3810 @@
+{
+  "files": [
+    {
+      "language": "python",
+      "path": "expressions.py",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 24,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "strings",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "plain",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "single \"double\" inside",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "it's",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "tab\there\nnewline \\ backslash",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "implicit",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "value": " concatenation",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "value": " mixed",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "raw\\d+",
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase": false
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "unicode é é •",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "bytes_literal",
+                    "parts": [
+                      {
+                        "value": [
+                          98,
+                          121,
+                          116,
+                          101,
+                          115,
+                          0,
+                          255,
+                          32,
+                          34,
+                          113,
+                          117,
+                          111,
+                          116,
+                          101,
+                          100,
+                          34
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "i",
+                  "annotation": null,
+                  "default": {
+                    "type": "bytes_literal",
+                    "parts": [
+                      {
+                        "value": [
+                          105,
+                          109,
+                          112,
+                          108,
+                          105,
+                          99,
+                          105,
+                          116
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "value": [
+                          32,
+                          98,
+                          121,
+                          116,
+                          101,
+                          115
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "j",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "\u0007 bell",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "k",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "triple\nquoted",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "l",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "raw upper \\d",
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase": true
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "m",
+                  "annotation": null,
+                  "default": {
+                    "type": "bytes_literal",
+                    "parts": [
+                      {
+                        "value": [
+                          92,
+                          100,
+                          32,
+                          98,
+                          121,
+                          116,
+                          101,
+                          115
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase_r": true
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "n",
+                  "annotation": null,
+                  "default": {
+                    "type": "bytes_literal",
+                    "parts": [
+                      {
+                        "value": [
+                          105,
+                          116,
+                          92,
+                          39,
+                          115,
+                          32,
+                          114,
+                          97,
+                          119
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase_r": false
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "o",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "triple 'single' \"double\"",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "p",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "raw \"quoted\" triple",
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase": false
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "q",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "escaped ' and \" quotes",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "r",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "unicode prefix",
+                        "flags": {
+                          "prefix": {
+                            "type": "unicode"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "s",
+                  "annotation": null,
+                  "default": {
+                    "type": "bytes_literal",
+                    "parts": [
+                      {
+                        "value": [
+                          117,
+                          112,
+                          112,
+                          101,
+                          114,
+                          32,
+                          98,
+                          121,
+                          116,
+                          101,
+                          115
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "t",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "mixed",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "value": "quote",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "value": "styles",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": true
+                        }
+                      },
+                      {
+                        "value": "raw",
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase": false
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "u",
+                  "annotation": null,
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "A A A A",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 27,
+              "column": 0
+            },
+            "end": {
+              "line": 46,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "fstrings",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "value"
+                            },
+                            "debug_text": null,
+                            "conversion": "repr",
+                            "format_spec": [
+                              {
+                                "type": "literal",
+                                "value": ">"
+                              },
+                              {
+                                "type": "interpolation",
+                                "expression": {
+                                  "type": "name",
+                                  "id": "width"
+                                },
+                                "debug_text": null,
+                                "conversion": "none",
+                                "format_spec": null
+                              }
+                            ]
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "value"
+                            },
+                            "debug_text": {
+                              "leading": "",
+                              "expression": "value",
+                              "trailing": "="
+                            },
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "value"
+                            },
+                            "debug_text": {
+                              "leading": " ",
+                              "expression": "value",
+                              "trailing": " = "
+                            },
+                            "conversion": "str",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "literal {braces} "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": [
+                              {
+                                "type": "literal",
+                                "value": ".2f"
+                              }
+                            ]
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "literal",
+                        "value": "plain ",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "type": "literal",
+                        "value": " tail",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "subscript",
+                              "value": {
+                                "type": "name",
+                                "id": "d"
+                              },
+                              "slice": {
+                                "type": "string_literal",
+                                "parts": [
+                                  {
+                                    "value": "key",
+                                    "flags": {
+                                      "prefix": {
+                                        "type": "empty"
+                                      },
+                                      "quote_style": "single",
+                                      "triple_quoted": false
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "subscript",
+                              "value": {
+                                "type": "dict",
+                                "items": [
+                                  {
+                                    "key": {
+                                      "type": "string_literal",
+                                      "parts": [
+                                        {
+                                          "value": "a",
+                                          "flags": {
+                                            "prefix": {
+                                              "type": "empty"
+                                            },
+                                            "quote_style": "single",
+                                            "triple_quoted": false
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "number_literal",
+                                      "value": {
+                                        "type": "int",
+                                        "value": "1"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "slice": {
+                                "type": "string_literal",
+                                "parts": [
+                                  {
+                                    "value": "a",
+                                    "flags": {
+                                      "prefix": {
+                                        "type": "empty"
+                                      },
+                                      "quote_style": "single",
+                                      "triple_quoted": false
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "call",
+                              "func": {
+                                "type": "lambda",
+                                "parameters": {
+                                  "posonly": [],
+                                  "args": [],
+                                  "vararg": null,
+                                  "kwonly": [],
+                                  "kwarg": null
+                                },
+                                "body": {
+                                  "type": "number_literal",
+                                  "value": {
+                                    "type": "int",
+                                    "value": "1"
+                                  }
+                                }
+                              },
+                              "args": [],
+                              "keywords": []
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "i",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "if",
+                              "test": {
+                                "type": "name",
+                                "id": "y"
+                              },
+                              "body": {
+                                "type": "name",
+                                "id": "x"
+                              },
+                              "orelse": {
+                                "type": "name",
+                                "id": "z"
+                              }
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "j",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "f_string",
+                              "parts": [
+                                {
+                                  "type": "f_string",
+                                  "elements": [
+                                    {
+                                      "type": "interpolation",
+                                      "expression": {
+                                        "type": "name",
+                                        "id": "x"
+                                      },
+                                      "debug_text": null,
+                                      "conversion": "none",
+                                      "format_spec": null
+                                    }
+                                  ],
+                                  "flags": {
+                                    "prefix": {
+                                      "type": "regular"
+                                    },
+                                    "quote_style": "single",
+                                    "triple_quoted": false
+                                  }
+                                }
+                              ]
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "k",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "ascii",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "l",
+                  "annotation": null,
+                  "default": {
+                    "type": "t_string",
+                    "parts": [
+                      {
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "hello "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "name"
+                            },
+                            "debug_text": null,
+                            "conversion": "repr",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "m",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "n",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "\\d"
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase_r": false
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "o",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "triple "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          },
+                          {
+                            "type": "literal",
+                            "value": " \"quoted\""
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "p",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "type": "literal",
+                        "value": "plain",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "y"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "type": "literal",
+                        "value": "raw",
+                        "flags": {
+                          "prefix": {
+                            "type": "raw",
+                            "uppercase": false
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "q",
+                  "annotation": null,
+                  "default": {
+                    "type": "t_string",
+                    "parts": [
+                      {
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "one "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      },
+                      {
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "two "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "y"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "single",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "r",
+                  "annotation": null,
+                  "default": {
+                    "type": "f_string",
+                    "parts": [
+                      {
+                        "type": "f_string",
+                        "elements": [
+                          {
+                            "type": "literal",
+                            "value": "escaped \" "
+                          },
+                          {
+                            "type": "interpolation",
+                            "expression": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "debug_text": null,
+                            "conversion": "none",
+                            "format_spec": null
+                          }
+                        ],
+                        "flags": {
+                          "prefix": {
+                            "type": "regular"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 49,
+              "column": 0
+            },
+            "end": {
+              "line": 70,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "numbers",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "255"
+                    }
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "1000000"
+                    }
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "15"
+                    }
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "10"
+                    }
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 1.5
+                    }
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 10000000000.0
+                    }
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 0.5
+                    }
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "complex",
+                      "real": 0.0,
+                      "imag": 2.0
+                    }
+                  }
+                },
+                {
+                  "name": "i",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "complex",
+                      "real": 0.0,
+                      "imag": 0.0015
+                    }
+                  }
+                },
+                {
+                  "name": "j",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "0x_FFFF_FFFF_FFFF_FFFF_FFFF"
+                    }
+                  }
+                },
+                {
+                  "name": "k",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "123456789012345678901234567890"
+                    }
+                  }
+                },
+                {
+                  "name": "l",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "u_sub",
+                    "operand": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "1"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "m",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 1.0
+                    }
+                  }
+                },
+                {
+                  "name": "n",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "255"
+                    }
+                  }
+                },
+                {
+                  "name": "o",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 100000.0
+                    }
+                  }
+                },
+                {
+                  "name": "p",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "complex",
+                      "real": 0.0,
+                      "imag": 2.0
+                    }
+                  }
+                },
+                {
+                  "name": "q",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "15"
+                    }
+                  }
+                },
+                {
+                  "name": "r",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "1"
+                    }
+                  }
+                },
+                {
+                  "name": "s",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 1.05E-9
+                    }
+                  }
+                },
+                {
+                  "name": "t",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 0.0
+                    }
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 3,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 73,
+              "column": 0
+            },
+            "end": {
+              "line": 73,
+              "column": 108
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "unions",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "int"
+                    },
+                    "op": "bit_or",
+                    "right": {
+                      "type": "none_literal"
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "b",
+                  "annotation": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "str | None",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  },
+                  "default": null
+                },
+                {
+                  "name": "c",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "Optional"
+                    },
+                    "slice": {
+                      "type": "subscript",
+                      "value": {
+                        "type": "name",
+                        "id": "Union"
+                      },
+                      "slice": {
+                        "type": "tuple",
+                        "elts": [
+                          {
+                            "type": "name",
+                            "id": "int"
+                          },
+                          {
+                            "type": "name",
+                            "id": "str"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "subscript",
+              "value": {
+                "type": "name",
+                "id": "dict"
+              },
+              "slice": {
+                "type": "tuple",
+                "elts": [
+                  {
+                    "type": "name",
+                    "id": "str"
+                  },
+                  {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "list"
+                    },
+                    "slice": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "int"
+                      },
+                      "op": "bit_or",
+                      "right": {
+                        "type": "none_literal"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 76,
+              "column": 0
+            },
+            "end": {
+              "line": 87,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "subscripts",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "tuple"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "name",
+                          "id": "int"
+                        },
+                        {
+                          "type": "ellipsis_literal"
+                        }
+                      ]
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "b",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "tuple"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": []
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "c",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "tuple"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "name",
+                          "id": "int"
+                        }
+                      ]
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "d",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "Callable"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "list",
+                          "elts": [
+                            {
+                              "type": "name",
+                              "id": "int"
+                            },
+                            {
+                              "type": "name",
+                              "id": "str"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "none_literal"
+                        }
+                      ]
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "e",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "Annotated"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "name",
+                          "id": "int"
+                        },
+                        {
+                          "type": "call",
+                          "func": {
+                            "type": "name",
+                            "id": "Gt"
+                          },
+                          "args": [
+                            {
+                              "type": "number_literal",
+                              "value": {
+                                "type": "int",
+                                "value": "0"
+                              }
+                            }
+                          ],
+                          "keywords": []
+                        }
+                      ]
+                    }
+                  },
+                  "default": null
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "slice",
+                      "lower": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      },
+                      "upper": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "2"
+                        }
+                      },
+                      "step": null
+                    }
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "slice",
+                      "lower": null,
+                      "upper": null,
+                      "step": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "2"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "slice",
+                          "lower": {
+                            "type": "name",
+                            "id": "a"
+                          },
+                          "upper": {
+                            "type": "name",
+                            "id": "b"
+                          },
+                          "step": null
+                        },
+                        {
+                          "type": "name",
+                          "id": "c"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "i",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "starred",
+                          "value": {
+                            "type": "name",
+                            "id": "ts"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "j",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "slice",
+                      "lower": {
+                        "type": "bin_op",
+                        "left": {
+                          "type": "name",
+                          "id": "lower"
+                        },
+                        "op": "add",
+                        "right": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "1"
+                          }
+                        }
+                      },
+                      "upper": {
+                        "type": "name",
+                        "id": "upper"
+                      },
+                      "step": null
+                    }
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 90,
+              "column": 0
+            },
+            "end": {
+              "line": 97,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "lambdas",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "lambda",
+                    "parameters": {
+                      "posonly": [],
+                      "args": [],
+                      "vararg": null,
+                      "kwonly": [],
+                      "kwarg": null
+                    },
+                    "body": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "0"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "lambda",
+                    "parameters": {
+                      "posonly": [
+                        {
+                          "name": "x",
+                          "annotation": null,
+                          "default": null
+                        }
+                      ],
+                      "args": [
+                        {
+                          "name": "y",
+                          "annotation": null,
+                          "default": {
+                            "type": "number_literal",
+                            "value": {
+                              "type": "int",
+                              "value": "1"
+                            }
+                          }
+                        }
+                      ],
+                      "vararg": {
+                        "name": "args",
+                        "annotation": null
+                      },
+                      "kwonly": [
+                        {
+                          "name": "z",
+                          "annotation": null,
+                          "default": null
+                        }
+                      ],
+                      "kwarg": {
+                        "name": "kw",
+                        "annotation": null
+                      }
+                    },
+                    "body": {
+                      "type": "name",
+                      "id": "x"
+                    }
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "sorted"
+                    },
+                    "args": [
+                      {
+                        "type": "name",
+                        "id": "items"
+                      }
+                    ],
+                    "keywords": [
+                      {
+                        "arg": "key",
+                        "value": {
+                          "type": "lambda",
+                          "parameters": {
+                            "posonly": [],
+                            "args": [
+                              {
+                                "name": "item",
+                                "annotation": null,
+                                "default": null
+                              }
+                            ],
+                            "vararg": null,
+                            "kwonly": [],
+                            "kwarg": null
+                          },
+                          "body": {
+                            "type": "subscript",
+                            "value": {
+                              "type": "name",
+                              "id": "item"
+                            },
+                            "slice": {
+                              "type": "number_literal",
+                              "value": {
+                                "type": "int",
+                                "value": "1"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "if",
+                    "test": {
+                      "type": "name",
+                      "id": "flag"
+                    },
+                    "body": {
+                      "type": "lambda",
+                      "parameters": {
+                        "posonly": [],
+                        "args": [],
+                        "vararg": null,
+                        "kwonly": [],
+                        "kwarg": null
+                      },
+                      "body": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    "orelse": {
+                      "type": "lambda",
+                      "parameters": {
+                        "posonly": [],
+                        "args": [],
+                        "vararg": null,
+                        "kwonly": [],
+                        "kwarg": null
+                      },
+                      "body": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "2"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "lambda",
+                      "parameters": {
+                        "posonly": [],
+                        "args": [],
+                        "vararg": null,
+                        "kwonly": [],
+                        "kwarg": null
+                      },
+                      "body": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    "args": [],
+                    "keywords": []
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "call"
+                    },
+                    "args": [
+                      {
+                        "type": "lambda",
+                        "parameters": {
+                          "posonly": [],
+                          "args": [],
+                          "vararg": null,
+                          "kwonly": [],
+                          "kwarg": null
+                        },
+                        "body": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "1"
+                          }
+                        }
+                      }
+                    ],
+                    "keywords": []
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 100,
+              "column": 0
+            },
+            "end": {
+              "line": 108,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "comprehensions",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "list_comp",
+                    "elt": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "generators": [
+                      {
+                        "target": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "iter": {
+                          "type": "call",
+                          "func": {
+                            "type": "name",
+                            "id": "range"
+                          },
+                          "args": [
+                            {
+                              "type": "number_literal",
+                              "value": {
+                                "type": "int",
+                                "value": "3"
+                              }
+                            }
+                          ],
+                          "keywords": []
+                        },
+                        "ifs": [],
+                        "is_async": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "set_comp",
+                    "elt": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "generators": [
+                      {
+                        "target": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "iter": {
+                          "type": "call",
+                          "func": {
+                            "type": "name",
+                            "id": "range"
+                          },
+                          "args": [
+                            {
+                              "type": "number_literal",
+                              "value": {
+                                "type": "int",
+                                "value": "3"
+                              }
+                            }
+                          ],
+                          "keywords": []
+                        },
+                        "ifs": [
+                          {
+                            "type": "name",
+                            "id": "x"
+                          }
+                        ],
+                        "is_async": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "dict_comp",
+                    "key": {
+                      "type": "name",
+                      "id": "k"
+                    },
+                    "value": {
+                      "type": "name",
+                      "id": "v"
+                    },
+                    "generators": [
+                      {
+                        "target": {
+                          "type": "tuple",
+                          "elts": [
+                            {
+                              "type": "name",
+                              "id": "k"
+                            },
+                            {
+                              "type": "name",
+                              "id": "v"
+                            }
+                          ]
+                        },
+                        "iter": {
+                          "type": "name",
+                          "id": "pairs"
+                        },
+                        "ifs": [
+                          {
+                            "type": "name",
+                            "id": "k"
+                          },
+                          {
+                            "type": "name",
+                            "id": "v"
+                          }
+                        ],
+                        "is_async": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "list"
+                    },
+                    "args": [
+                      {
+                        "type": "generator",
+                        "elt": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "generators": [
+                          {
+                            "target": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "iter": {
+                              "type": "call",
+                              "func": {
+                                "type": "name",
+                                "id": "range"
+                              },
+                              "args": [
+                                {
+                                  "type": "number_literal",
+                                  "value": {
+                                    "type": "int",
+                                    "value": "3"
+                                  }
+                                }
+                              ],
+                              "keywords": []
+                            },
+                            "ifs": [],
+                            "is_async": false
+                          }
+                        ]
+                      }
+                    ],
+                    "keywords": []
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "sum"
+                    },
+                    "args": [
+                      {
+                        "type": "generator",
+                        "elt": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "generators": [
+                          {
+                            "target": {
+                              "type": "name",
+                              "id": "x"
+                            },
+                            "iter": {
+                              "type": "call",
+                              "func": {
+                                "type": "name",
+                                "id": "range"
+                              },
+                              "args": [
+                                {
+                                  "type": "number_literal",
+                                  "value": {
+                                    "type": "int",
+                                    "value": "3"
+                                  }
+                                }
+                              ],
+                              "keywords": []
+                            },
+                            "ifs": [],
+                            "is_async": false
+                          }
+                        ]
+                      }
+                    ],
+                    "keywords": [
+                      {
+                        "arg": "start",
+                        "value": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "0"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "dict",
+                    "items": [
+                      {
+                        "key": null,
+                        "value": {
+                          "type": "name",
+                          "id": "base"
+                        }
+                      },
+                      {
+                        "key": {
+                          "type": "string_literal",
+                          "parts": [
+                            {
+                              "value": "key",
+                              "flags": {
+                                "prefix": {
+                                  "type": "empty"
+                                },
+                                "quote_style": "double",
+                                "triple_quoted": false
+                              }
+                            }
+                          ]
+                        },
+                        "value": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "1"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "list_comp",
+                    "elt": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "generators": [
+                      {
+                        "target": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "iter": {
+                          "type": "bool_op",
+                          "op": "or",
+                          "values": [
+                            {
+                              "type": "name",
+                              "id": "a"
+                            },
+                            {
+                              "type": "name",
+                              "id": "b"
+                            }
+                          ]
+                        },
+                        "ifs": [],
+                        "is_async": false
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 7,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 111,
+              "column": 0
+            },
+            "end": {
+              "line": 146,
+              "column": 6
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "precedence",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "op": "add",
+                      "right": {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    },
+                    "op": "mult",
+                    "right": {
+                      "type": "name",
+                      "id": "d"
+                    }
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "b"
+                    },
+                    "op": "add",
+                    "right": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "c"
+                      },
+                      "op": "mult",
+                      "right": {
+                        "type": "name",
+                        "id": "d"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "op": "mult",
+                      "right": {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    },
+                    "op": "add",
+                    "right": {
+                      "type": "name",
+                      "id": "d"
+                    }
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "b"
+                    },
+                    "op": "sub",
+                    "right": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "c"
+                      },
+                      "op": "sub",
+                      "right": {
+                        "type": "name",
+                        "id": "d"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "op": "sub",
+                      "right": {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    },
+                    "op": "sub",
+                    "right": {
+                      "type": "name",
+                      "id": "d"
+                    }
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "u_sub",
+                    "operand": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "x"
+                      },
+                      "op": "pow",
+                      "right": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "2"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "unary_op",
+                      "op": "u_sub",
+                      "operand": {
+                        "type": "name",
+                        "id": "x"
+                      }
+                    },
+                    "op": "pow",
+                    "right": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "2"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "op": "pow",
+                    "right": {
+                      "type": "unary_op",
+                      "op": "u_sub",
+                      "operand": {
+                        "type": "name",
+                        "id": "y"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "i",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "x"
+                      },
+                      "op": "pow",
+                      "right": {
+                        "type": "name",
+                        "id": "y"
+                      }
+                    },
+                    "op": "pow",
+                    "right": {
+                      "type": "name",
+                      "id": "z"
+                    }
+                  }
+                },
+                {
+                  "name": "j",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "op": "pow",
+                    "right": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "y"
+                      },
+                      "op": "pow",
+                      "right": {
+                        "type": "name",
+                        "id": "z"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "k",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "not",
+                    "operand": {
+                      "type": "bool_op",
+                      "op": "and",
+                      "values": [
+                        {
+                          "type": "name",
+                          "id": "a"
+                        },
+                        {
+                          "type": "name",
+                          "id": "b"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "l",
+                  "annotation": null,
+                  "default": {
+                    "type": "bool_op",
+                    "op": "and",
+                    "values": [
+                      {
+                        "type": "unary_op",
+                        "op": "not",
+                        "operand": {
+                          "type": "name",
+                          "id": "a"
+                        }
+                      },
+                      {
+                        "type": "name",
+                        "id": "b"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "m",
+                  "annotation": null,
+                  "default": {
+                    "type": "bool_op",
+                    "op": "or",
+                    "values": [
+                      {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      {
+                        "type": "bool_op",
+                        "op": "and",
+                        "values": [
+                          {
+                            "type": "name",
+                            "id": "b"
+                          },
+                          {
+                            "type": "name",
+                            "id": "c"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "n",
+                  "annotation": null,
+                  "default": {
+                    "type": "bool_op",
+                    "op": "and",
+                    "values": [
+                      {
+                        "type": "bool_op",
+                        "op": "or",
+                        "values": [
+                          {
+                            "type": "name",
+                            "id": "a"
+                          },
+                          {
+                            "type": "name",
+                            "id": "b"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "o",
+                  "annotation": null,
+                  "default": {
+                    "type": "if",
+                    "test": {
+                      "type": "name",
+                      "id": "d"
+                    },
+                    "body": {
+                      "type": "if",
+                      "test": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "body": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "orelse": {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    },
+                    "orelse": {
+                      "type": "name",
+                      "id": "e"
+                    }
+                  }
+                },
+                {
+                  "name": "p",
+                  "annotation": null,
+                  "default": {
+                    "type": "if",
+                    "test": {
+                      "type": "if",
+                      "test": {
+                        "type": "name",
+                        "id": "c"
+                      },
+                      "body": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "orelse": {
+                        "type": "name",
+                        "id": "d"
+                      }
+                    },
+                    "body": {
+                      "type": "name",
+                      "id": "a"
+                    },
+                    "orelse": {
+                      "type": "name",
+                      "id": "e"
+                    }
+                  }
+                },
+                {
+                  "name": "q",
+                  "annotation": null,
+                  "default": {
+                    "type": "compare",
+                    "left": {
+                      "type": "compare",
+                      "left": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "comparisons": [
+                        {
+                          "op": "lt",
+                          "right": {
+                            "type": "name",
+                            "id": "b"
+                          }
+                        }
+                      ]
+                    },
+                    "comparisons": [
+                      {
+                        "op": "lt",
+                        "right": {
+                          "type": "name",
+                          "id": "c"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "r",
+                  "annotation": null,
+                  "default": {
+                    "type": "compare",
+                    "left": {
+                      "type": "name",
+                      "id": "a"
+                    },
+                    "comparisons": [
+                      {
+                        "op": "lt",
+                        "right": {
+                          "type": "name",
+                          "id": "b"
+                        }
+                      },
+                      {
+                        "op": "lt",
+                        "right": {
+                          "type": "name",
+                          "id": "c"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "s",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "f"
+                    },
+                    "args": [
+                      {
+                        "type": "named",
+                        "target": {
+                          "type": "name",
+                          "id": "x"
+                        },
+                        "value": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "1"
+                          }
+                        }
+                      }
+                    ],
+                    "keywords": []
+                  }
+                },
+                {
+                  "name": "t",
+                  "annotation": null,
+                  "default": {
+                    "type": "call",
+                    "func": {
+                      "type": "name",
+                      "id": "f"
+                    },
+                    "args": [],
+                    "keywords": [
+                      {
+                        "arg": "k",
+                        "value": {
+                          "type": "named",
+                          "target": {
+                            "type": "name",
+                            "id": "x"
+                          },
+                          "value": {
+                            "type": "number_literal",
+                            "value": {
+                              "type": "int",
+                              "value": "1"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "u",
+                  "annotation": null,
+                  "default": {
+                    "type": "attribute",
+                    "value": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "1"
+                      }
+                    },
+                    "attr": "real"
+                  }
+                },
+                {
+                  "name": "v",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "name",
+                          "id": "a"
+                        },
+                        {
+                          "type": "name",
+                          "id": "b"
+                        }
+                      ]
+                    },
+                    "slice": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "0"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "w",
+                  "annotation": null,
+                  "default": {
+                    "type": "attribute",
+                    "value": {
+                      "type": "unary_op",
+                      "op": "u_sub",
+                      "operand": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    "attr": "real"
+                  }
+                },
+                {
+                  "name": "x",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "u_sub",
+                    "operand": {
+                      "type": "unary_op",
+                      "op": "u_sub",
+                      "operand": {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "y",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "invert",
+                    "operand": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "op": "bit_or",
+                      "right": {
+                        "type": "name",
+                        "id": "b"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "z",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "name",
+                      "id": "a"
+                    },
+                    "op": "bit_or",
+                    "right": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "bin_op",
+                        "left": {
+                          "type": "name",
+                          "id": "b"
+                        },
+                        "op": "bit_and",
+                        "right": {
+                          "type": "name",
+                          "id": "c"
+                        }
+                      },
+                      "op": "bit_xor",
+                      "right": {
+                        "type": "name",
+                        "id": "d"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "aa",
+                  "annotation": null,
+                  "default": {
+                    "type": "bin_op",
+                    "left": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "op": "bit_or",
+                      "right": {
+                        "type": "name",
+                        "id": "b"
+                      }
+                    },
+                    "op": "bit_and",
+                    "right": {
+                      "type": "name",
+                      "id": "c"
+                    }
+                  }
+                },
+                {
+                  "name": "bb",
+                  "annotation": null,
+                  "default": {
+                    "type": "list",
+                    "elts": [
+                      {
+                        "type": "starred",
+                        "value": {
+                          "type": "name",
+                          "id": "a"
+                        }
+                      },
+                      {
+                        "type": "starred",
+                        "value": {
+                          "type": "bool_op",
+                          "op": "or",
+                          "values": [
+                            {
+                              "type": "name",
+                              "id": "b"
+                            },
+                            {
+                              "type": "name",
+                              "id": "c"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "cc",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    },
+                    "slice": {
+                      "type": "if",
+                      "test": {
+                        "type": "name",
+                        "id": "b"
+                      },
+                      "body": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "orelse": {
+                        "type": "name",
+                        "id": "c"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "dd",
+                  "annotation": null,
+                  "default": {
+                    "type": "tuple",
+                    "elts": [
+                      {
+                        "type": "named",
+                        "target": {
+                          "type": "name",
+                          "id": "a"
+                        },
+                        "value": {
+                          "type": "number_literal",
+                          "value": {
+                            "type": "int",
+                            "value": "1"
+                          }
+                        }
+                      },
+                      {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "2"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "ee",
+                  "annotation": null,
+                  "default": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "call",
+                      "func": {
+                        "type": "attribute",
+                        "value": {
+                          "type": "attribute",
+                          "value": {
+                            "type": "name",
+                            "id": "a"
+                          },
+                          "attr": "b"
+                        },
+                        "attr": "c"
+                      },
+                      "args": [
+                        {
+                          "type": "name",
+                          "id": "d"
+                        }
+                      ],
+                      "keywords": []
+                    },
+                    "slice": {
+                      "type": "name",
+                      "id": "e"
+                    }
+                  }
+                },
+                {
+                  "name": "ff",
+                  "annotation": null,
+                  "default": {
+                    "type": "attribute",
+                    "value": {
+                      "type": "bin_op",
+                      "left": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "op": "add",
+                      "right": {
+                        "type": "name",
+                        "id": "b"
+                      }
+                    },
+                    "attr": "c"
+                  }
+                },
+                {
+                  "name": "gg",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "not",
+                    "operand": {
+                      "type": "compare",
+                      "left": {
+                        "type": "name",
+                        "id": "a"
+                      },
+                      "comparisons": [
+                        {
+                          "op": "eq",
+                          "right": {
+                            "type": "name",
+                            "id": "b"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "hh",
+                  "annotation": null,
+                  "default": {
+                    "type": "compare",
+                    "left": {
+                      "type": "name",
+                      "id": "a"
+                    },
+                    "comparisons": [
+                      {
+                        "op": "in",
+                        "right": {
+                          "type": "name",
+                          "id": "b"
+                        }
+                      },
+                      {
+                        "op": "not_in",
+                        "right": {
+                          "type": "name",
+                          "id": "c"
+                        }
+                      },
+                      {
+                        "op": "is_not",
+                        "right": {
+                          "type": "name",
+                          "id": "d"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 8,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 149,
+              "column": 0
+            },
+            "end": {
+              "line": 150,
+              "column": 69
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "generator",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 9,
+          "parent": 8,
+          "span": {
+            "start": {
+              "line": 150,
+              "column": 4
+            },
+            "end": {
+              "line": 150,
+              "column": 69
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "uses_yield",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "yield",
+                    "value": null
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "yield",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    }
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "yield_from",
+                    "value": {
+                      "type": "name",
+                      "id": "items"
+                    }
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 10,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 153,
+              "column": 0
+            },
+            "end": {
+              "line": 154,
+              "column": 96
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "coroutine",
+            "is_async": true,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 11,
+          "parent": 10,
+          "span": {
+            "start": {
+              "line": 154,
+              "column": 4
+            },
+            "end": {
+              "line": 154,
+              "column": 96
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "uses_await",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "await",
+                    "value": {
+                      "type": "name",
+                      "id": "x"
+                    }
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "attribute",
+                    "value": {
+                      "type": "await",
+                      "value": {
+                        "type": "name",
+                        "id": "x"
+                      }
+                    },
+                    "attr": "y"
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "u_sub",
+                    "operand": {
+                      "type": "await",
+                      "value": {
+                        "type": "name",
+                        "id": "x"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "list_comp",
+                    "elt": {
+                      "type": "name",
+                      "id": "y"
+                    },
+                    "generators": [
+                      {
+                        "target": {
+                          "type": "name",
+                          "id": "y"
+                        },
+                        "iter": {
+                          "type": "call",
+                          "func": {
+                            "type": "name",
+                            "id": "source"
+                          },
+                          "args": [],
+                          "keywords": []
+                        },
+                        "ifs": [],
+                        "is_async": true
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        }
+      ]
+    }
+  ]
+}

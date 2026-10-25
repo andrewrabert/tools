@@ -1,0 +1,19 @@
+{% macro declarations(files, empty) %}{% for file in files %}{% if not loop.first %}
+
+{% endif %}### {{ file.path }}
+```rust
+{{ file.code }}
+```{% else %}{{ empty }}{% endfor %}{% endmacro -%}
+# Surface Spec: Rust
+The set of `fn`, `struct`, `enum`, `trait`, and `impl` declarations the
+resulting combined diff adds must equal the declarations under
+`## Additions`, and the set it deletes must equal the declarations under
+`## Deletions`.
+
+## Additions
+
+{{ declarations(additions, "No additions.") }}
+
+## Deletions
+
+{{ declarations(deletions, "No deletions.") }}

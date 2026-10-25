@@ -1,0 +1,776 @@
+{
+  "files": [
+    {
+      "language": "python",
+      "path": "functions.py",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 2,
+              "column": 8
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "plain",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 6,
+              "column": 12
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "positional",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": null
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": null
+                }
+              ],
+              "args": [
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": null
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "1"
+                    }
+                  }
+                }
+              ],
+              "vararg": {
+                "name": "args",
+                "annotation": null
+              },
+              "kwonly": [
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": null
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "2"
+                    }
+                  }
+                }
+              ],
+              "kwarg": {
+                "name": "kwargs",
+                "annotation": null
+              }
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 2,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 9,
+              "column": 0
+            },
+            "end": {
+              "line": 10,
+              "column": 15
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "annotated",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": {
+                    "type": "name",
+                    "id": "int"
+                  },
+                  "default": null
+                },
+                {
+                  "name": "b",
+                  "annotation": {
+                    "type": "name",
+                    "id": "str"
+                  },
+                  "default": {
+                    "type": "string_literal",
+                    "parts": [
+                      {
+                        "value": "x",
+                        "flags": {
+                          "prefix": {
+                            "type": "empty"
+                          },
+                          "quote_style": "double",
+                          "triple_quoted": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "vararg": {
+                "name": "args",
+                "annotation": {
+                  "type": "name",
+                  "id": "int"
+                }
+              },
+              "kwonly": [
+                {
+                  "name": "flag",
+                  "annotation": {
+                    "type": "name",
+                    "id": "bool"
+                  },
+                  "default": {
+                    "type": "boolean_literal",
+                    "value": false
+                  }
+                }
+              ],
+              "kwarg": {
+                "name": "kwargs",
+                "annotation": {
+                  "type": "name",
+                  "id": "object"
+                }
+              }
+            },
+            "returns": {
+              "type": "none_literal"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 13,
+              "column": 0
+            },
+            "end": {
+              "line": 14,
+              "column": 14
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "keyword_only",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [
+                {
+                  "name": "key",
+                  "annotation": {
+                    "type": "name",
+                    "id": "str"
+                  },
+                  "default": null
+                }
+              ],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "str"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 17,
+              "column": 0
+            },
+            "end": {
+              "line": 18,
+              "column": 12
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "positional_only",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [
+                {
+                  "name": "a",
+                  "annotation": {
+                    "type": "name",
+                    "id": "int"
+                  },
+                  "default": null
+                }
+              ],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "int"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 0
+            },
+            "end": {
+              "line": 22,
+              "column": 14
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "fetch",
+            "is_async": true,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "url",
+                  "annotation": {
+                    "type": "name",
+                    "id": "str"
+                  },
+                  "default": null
+                },
+                {
+                  "name": "timeout",
+                  "annotation": {
+                    "type": "name",
+                    "id": "float"
+                  },
+                  "default": {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "float",
+                      "value": 1.5
+                    }
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "name",
+              "id": "bytes"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 25,
+              "column": 0
+            },
+            "end": {
+              "line": 28,
+              "column": 28
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "decorated",
+            "is_async": false,
+            "decorators": [
+              {
+                "type": "name",
+                "id": "decorator"
+              },
+              {
+                "type": "call",
+                "func": {
+                  "type": "name",
+                  "id": "decorator_factory"
+                },
+                "args": [
+                  {
+                    "type": "number_literal",
+                    "value": {
+                      "type": "int",
+                      "value": "1"
+                    }
+                  }
+                ],
+                "keywords": [
+                  {
+                    "arg": "key",
+                    "value": {
+                      "type": "string_literal",
+                      "parts": [
+                        {
+                          "value": "value",
+                          "flags": {
+                            "prefix": {
+                              "type": "empty"
+                            },
+                            "quote_style": "double",
+                            "triple_quoted": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "attribute",
+                "value": {
+                  "type": "name",
+                  "id": "module"
+                },
+                "attr": "attribute"
+              }
+            ],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "none_literal"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 31,
+              "column": 0
+            },
+            "end": {
+              "line": 32,
+              "column": 32
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "decorated_async",
+            "is_async": true,
+            "decorators": [
+              {
+                "type": "attribute",
+                "value": {
+                  "type": "name",
+                  "id": "functools"
+                },
+                "attr": "cache"
+              }
+            ],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        },
+        {
+          "id": 8,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 0
+            },
+            "end": {
+              "line": 36,
+              "column": 14
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "generic",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [
+              {
+                "type": "type_var",
+                "name": "T",
+                "bound": null,
+                "default": null
+              },
+              {
+                "type": "type_var",
+                "name": "U",
+                "bound": {
+                  "type": "name",
+                  "id": "int"
+                },
+                "default": null
+              },
+              {
+                "type": "type_var_tuple",
+                "name": "Ts",
+                "default": null
+              },
+              {
+                "type": "param_spec",
+                "name": "P",
+                "default": null
+              },
+              {
+                "type": "type_var",
+                "name": "V",
+                "bound": {
+                  "type": "tuple",
+                  "elts": [
+                    {
+                      "type": "name",
+                      "id": "str"
+                    },
+                    {
+                      "type": "name",
+                      "id": "bytes"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "name",
+                  "id": "str"
+                }
+              }
+            ],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "x",
+                  "annotation": {
+                    "type": "name",
+                    "id": "T"
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": {
+                "name": "args",
+                "annotation": {
+                  "type": "starred",
+                  "value": {
+                    "type": "name",
+                    "id": "Ts"
+                  }
+                }
+              },
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": {
+              "type": "subscript",
+              "value": {
+                "type": "name",
+                "id": "list"
+              },
+              "slice": {
+                "type": "name",
+                "id": "T"
+              }
+            }
+          }
+        },
+        {
+          "id": 9,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 39,
+              "column": 0
+            },
+            "end": {
+              "line": 40,
+              "column": 32
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "callable_params",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [
+              {
+                "type": "param_spec",
+                "name": "P",
+                "default": null
+              },
+              {
+                "type": "type_var",
+                "name": "R",
+                "bound": null,
+                "default": null
+              }
+            ],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "func",
+                  "annotation": {
+                    "type": "subscript",
+                    "value": {
+                      "type": "name",
+                      "id": "Callable"
+                    },
+                    "slice": {
+                      "type": "tuple",
+                      "elts": [
+                        {
+                          "type": "name",
+                          "id": "P"
+                        },
+                        {
+                          "type": "name",
+                          "id": "R"
+                        }
+                      ]
+                    }
+                  },
+                  "default": null
+                }
+              ],
+              "vararg": {
+                "name": "args",
+                "annotation": {
+                  "type": "attribute",
+                  "value": {
+                    "type": "name",
+                    "id": "P"
+                  },
+                  "attr": "args"
+                }
+              },
+              "kwonly": [],
+              "kwarg": {
+                "name": "kwargs",
+                "annotation": {
+                  "type": "attribute",
+                  "value": {
+                    "type": "name",
+                    "id": "P"
+                  },
+                  "attr": "kwargs"
+                }
+              }
+            },
+            "returns": {
+              "type": "name",
+              "id": "R"
+            }
+          }
+        },
+        {
+          "id": 10,
+          "parent": null,
+          "span": {
+            "start": {
+              "line": 43,
+              "column": 0
+            },
+            "end": {
+              "line": 45,
+              "column": 12
+            }
+          },
+          "kind": "def",
+          "node": {
+            "name": "defaults",
+            "is_async": false,
+            "decorators": [],
+            "type_params": [],
+            "parameters": {
+              "posonly": [],
+              "args": [
+                {
+                  "name": "a",
+                  "annotation": null,
+                  "default": {
+                    "type": "none_literal"
+                  }
+                },
+                {
+                  "name": "b",
+                  "annotation": null,
+                  "default": {
+                    "type": "boolean_literal",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "c",
+                  "annotation": null,
+                  "default": {
+                    "type": "ellipsis_literal"
+                  }
+                },
+                {
+                  "name": "d",
+                  "annotation": null,
+                  "default": {
+                    "type": "tuple",
+                    "elts": [
+                      {
+                        "type": "number_literal",
+                        "value": {
+                          "type": "int",
+                          "value": "1"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "e",
+                  "annotation": null,
+                  "default": {
+                    "type": "list",
+                    "elts": []
+                  }
+                },
+                {
+                  "name": "f",
+                  "annotation": null,
+                  "default": {
+                    "type": "dict",
+                    "items": []
+                  }
+                },
+                {
+                  "name": "g",
+                  "annotation": null,
+                  "default": {
+                    "type": "lambda",
+                    "parameters": {
+                      "posonly": [],
+                      "args": [
+                        {
+                          "name": "x",
+                          "annotation": null,
+                          "default": null
+                        }
+                      ],
+                      "vararg": null,
+                      "kwonly": [],
+                      "kwarg": null
+                    },
+                    "body": {
+                      "type": "name",
+                      "id": "x"
+                    }
+                  }
+                },
+                {
+                  "name": "h",
+                  "annotation": null,
+                  "default": {
+                    "type": "unary_op",
+                    "op": "u_sub",
+                    "operand": {
+                      "type": "number_literal",
+                      "value": {
+                        "type": "int",
+                        "value": "1"
+                      }
+                    }
+                  }
+                }
+              ],
+              "vararg": null,
+              "kwonly": [],
+              "kwarg": null
+            },
+            "returns": null
+          }
+        }
+      ]
+    }
+  ]
+}
