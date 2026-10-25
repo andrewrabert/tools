@@ -2,10 +2,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::LazyLock;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use jiff::civil::DateTime;
 use jiff::tz::TimeZone;
 use regex::Regex;
+use winnow::Parser;
+use winnow::combinator::{alt, eof, iterator, opt, preceded, repeat, terminated};
+use winnow::error::EmptyError;
+use winnow::token::{take_till, take_until};
 
 use crate::tools::archive::extract::backend::{Destination, Request};
 use crate::tools::archive::extract::config::Overwrite;
@@ -71,11 +75,63 @@ pub fn extract(request: &Request) -> Result<()> {
     )
 }
 
+struct Field<'i> {
+    key: &'i [u8],
+    value: &'i [u8],
+}
+
 #[derive(Default)]
-struct Block {
-    path: Option<Vec<u8>>,
+struct Block<'i> {
+    path: Option<&'i [u8]>,
     is_dir: bool,
-    entry: Entry,
+    size: Option<&'i [u8]>,
+    modified: Option<&'i [u8]>,
+}
+
+impl<'i> Block<'i> {
+    fn with(mut self, Field { key, value }: Field<'i>) -> Self {
+        match key {
+            b"Path" => self.path = Some(value),
+            // zip archives mark directories with Folder rather than Attributes
+            b"Folder" => self.is_dir |= value == b"+",
+            b"Attributes" => {
+                self.is_dir |= listing::split_fields(value, 1)
+                    .first()
+                    .is_some_and(|attributes| attributes.contains(&b'D'))
+            }
+            // .dmg entries have an empty Size
+            b"Size" if !value.is_empty() => self.size = Some(value),
+            b"Modified" if !value.is_empty() => self.modified = Some(value),
+            _ => {}
+        }
+        self
+    }
+
+    fn file(self) -> Result<Option<(&'i [u8], Entry)>> {
+        let size = self
+            .size
+            .map(|value| {
+                std::str::from_utf8(value)
+                    .ok()
+                    .and_then(|size| size.parse::<u64>().ok())
+                    .with_context(|| {
+                        format!("unexpected 7z size: {}", String::from_utf8_lossy(value))
+                    })
+            })
+            .transpose()?;
+        let mtime = self
+            .modified
+            .map(|value| {
+                std::str::from_utf8(value)
+                    .context("unexpected 7z modification time")
+                    .and_then(mtime)
+            })
+            .transpose()?;
+        Ok(match self.path {
+            Some(path) if !self.is_dir => Some((path, Entry { mtime, size })),
+            _ => None,
+        })
+    }
 }
 
 pub fn contents(archive: &Path) -> Result<Contents> {
@@ -92,52 +148,41 @@ pub fn contents(archive: &Path) -> Result<Contents> {
 
 fn parse_listing(output: &[u8]) -> Result<Contents> {
     let mut contents = Contents::default();
-    let mut block = Block::default();
-    let mut lines = listing::lines(output);
-    lines.push(b"");
-    for line in lines {
-        if line.is_empty() {
-            let Block {
-                path,
-                is_dir,
-                entry,
-            } = std::mem::take(&mut block);
-            if let (Some(path), false) = (path, is_dir) {
-                contents.insert(path, entry);
-            }
-            continue;
-        }
-        let separator = line
-            .windows(FIELD_SEPARATOR.len())
-            .position(|window| window == FIELD_SEPARATOR)
-            .with_context(|| format!("unexpected 7z output: {}", String::from_utf8_lossy(line)))?;
-        let value = &line[separator + FIELD_SEPARATOR.len()..];
-        match &line[..separator] {
-            b"Path" => block.path = Some(value.to_vec()),
-            // zip archives mark directories with Folder rather than Attributes
-            b"Folder" => block.is_dir |= value == b"+",
-            b"Attributes" => {
-                block.is_dir |= listing::split_fields(value, 1).first() == Some(&b"D".as_slice())
-            }
-            // .dmg entries have an empty Size
-            b"Size" if !value.is_empty() => {
-                let size = std::str::from_utf8(value)
-                    .ok()
-                    .and_then(|size| size.parse::<u64>().ok())
-                    .with_context(|| {
-                        format!("unexpected 7z size: {}", String::from_utf8_lossy(value))
-                    })?;
-                block.entry.size = Some(size);
-            }
-            b"Modified" if !value.is_empty() => {
-                let modified =
-                    std::str::from_utf8(value).context("unexpected 7z modification time")?;
-                block.entry.mtime = Some(mtime(modified)?);
-            }
-            _ => {}
+    let mut input = output;
+    let mut blocks = iterator(&mut input, preceded(blank_lines, block));
+    for block in &mut blocks {
+        if let Some((path, entry)) = block.file()? {
+            contents.insert(path.to_vec(), entry);
         }
     }
+    blocks
+        .finish()
+        .and_then(|()| (blank_lines, eof).parse_next(&mut input))
+        .map_err(|EmptyError| {
+            let line = input.split(|byte| *byte == b'\n').next().unwrap_or(input);
+            let line = line.strip_suffix(b"\r").unwrap_or(line);
+            anyhow!("unexpected 7z output: {}", String::from_utf8_lossy(line))
+        })?;
     Ok(contents)
+}
+
+fn block<'i>(input: &mut &'i [u8]) -> winnow::Result<Block<'i>, EmptyError> {
+    repeat(1.., field)
+        .fold(Block::default, Block::with)
+        .parse_next(input)
+}
+
+fn blank_lines(input: &mut &[u8]) -> winnow::Result<(), EmptyError> {
+    repeat(0.., (opt(b'\r'), b'\n')).parse_next(input)
+}
+
+fn field<'i>(input: &mut &'i [u8]) -> winnow::Result<Field<'i>, EmptyError> {
+    let mut line = terminated(take_till(1.., b'\n'), alt((b"\n".void(), eof.void())))
+        .map(|line: &'i [u8]| line.strip_suffix(b"\r").unwrap_or(line))
+        .parse_next(input)?;
+    let key =
+        terminated(take_until(0.., FIELD_SEPARATOR), FIELD_SEPARATOR).parse_next(&mut line)?;
+    Ok(Field { key, value: line })
 }
 
 // The fraction's leading zeros are dropped: file-hash-recorder compares listings against
@@ -372,5 +417,171 @@ mod tests {
     #[test]
     fn unparseable_modified_is_an_error() {
         assert!(parse_listing(fixture!("unparseable_modified")).is_err());
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    use std::fmt::Write as _;
+    use std::hint::black_box;
+    use std::time::{Duration, Instant};
+
+    use super::*;
+
+    const ENTRIES: usize = 10_000;
+    const WARMUP: usize = 3;
+    const ITERATIONS: usize = 50;
+
+    #[derive(Default)]
+    struct LineBlock {
+        path: Option<Vec<u8>>,
+        is_dir: bool,
+        entry: Entry,
+    }
+
+    fn parse_listing_lines(output: &[u8]) -> Result<Contents> {
+        let mut contents = Contents::default();
+        let mut block = LineBlock::default();
+        let mut lines = listing::lines(output);
+        lines.push(b"");
+        for line in lines {
+            if line.is_empty() {
+                let LineBlock {
+                    path,
+                    is_dir,
+                    entry,
+                } = std::mem::take(&mut block);
+                if let (Some(path), false) = (path, is_dir) {
+                    contents.insert(path, entry);
+                }
+                continue;
+            }
+            let separator = line
+                .windows(FIELD_SEPARATOR.len())
+                .position(|window| window == FIELD_SEPARATOR)
+                .with_context(|| {
+                    format!("unexpected 7z output: {}", String::from_utf8_lossy(line))
+                })?;
+            let value = &line[separator + FIELD_SEPARATOR.len()..];
+            match &line[..separator] {
+                b"Path" => block.path = Some(value.to_vec()),
+                b"Folder" => block.is_dir |= value == b"+",
+                b"Attributes" => {
+                    block.is_dir |=
+                        listing::split_fields(value, 1).first() == Some(&b"D".as_slice())
+                }
+                b"Size" if !value.is_empty() => {
+                    let size = std::str::from_utf8(value)
+                        .ok()
+                        .and_then(|size| size.parse::<u64>().ok())
+                        .with_context(|| {
+                            format!("unexpected 7z size: {}", String::from_utf8_lossy(value))
+                        })?;
+                    block.entry.size = Some(size);
+                }
+                b"Modified" if !value.is_empty() => {
+                    let modified =
+                        std::str::from_utf8(value).context("unexpected 7z modification time")?;
+                    block.entry.mtime = Some(mtime(modified)?);
+                }
+                _ => {}
+            }
+        }
+        Ok(contents)
+    }
+
+    fn generated_listing(modified: bool) -> Vec<u8> {
+        let modified = if modified {
+            "2026-10-25 01:46:08.1137229"
+        } else {
+            ""
+        };
+        let mut output = String::new();
+        for index in 0..ENTRIES {
+            let (path, size, attributes) = if index % 10 == 0 {
+                (format!("dir{index}"), 0, "D drwxr-xr-x")
+            } else {
+                (
+                    format!("dir{}/file{index}", index / 10 * 10),
+                    index,
+                    "A -rw-r--r--",
+                )
+            };
+            write!(
+                output,
+                "Path = {path}\nSize = {size}\nPacked Size = 14\nModified = {modified}\n\
+                 Attributes = {attributes}\nCRC = E46F28FB\nEncrypted = -\n\
+                 Method = LZMA2:12\nBlock = 0\n\n"
+            )
+            .expect("writing to a String");
+        }
+        output.into_bytes()
+    }
+
+    fn time(parse: fn(&[u8]) -> Result<Contents>, output: &[u8]) -> Duration {
+        let start = Instant::now();
+        black_box(parse(black_box(output)).expect("valid listing"));
+        start.elapsed()
+    }
+
+    fn report(name: &str, mut timings: Vec<Duration>) -> Duration {
+        timings.sort();
+        let mean = timings.iter().sum::<Duration>() / timings.len() as u32;
+        let median = timings[timings.len() / 2];
+        println!(
+            "  {name:<8} min {:>10.3?}  median {median:>10.3?}  mean {mean:>10.3?}",
+            timings[0]
+        );
+        median
+    }
+
+    fn compare(label: &str, output: &[u8]) {
+        let winnow: Vec<_> = parse_listing(output)
+            .expect("valid listing")
+            .into_iter()
+            .collect();
+        let lines: Vec<_> = parse_listing_lines(output)
+            .expect("valid listing")
+            .into_iter()
+            .collect();
+        assert_eq!(
+            winnow.iter().map(|(path, _)| path).collect::<Vec<_>>(),
+            lines.iter().map(|(path, _)| path).collect::<Vec<_>>(),
+            "both parsers list the same files"
+        );
+
+        for _ in 0..WARMUP {
+            time(parse_listing, output);
+            time(parse_listing_lines, output);
+        }
+        let mut winnow = Vec::with_capacity(ITERATIONS);
+        let mut lines = Vec::with_capacity(ITERATIONS);
+        for iteration in 0..ITERATIONS {
+            if iteration % 2 == 0 {
+                winnow.push(time(parse_listing, output));
+                lines.push(time(parse_listing_lines, output));
+            } else {
+                lines.push(time(parse_listing_lines, output));
+                winnow.push(time(parse_listing, output));
+            }
+        }
+
+        println!(
+            "{label}: {ENTRIES} entries, {} KiB, {ITERATIONS} iterations",
+            output.len() / 1024
+        );
+        let winnow = report("winnow", winnow);
+        let lines = report("lines", lines);
+        println!(
+            "  winnow/lines median ratio {:.3}",
+            winnow.as_secs_f64() / lines.as_secs_f64()
+        );
+    }
+
+    #[test]
+    #[ignore = "benchmark; run with `just bench-seven-zip`"]
+    fn parse_listing_benchmark() {
+        compare("with Modified", &generated_listing(true));
+        compare("without Modified", &generated_listing(false));
     }
 }
