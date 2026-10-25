@@ -44,7 +44,3 @@ run *args:
 
 build-release:
     cargo build --release
-
-# Benchmark the 7z listing parsers
-bench-seven-zip:
-    @cargo test --manifest-path {{justfile_directory()}}/Cargo.toml --release parse_listing_benchmark -- --ignored --nocapture
