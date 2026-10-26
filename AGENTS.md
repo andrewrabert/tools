@@ -39,6 +39,7 @@ Wrappers for external programs and services.
 - `src/mkvmerge.rs` using mkvmerge
 - `src/sqlite.rs` SQLite databases
 - `src/tmux.rs` using tmux
+- `src/wayland.rs` the Wayland session
 
 ### CLI
 - When stdin is a TTY, a CLI takes its input only from its arguments.

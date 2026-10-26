@@ -18,6 +18,7 @@ mod tmux;
 mod tools;
 mod urls;
 mod walk;
+mod wayland;
 
 use std::env;
 use std::process::ExitCode;

@@ -9,8 +9,9 @@ use clap::Args as ClapArgs;
 use crate::dirs;
 use crate::tmux;
 use crate::tools::Tool;
+use crate::wayland;
 
-const GUI_VARIABLES: [&str; 3] = ["WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DISPLAY"];
+const GUI_VARIABLES: [&str; 3] = [wayland::WAYLAND_DISPLAY, "XDG_RUNTIME_DIR", "DISPLAY"];
 
 #[derive(ClapArgs)]
 #[command(about = "Attach to the first tmux session, detaching other clients, or start one")]
@@ -79,9 +80,8 @@ fn run(args: Attach) -> Result<ExitCode> {
 }
 
 fn update_gui_environment() {
-    let has_display = ["WAYLAND_DISPLAY", "DISPLAY"]
-        .into_iter()
-        .any(|name| env::var_os(name).is_some_and(|value| !value.is_empty()));
+    let has_display = wayland::current_display().is_some()
+        || env::var_os("DISPLAY").is_some_and(|value| !value.is_empty());
     if !has_display {
         return;
     }
