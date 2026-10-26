@@ -1,0 +1,7 @@
+{% import "language.md.j2" as language -%}
+{% for file in files %}{% if not loop.first %}
+
+{% endif %}### {{ file.path }}
+```{{ language.fence }}
+{{ file.code }}
+```{% else %}{{ empty }}{% endfor -%}

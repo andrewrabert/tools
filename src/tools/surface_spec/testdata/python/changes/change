@@ -1,0 +1,29 @@
+# Surface Spec: Python
+The set of `def` and `class`
+declarations the resulting combined diff adds must equal the declarations
+under `## Additions`, and the set it deletes must equal the declarations
+under `## Deletions`.
+
+## Additions
+
+### changes.py
+```python
+class Config:
+    debug: bool = False
+
+    def load(self, path: Path) -> None: ...
+
+
+class Empty: ...
+```
+
+## Deletions
+
+### changes.py
+```python
+class Config:
+    def load(self, path: str) -> None: ...
+
+
+def removed() -> None: ...
+```

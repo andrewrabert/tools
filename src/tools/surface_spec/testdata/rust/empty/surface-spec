@@ -1,0 +1,8 @@
+# Surface Spec: Rust
+The set of `fn`, `struct`, `enum`, `trait`, and `impl`
+declarations in each file under `## Declarations` must equal the
+declarations under that file.
+
+## Declarations
+
+No declarations.

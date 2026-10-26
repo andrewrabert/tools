@@ -1,0 +1,38 @@
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub enum Shape {
+    Circle,
+}
+
+impl Point {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+
+    pub fn x(&self) -> i32 {
+        self.x
+    }
+
+    pub fn y(&self) -> i32 {
+        self.y
+    }
+}
+
+impl Clone for Point {
+    fn clone(&self) -> Self {
+        Self { x: self.x, y: self.y }
+    }
+}
+
+impl Default for Point {
+    fn default() -> Self {
+        Self::new(0, 0)
+    }
+}
+
+pub fn kept(value: u8) -> u8 {
+    value + 0
+}

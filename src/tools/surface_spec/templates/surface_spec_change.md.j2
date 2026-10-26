@@ -1,0 +1,14 @@
+{% import "language.md.j2" as language -%}
+# Surface Spec: {{ language.name }}
+The set of {{ language.kinds }}
+declarations the resulting combined diff adds must equal the declarations
+under `## Additions`, and the set it deletes must equal the declarations
+under `## Deletions`.
+
+## Additions
+
+{% with files = additions, empty = "No additions." %}{% include "common.md.j2" %}{% endwith %}
+
+## Deletions
+
+{% with files = deletions, empty = "No deletions." %}{% include "common.md.j2" %}{% endwith %}

@@ -1,0 +1,385 @@
+{
+  "files": [
+    {
+      "language": "rust",
+      "path": "bodiless_fns.rs",
+      "records": [
+        {
+          "id": 0,
+          "parent": null,
+          "mod_path": [],
+          "kind": "struct",
+          "span": {
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 1
+            }
+          },
+          "syn": "ItemStruct",
+          "node": {
+            "vis": "pub",
+            "ident": "Player",
+            "fields": {
+              "named": [
+                {
+                  "ident": "position",
+                  "colon_token": true,
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "i64"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 1,
+          "parent": null,
+          "mod_path": [],
+          "kind": "impl",
+          "span": {
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 18,
+              "column": 1
+            }
+          },
+          "syn": "InherentImpl",
+          "node": {
+            "attrs": [
+              {
+                "style": "outer",
+                "meta": {
+                  "list": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "interface"
+                        }
+                      ]
+                    },
+                    "delimiter": "paren",
+                    "tokens": [
+                      {
+                        "ident": "name"
+                      },
+                      {
+                        "punct": {
+                          "op": "=",
+                          "spacing": "alone"
+                        }
+                      },
+                      {
+                        "lit": "\"org.mpris.MediaPlayer2.Player\""
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "self_ty": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Player"
+                  }
+                ]
+              }
+            },
+            "items": []
+          }
+        },
+        {
+          "id": 2,
+          "parent": 1,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 7,
+              "column": 4
+            },
+            "end": {
+              "line": 7,
+              "column": 21
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "ident": "play",
+            "inputs": [
+              {
+                "receiver": {
+                  "ref": true,
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Self"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": null,
+            "stmts": []
+          }
+        },
+        {
+          "id": 3,
+          "parent": 1,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 9,
+              "column": 4
+            },
+            "end": {
+              "line": 10,
+              "column": 84
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "attrs": [
+              {
+                "style": "outer",
+                "meta": {
+                  "list": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "zbus"
+                        }
+                      ]
+                    },
+                    "delimiter": "paren",
+                    "tokens": [
+                      {
+                        "ident": "signal"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "async": true,
+            "ident": "seeked",
+            "inputs": [
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "emitter"
+                    }
+                  },
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "SignalEmitter",
+                              "arguments": {
+                                "angle_bracketed": {
+                                  "args": [
+                                    {
+                                      "lifetime": "_"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "typed": {
+                  "pat": {
+                    "ident": {
+                      "ident": "position"
+                    }
+                  },
+                  "ty": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "i64"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "zbus"
+                  },
+                  {
+                    "ident": "Result",
+                    "arguments": {
+                      "angle_bracketed": {
+                        "args": [
+                          {
+                            "type": {
+                              "tuple": {
+                                "elems": []
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        },
+        {
+          "id": 4,
+          "parent": 1,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 12,
+              "column": 4
+            },
+            "end": {
+              "line": 12,
+              "column": 23
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "vis": "pub",
+            "ident": "stop",
+            "inputs": [
+              {
+                "receiver": {
+                  "ref": true,
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Self"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": null,
+            "stmts": []
+          }
+        },
+        {
+          "id": 5,
+          "parent": 1,
+          "mod_path": [],
+          "kind": "fn",
+          "span": {
+            "start": {
+              "line": 14,
+              "column": 4
+            },
+            "end": {
+              "line": 17,
+              "column": 5
+            }
+          },
+          "syn": "ImplItemFn",
+          "node": {
+            "attrs": [
+              {
+                "style": "outer",
+                "meta": {
+                  "list": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "zbus"
+                        }
+                      ]
+                    },
+                    "delimiter": "paren",
+                    "tokens": [
+                      {
+                        "ident": "property"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "ident": "position",
+            "inputs": [
+              {
+                "receiver": {
+                  "ref": true,
+                  "ty": {
+                    "reference": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "Self"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "output": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "i64"
+                  }
+                ]
+              }
+            },
+            "stmts": []
+          }
+        }
+      ]
+    }
+  ]
+}

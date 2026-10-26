@@ -1,0 +1,9 @@
+{% import "language.md.j2" as language -%}
+# Surface Spec: {{ language.name }}
+The set of {{ language.kinds }}
+declarations in each file under `## Declarations` must equal the
+declarations under that file.
+
+## Declarations
+
+{% with files = declarations, empty = "No declarations." %}{% include "common.md.j2" %}{% endwith %}

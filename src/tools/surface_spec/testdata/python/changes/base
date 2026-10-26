@@ -1,0 +1,16 @@
+class Config:
+    name: str
+
+    def load(self, path: str) -> None:
+        pass
+
+    def save(self) -> None:
+        pass
+
+
+def removed() -> None:
+    pass
+
+
+def kept(value: int) -> int:
+    return value

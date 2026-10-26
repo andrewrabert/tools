@@ -4,6 +4,7 @@ mod rust;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::io::{self, Write};
 use std::panic::{self, AssertUnwindSafe};
@@ -13,7 +14,7 @@ use std::slice;
 use std::str::FromStr;
 
 use anyhow::{Context, Result, anyhow};
-use clap::{ArgGroup, Args as ClapArgs, Subcommand, ValueEnum};
+use clap::{Args as ClapArgs, ValueEnum};
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{Walk, WalkBuilder};
 use minijinja::syntax::SyntaxConfig;
@@ -21,86 +22,176 @@ use minijinja::{Environment, Value, context};
 use serde::{Deserialize, Serialize};
 
 use crate::atomic_write;
+use crate::git::Git;
 use crate::tools::Tool;
+
+const CHANGE: &str = include_str!("surface_spec/templates/surface_spec_change.md.j2");
+const SURFACE_SPEC: &str = include_str!("surface_spec/templates/surface_spec.md.j2");
+const COMMON: &str = include_str!("surface_spec/templates/common.md.j2");
 
 #[derive(ClapArgs)]
 #[command(
-    about = "Capture the declarations in Rust and Python source files and render them as a surface spec"
+    about = "Render the declarations in Rust and Python source files as a surface spec, or as the additions and deletions of a change"
 )]
 pub struct SurfaceSpec {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand)]
-enum Command {
-    /// Print the declarations in Rust and Python source files as JSON syntax trees
-    Capture(Capture),
-    /// Print a captured surface as the additions or deletions of a surface spec
-    Render(Render),
-}
-
-#[derive(ClapArgs)]
-struct Capture {
-    /// A `.rs`, `.py`, or `.pyi` file, or a directory to search for them
-    #[arg(value_name = "PATH", required = true)]
+    /// A source file or directory to list every declaration of; with --git, one to limit the
+    /// change to [default with --git: .]
+    #[arg(
+        value_name = "PATH",
+        required_unless_present_any = ["additions", "deletions", "git"],
+        conflicts_with_all = ["additions", "deletions"],
+    )]
     paths: Vec<PathBuf>,
+    /// List the declarations of this file or directory as additions; with --deletions, list
+    /// those it adds to that one, pairing files by their path under each directory
+    #[arg(short, long, value_name = "PATH")]
+    additions: Option<PathBuf>,
+    /// List the declarations of this file or directory as deletions; with --additions, list
+    /// those that one deletes from it
+    #[arg(short, long, value_name = "PATH")]
+    deletions: Option<PathBuf>,
+    /// List the declarations a git diff adds and deletes: `REV` from REV to the working tree,
+    /// `A..B` from A to B, or `A...B` from their merge base to B; an omitted side is HEAD
+    #[arg(
+        short,
+        long,
+        value_name = "REVISIONS",
+        conflicts_with_all = ["additions", "deletions", "input_json"],
+    )]
+    git: Option<GitDiff>,
+    /// Read each path as a JSON capture printed by --json instead of as sources
+    #[arg(long)]
+    input_json: bool,
+    /// Print the declarations of PATH as JSON syntax trees instead of a Markdown surface spec
+    #[arg(long, conflicts_with_all = ["additions", "deletions", "git", "language"])]
+    json: bool,
     #[command(flatten)]
     filter: Filter,
-    /// Write the JSON to this file instead of stdout
-    #[arg(short, long, value_name = "FILE")]
-    output: Option<PathBuf>,
-}
-
-#[derive(ClapArgs)]
-#[command(group(ArgGroup::new("section").required(true).args(["additions", "deletions"])))]
-struct Render {
-    /// A `.json` file printed by `capture`, or a source file or directory to capture
-    #[arg(value_name = "PATH", required = true)]
-    inputs: Vec<Input>,
-    #[command(flatten)]
-    filter: Filter,
-    /// List the declarations as additions
-    #[arg(short, long)]
-    additions: bool,
-    /// List the declarations as deletions
-    #[arg(short, long)]
-    deletions: bool,
     /// Render the spec for this language's files [default: every language captured]
     #[arg(short, long, value_enum)]
     language: Option<Language>,
-    /// Write each language's spec to `<language>.md` in this directory instead of stdout;
-    /// required to render more than one language
-    #[arg(short, long, value_name = "DIR")]
+    /// Write the JSON to this file, or each language's spec to `<language>.md` in this
+    /// directory, instead of stdout; required to render more than one language
+    #[arg(short, long, value_name = "PATH")]
     output: Option<PathBuf>,
 }
 
-impl Render {
-    fn section(&self) -> Section {
-        if self.additions {
-            Section::Additions
-        } else {
-            Section::Deletions
-        }
-    }
-}
-
 #[derive(Clone)]
-enum Input {
-    Capture(PathBuf),
-    Sources(PathBuf),
+enum GitDiff {
+    WorkingTree(String),
+    Revisions { base: String, head: String },
+    MergeBase { base: String, head: String },
 }
 
-impl FromStr for Input {
+impl FromStr for GitDiff {
     type Err = Infallible;
 
-    fn from_str(path: &str) -> Result<Self, Self::Err> {
-        let path = PathBuf::from(path);
-        Ok(match path.extension() {
-            Some(extension) if extension == "json" => Self::Capture(path),
-            _ => Self::Sources(path),
+    fn from_str(revisions: &str) -> Result<Self, Self::Err> {
+        let side = |revision: &str| {
+            if revision.is_empty() {
+                "HEAD"
+            } else {
+                revision
+            }
+            .to_owned()
+        };
+        Ok(if let Some((base, head)) = revisions.split_once("...") {
+            Self::MergeBase {
+                base: side(base),
+                head: side(head),
+            }
+        } else if let Some((base, head)) = revisions.split_once("..") {
+            Self::Revisions {
+                base: side(base),
+                head: side(head),
+            }
+        } else {
+            Self::WorkingTree(revisions.to_owned())
         })
     }
+}
+
+impl GitDiff {
+    fn changes(
+        &self,
+        paths: &[PathBuf],
+        selection: &Selection,
+    ) -> Result<(Vec<FileChange>, Vec<anyhow::Error>)> {
+        let git = Git::cwd();
+        let (base, head) = match self {
+            Self::WorkingTree(base) => (base.clone(), working_tree(&git, paths, selection)?),
+            Self::Revisions { base, head } => (base.clone(), tree(&git, head, paths, selection)?),
+            Self::MergeBase { base, head } => (
+                git.capture(["merge-base", base, head])?
+                    .trim_end()
+                    .to_owned(),
+                tree(&git, head, paths, selection)?,
+            ),
+        };
+        Ok(FileChange::pair(tree(&git, &base, paths, selection)?, head))
+    }
+}
+
+fn listed_sources(listed: &str, selection: &Selection) -> BTreeMap<PathBuf, Language> {
+    listed
+        .split_terminator('\0')
+        .map(PathBuf::from)
+        .filter(|path| selection.keeps(path))
+        .filter_map(|path| Language::of(&path).map(|language| (path, language)))
+        .collect()
+}
+
+fn pathspec(paths: &[PathBuf]) -> impl Iterator<Item = OsString> {
+    [OsString::from("--")]
+        .into_iter()
+        .chain(paths.iter().map(OsString::from))
+}
+
+fn tree(
+    git: &Git,
+    revision: &str,
+    paths: &[PathBuf],
+    selection: &Selection,
+) -> Result<BTreeMap<PathBuf, Result<FileSurface>>> {
+    let listed = git.capture(
+        ["ls-tree", "-r", "-z", "--name-only", revision]
+            .map(OsString::from)
+            .into_iter()
+            .chain(pathspec(paths)),
+    )?;
+    Ok(listed_sources(&listed, selection)
+        .into_iter()
+        .map(|(path, language)| {
+            let object = format!("{revision}:./{}", path.display());
+            let surface = git
+                .capture(["cat-file", "blob", object.as_str()])
+                .and_then(|source| FileSurface::parse(path.clone(), language, &source));
+            (path, surface)
+        })
+        .collect())
+}
+
+fn working_tree(
+    git: &Git,
+    paths: &[PathBuf],
+    selection: &Selection,
+) -> Result<BTreeMap<PathBuf, Result<FileSurface>>> {
+    let mut ls_files = vec!["ls-files", "-z", "--cached", "--others"];
+    if selection.gitignore {
+        ls_files.push("--exclude-standard");
+    }
+    let listed = git.capture(
+        ls_files
+            .into_iter()
+            .map(OsString::from)
+            .chain(pathspec(paths)),
+    )?;
+    Ok(listed_sources(&listed, selection)
+        .into_iter()
+        // A file in the index but gone from the working tree is deleted.
+        .filter(|(path, _)| path.is_file())
+        .map(|(path, language)| (path.clone(), FileSurface::read(path, language)))
+        .collect())
 }
 
 #[derive(ClapArgs)]
@@ -165,12 +256,6 @@ impl Selection {
     }
 }
 
-#[derive(Clone, Copy)]
-enum Section {
-    Additions,
-    Deletions,
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Language {
     Rust,
@@ -186,10 +271,10 @@ impl Language {
         }
     }
 
-    fn spec(self) -> (&'static str, &'static str) {
+    fn template(self) -> &'static str {
         match self {
-            Self::Rust => ("rust.md.j2", rust::SPEC),
-            Self::Python => ("python.md.j2", python::SPEC),
+            Self::Rust => include_str!("surface_spec/templates/rust.md.j2"),
+            Self::Python => include_str!("surface_spec/templates/python.md.j2"),
         }
     }
 
@@ -203,11 +288,7 @@ impl Language {
 
 impl Tool for SurfaceSpec {
     fn run(self) -> ExitCode {
-        let result = match self.command {
-            Command::Capture(args) => capture(args),
-            Command::Render(args) => render(args),
-        };
-        match result {
+        match self.print() {
             Ok(()) => ExitCode::SUCCESS,
             Err(Errors(errors)) => {
                 for error in &errors {
@@ -227,17 +308,137 @@ impl From<anyhow::Error> for Errors {
     }
 }
 
-fn capture(args: Capture) -> Result<(), Errors> {
-    let selection = args.filter.select()?;
-    let (files, mut errors) = split(read_sources(&args.paths, &selection));
-    if let Err(error) = write_capture(&CapturedSurface { files }, args.output.as_deref()) {
-        errors.push(error);
+impl Errors {
+    fn check(errors: Vec<anyhow::Error>) -> Result<(), Self> {
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(Self(errors))
+        }
     }
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(Errors(errors))
+}
+
+impl SurfaceSpec {
+    fn print(self) -> Result<(), Errors> {
+        let selection = self.filter.select()?;
+        let (changes, mut errors) = match (&self.git, &self.additions, &self.deletions) {
+            (Some(diff), _, _) => {
+                let paths = match self.paths.as_slice() {
+                    [] => vec![PathBuf::from(".")],
+                    paths => paths.to_vec(),
+                };
+                diff.changes(&paths, &selection)?
+            }
+            (None, Some(additions), Some(deletions)) => {
+                let (base, mut errors) = side(deletions, self.input_json, &selection);
+                let (head, head_errors) = side(additions, self.input_json, &selection);
+                let (changes, pair_errors) = FileChange::pair(base, head);
+                errors.extend(head_errors);
+                errors.extend(pair_errors);
+                (changes, errors)
+            }
+            (None, Some(additions), None) => {
+                let (files, errors) = load(slice::from_ref(additions), self.input_json, &selection);
+                (files.into_iter().map(FileChange::Added).collect(), errors)
+            }
+            (None, None, Some(deletions)) => {
+                let (files, errors) = load(slice::from_ref(deletions), self.input_json, &selection);
+                (files.into_iter().map(FileChange::Deleted).collect(), errors)
+            }
+            (None, None, None) => return self.print_surface(&selection),
+        };
+        let languages = match self.language {
+            Some(language) => BTreeSet::from([language]),
+            None => changes.iter().map(FileChange::language).collect(),
+        };
+        match write_specs(
+            languages,
+            |language| FileChange::spec(&changes, language),
+            self.output.as_deref(),
+        ) {
+            Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
+        }
+        Errors::check(errors)
     }
+
+    fn print_surface(&self, selection: &Selection) -> Result<(), Errors> {
+        let (files, mut errors) = load(&self.paths, self.input_json, selection);
+        let surface = CapturedSurface { files };
+        if self.json {
+            if let Err(error) = write_capture(&surface, self.output.as_deref()) {
+                errors.push(error);
+            }
+            return Errors::check(errors);
+        }
+        let languages = match self.language {
+            Some(language) => BTreeSet::from([language]),
+            None => surface.languages(),
+        };
+        match write_specs(
+            languages,
+            |language| surface.spec(language),
+            self.output.as_deref(),
+        ) {
+            Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
+        }
+        Errors::check(errors)
+    }
+}
+
+fn load(
+    paths: &[PathBuf],
+    input_json: bool,
+    selection: &Selection,
+) -> (Vec<FileSurface>, Vec<anyhow::Error>) {
+    if !input_json {
+        return split(read_sources(paths, selection));
+    }
+    let mut files = Vec::new();
+    let mut errors = Vec::new();
+    for path in paths {
+        match CapturedSurface::load(path) {
+            Ok(surface) => files.extend(
+                surface
+                    .files
+                    .into_iter()
+                    .filter(|file| selection.keeps(file.path())),
+            ),
+            Err(error) => errors.push(error),
+        }
+    }
+    (files, errors)
+}
+
+fn side(
+    root: &Path,
+    input_json: bool,
+    selection: &Selection,
+) -> (BTreeMap<PathBuf, Result<FileSurface>>, Vec<anyhow::Error>) {
+    if input_json {
+        let (files, errors) = load(&[root.to_path_buf()], true, selection);
+        let files = files
+            .into_iter()
+            .map(|file| (file.path().to_path_buf(), Ok(file)))
+            .collect();
+        return (files, errors);
+    }
+    let (sources, errors) = split(sources(&[root.to_path_buf()], selection));
+    let files = sources
+        .into_iter()
+        .map(|(path, language)| {
+            let relative = path.strip_prefix(root).unwrap_or(&path).to_path_buf();
+            let listed = if relative.as_os_str().is_empty() {
+                path.clone()
+            } else {
+                relative.clone()
+            };
+            let surface = fs::read_to_string(&path)
+                .with_context(|| format!("reading {}", path.display()))
+                .and_then(|source| FileSurface::parse(listed, language, &source));
+            (relative, surface)
+        })
+        .collect();
+    (files, errors)
 }
 
 fn write_capture(surface: &CapturedSurface, output: Option<&Path>) -> Result<()> {
@@ -249,63 +450,19 @@ fn write_capture(surface: &CapturedSurface, output: Option<&Path>) -> Result<()>
     Ok(())
 }
 
-fn render(args: Render) -> Result<(), Errors> {
-    let selection = args.filter.select()?;
-    let mut files = Vec::new();
-    let mut errors = Vec::new();
-    for input in &args.inputs {
-        match input {
-            Input::Capture(path) => match CapturedSurface::load(path) {
-                Ok(surface) => files.extend(
-                    surface
-                        .files
-                        .into_iter()
-                        .filter(|file| selection.keeps(file.path())),
-                ),
-                Err(error) => errors.push(error),
-            },
-            Input::Sources(path) => {
-                let (sources, source_errors) =
-                    split(read_sources(slice::from_ref(path), &selection));
-                files.extend(sources);
-                errors.extend(source_errors);
-            }
-        }
-    }
-    let surface = CapturedSurface { files };
-    match write_specs(
-        &surface,
-        args.language,
-        args.section(),
-        args.output.as_deref(),
-    ) {
-        Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
-    }
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(Errors(errors))
-    }
-}
-
-/// `Ok` holds the errors of files left out of the written specs; `Err` holds
-/// those followed by the error that stopped the write.
+/// Writes the spec `spec` renders for each of `languages`. `Ok` holds the errors of files left
+/// out of the written specs; `Err` holds those followed by the error that stopped the write.
 fn write_specs(
-    surface: &CapturedSurface,
-    language: Option<Language>,
-    section: Section,
+    languages: BTreeSet<Language>,
+    spec: impl Fn(Language) -> Result<(String, Vec<anyhow::Error>)>,
     output: Option<&Path>,
 ) -> Result<Vec<anyhow::Error>, Errors> {
-    let languages = match language {
-        Some(language) => BTreeSet::from([language]),
-        None => surface.languages(),
-    };
     match (output, Vec::from_iter(languages).as_slice()) {
         (_, []) => {
             Err(anyhow!("no files to render; pass --language to render an empty spec").into())
         }
         (None, [language]) => {
-            let (spec, errors) = surface.spec(*language, section)?;
+            let (spec, errors) = spec(*language)?;
             write!(io::stdout(), "{spec}").context("writing to stdout")?;
             Ok(errors)
         }
@@ -317,7 +474,7 @@ fn write_specs(
             fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
             let mut errors = Vec::new();
             for &language in languages {
-                let (spec, spec_errors) = match surface.spec(language, section) {
+                let (spec, spec_errors) = match spec(language) {
                     Ok(spec) => spec,
                     Err(error) => {
                         errors.push(error);
@@ -426,35 +583,163 @@ impl CapturedSurface {
         self.files.iter().map(FileSurface::language).collect()
     }
 
-    fn spec(&self, language: Language, section: Section) -> Result<(String, Vec<anyhow::Error>)> {
-        let (files, errors): (Vec<Value>, _) = split(
+    fn spec(&self, language: Language) -> Result<(String, Vec<anyhow::Error>)> {
+        let (declarations, errors) = split(
             self.files
                 .iter()
                 .filter(|file| file.language() == language && !file.is_empty())
-                .map(|file| {
-                    let code = file.declarations()?;
-                    Ok(context! {
-                        path => file.path().display().to_string(),
-                        code,
-                    })
-                }),
+                .map(|file| file.declarations(&file.parts().into_iter().collect())),
         );
-        let (additions, deletions) = match section {
-            Section::Additions => (files, Vec::new()),
-            Section::Deletions => (Vec::new(), files),
+        Ok((Spec::SurfaceSpec { declarations }.render(language)?, errors))
+    }
+}
+
+enum FileChange {
+    Added(FileSurface),
+    Deleted(FileSurface),
+    Kept {
+        base: FileSurface,
+        head: FileSurface,
+    },
+}
+
+impl FileChange {
+    fn pair(
+        mut base: BTreeMap<PathBuf, Result<FileSurface>>,
+        head: BTreeMap<PathBuf, Result<FileSurface>>,
+    ) -> (Vec<Self>, Vec<anyhow::Error>) {
+        let mut changes = Vec::new();
+        let mut errors = Vec::new();
+        for (path, head) in head {
+            match (base.remove(&path), head) {
+                (None, Ok(head)) => changes.push(Self::Added(head)),
+                (Some(Ok(base)), Ok(head)) => changes.push(Self::Kept { base, head }),
+                (None | Some(Ok(_)), Err(error)) | (Some(Err(error)), Ok(_)) => errors.push(error),
+                (Some(Err(base_error)), Err(head_error)) => errors.extend([base_error, head_error]),
+            }
+        }
+        for surface in base.into_values() {
+            match surface {
+                Ok(base) => changes.push(Self::Deleted(base)),
+                Err(error) => errors.push(error),
+            }
+        }
+        changes.sort_by(|a, b| a.path().cmp(b.path()));
+        (changes, errors)
+    }
+
+    fn spec(changes: &[Self], language: Language) -> Result<(String, Vec<anyhow::Error>)> {
+        let mut additions = Vec::new();
+        let mut deletions = Vec::new();
+        let mut errors = Vec::new();
+        for change in changes
+            .iter()
+            .filter(|change| change.language() == language)
+        {
+            match change.declarations() {
+                Ok((added, deleted)) => {
+                    additions.extend(added);
+                    deletions.extend(deleted);
+                }
+                Err(error) => errors.push(error),
+            }
+        }
+        let spec = Spec::Change {
+            additions,
+            deletions,
         };
-        let (name, template) = language.spec();
+        Ok((spec.render(language)?, errors))
+    }
+
+    fn declarations(&self) -> Result<(Option<FileDeclarations>, Option<FileDeclarations>)> {
+        Ok(match self {
+            Self::Added(head) => (head.declarations_lacking(None)?, None),
+            Self::Deleted(base) => (None, base.declarations_lacking(None)?),
+            Self::Kept { base, head } => (
+                head.declarations_lacking(Some(base))?,
+                base.declarations_lacking(Some(head))?,
+            ),
+        })
+    }
+
+    fn language(&self) -> Language {
+        self.surface().language()
+    }
+
+    fn path(&self) -> &Path {
+        self.surface().path()
+    }
+
+    fn surface(&self) -> &FileSurface {
+        match self {
+            Self::Added(head) | Self::Kept { head, .. } => head,
+            Self::Deleted(base) => base,
+        }
+    }
+}
+
+enum Spec {
+    Change {
+        additions: Vec<FileDeclarations>,
+        deletions: Vec<FileDeclarations>,
+    },
+    SurfaceSpec {
+        declarations: Vec<FileDeclarations>,
+    },
+}
+
+impl Spec {
+    fn render(self, language: Language) -> Result<String> {
         let mut env = Environment::new();
         env.set_syntax(
             SyntaxConfig::builder()
                 .keep_trailing_newline(true)
                 .build()?,
         );
-        env.add_template(name, template)?;
-        let spec = env
-            .get_template(name)?
-            .render(context! { additions, deletions })?;
-        Ok((spec, errors))
+        env.add_template("common.md.j2", COMMON)?;
+        env.add_template("language.md.j2", language.template())?;
+        let values =
+            |files: Vec<FileDeclarations>| Vec::from_iter(files.into_iter().map(Value::from));
+        let (template, declarations) = match self {
+            Self::Change {
+                additions,
+                deletions,
+            } => (
+                CHANGE,
+                context! { additions => values(additions), deletions => values(deletions) },
+            ),
+            Self::SurfaceSpec { declarations } => (
+                SURFACE_SPEC,
+                context! { declarations => values(declarations) },
+            ),
+        };
+        Ok(env.template_from_str(template)?.render(declarations)?)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Part {
+    Record(RecordId),
+    /// A class attribute, by its index among the class's attributes.
+    Attribute(RecordId, usize),
+}
+
+impl Part {
+    fn record(self) -> RecordId {
+        match self {
+            Self::Record(id) | Self::Attribute(id, _) => id,
+        }
+    }
+}
+
+struct FileDeclarations {
+    path: String,
+    code: String,
+}
+
+impl From<FileDeclarations> for Value {
+    fn from(file: FileDeclarations) -> Self {
+        context! { path => file.path, code => file.code }
     }
 }
 
@@ -504,17 +789,62 @@ impl FileSurface {
         }
     }
 
-    fn declarations(&self) -> Result<String> {
-        unwind(|| match self {
-            Self::Rust(file) => Ok(file.declarations()),
-            Self::Python(file) => file.declarations(),
+    fn parts(&self) -> Vec<Part> {
+        match self {
+            Self::Rust(file) => file.parts(),
+            Self::Python(file) => file.parts(),
+        }
+    }
+
+    fn declarations(&self, parts: &BTreeSet<Part>) -> Result<FileDeclarations> {
+        let code = unwind(|| match self {
+            Self::Rust(file) => Ok(file.declarations(parts)),
+            Self::Python(file) => file.declarations(parts),
         })
         .and_then(|declarations| declarations)
+        .with_context(|| format!("rendering {}", self.path().display()))?;
+        Ok(FileDeclarations {
+            path: self.path().display().to_string(),
+            code,
+        })
+    }
+
+    /// The declarations of the parts `other` lacks, each part matching one equal to it in
+    /// `other` by text; `None` when `other` has them all.
+    fn declarations_lacking(&self, other: Option<&Self>) -> Result<Option<FileDeclarations>> {
+        let mut unmatched: BTreeMap<String, usize> = BTreeMap::new();
+        if let Some(other) = other {
+            for part in other.parts() {
+                *unmatched.entry(other.text(part)?).or_default() += 1;
+            }
+        }
+        let mut lacking = BTreeSet::new();
+        for part in self.parts() {
+            match unmatched.get_mut(&self.text(part)?) {
+                Some(count) if *count > 0 => *count -= 1,
+                Some(_) | None => {
+                    lacking.insert(part);
+                }
+            }
+        }
+        if lacking.is_empty() {
+            return Ok(None);
+        }
+        self.declarations(&lacking).map(Some)
+    }
+
+    /// `part` as text, inside the records enclosing it, which equals the text of an equal part.
+    fn text(&self, part: Part) -> Result<String> {
+        let parts = BTreeSet::from([part]);
+        unwind(|| match self {
+            Self::Rust(file) => file.declarations(&parts),
+            Self::Python(file) => file.text(&parts),
+        })
         .with_context(|| format!("rendering {}", self.path().display()))
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 struct RecordId(usize);
 
 #[derive(Serialize, Deserialize)]
@@ -534,34 +864,30 @@ struct Position {
 mod tests {
     use super::*;
 
+    /// The file `$file` of fixture `$case` in `$dir`.
+    macro_rules! fixture_file {
+        ($dir:literal, $case:literal, $file:literal) => {
+            include_str!(concat!(
+                "surface_spec/testdata/",
+                $dir,
+                "/",
+                $case,
+                "/",
+                $file
+            ))
+        };
+    }
+
     macro_rules! fixture {
         ($language:ident, $dir:literal, $extension:literal, $case:literal) => {
             Fixture {
                 language: Language::$language,
                 path: concat!($case, ".", $extension),
-                source: include_str!(concat!(
-                    "surface_spec/testdata/",
-                    $dir,
-                    "/",
-                    $case,
-                    ".",
-                    $extension
-                )),
-                capture: include_str!(concat!("surface_spec/testdata/", $dir, "/", $case, ".json")),
-                additions: include_str!(concat!(
-                    "surface_spec/testdata/",
-                    $dir,
-                    "/",
-                    $case,
-                    ".additions.md"
-                )),
-                deletions: include_str!(concat!(
-                    "surface_spec/testdata/",
-                    $dir,
-                    "/",
-                    $case,
-                    ".deletions.md"
-                )),
+                source: fixture_file!($dir, $case, "source"),
+                capture: fixture_file!($dir, $case, "capture"),
+                additions: fixture_file!($dir, $case, "additions"),
+                deletions: fixture_file!($dir, $case, "deletions"),
+                surface_spec: fixture_file!($dir, $case, "surface-spec"),
             }
         };
     }
@@ -578,6 +904,29 @@ mod tests {
         };
     }
 
+    macro_rules! error_fixture {
+        ($language:ident, $dir:literal, $extension:literal, $case:literal) => {
+            ErrorFixture {
+                language: Language::$language,
+                path: concat!($case, ".", $extension),
+                source: fixture_file!($dir, $case, "source"),
+                error: fixture_file!($dir, $case, "error"),
+            }
+        };
+    }
+
+    macro_rules! rust_error_fixture {
+        ($case:literal) => {
+            error_fixture!(Rust, "rust", "rs", $case)
+        };
+    }
+
+    macro_rules! python_error_fixture {
+        ($case:literal) => {
+            error_fixture!(Python, "python", "py", $case)
+        };
+    }
+
     struct Fixture {
         language: Language,
         path: &'static str,
@@ -585,6 +934,7 @@ mod tests {
         capture: &'static str,
         additions: &'static str,
         deletions: &'static str,
+        surface_spec: &'static str,
     }
 
     impl Fixture {
@@ -597,25 +947,80 @@ mod tests {
                 serde_json::from_str(self.capture).expect("JSON fixture");
             assert_eq!(captured, expected);
 
-            let surface: CapturedSurface =
-                serde_json::from_str(self.capture).expect("captured surface");
-            let (additions, errors) = surface
-                .spec(self.language, Section::Additions)
-                .expect("rendered spec");
+            let surface = || -> CapturedSurface {
+                serde_json::from_str(self.capture).expect("captured surface")
+            };
+            for (change, expected) in [
+                (
+                    FileChange::Added as fn(FileSurface) -> FileChange,
+                    self.additions,
+                ),
+                (FileChange::Deleted, self.deletions),
+            ] {
+                let changes = Vec::from_iter(surface().files.into_iter().map(change));
+                let (spec, errors) =
+                    FileChange::spec(&changes, self.language).expect("rendered spec");
+                assert!(errors.is_empty());
+                assert_eq!(spec, expected);
+            }
+            let (surface_spec, errors) = surface().spec(self.language).expect("rendered spec");
             assert!(errors.is_empty());
-            assert_eq!(additions, self.additions);
-            let (deletions, errors) = surface
-                .spec(self.language, Section::Deletions)
-                .expect("rendered spec");
-            assert!(errors.is_empty());
-            assert_eq!(deletions, self.deletions);
+            assert_eq!(surface_spec, self.surface_spec);
         }
     }
 
-    fn error(language: Language, path: &str, source: &str) -> anyhow::Error {
-        FileSurface::parse(PathBuf::from(path), language, source)
-            .err()
-            .expect("uncapturable source")
+    macro_rules! change_fixture {
+        ($language:ident, $dir:literal, $extension:literal, $case:literal) => {
+            ChangeFixture {
+                language: Language::$language,
+                path: concat!($case, ".", $extension),
+                base: fixture_file!($dir, $case, "base"),
+                head: fixture_file!($dir, $case, "head"),
+                change: fixture_file!($dir, $case, "change"),
+            }
+        };
+    }
+
+    /// A source before and after a change, and the change surface spec between them.
+    struct ChangeFixture {
+        language: Language,
+        path: &'static str,
+        base: &'static str,
+        head: &'static str,
+        change: &'static str,
+    }
+
+    impl ChangeFixture {
+        fn check(&self) {
+            let parse = |source| {
+                FileSurface::parse(PathBuf::from(self.path), self.language, source)
+                    .expect("capturable fixture")
+            };
+            let change = FileChange::Kept {
+                base: parse(self.base),
+                head: parse(self.head),
+            };
+            let (spec, errors) = FileChange::spec(&[change], self.language).expect("rendered spec");
+            assert!(errors.is_empty());
+            assert_eq!(spec, self.change);
+        }
+    }
+
+    /// A source surface-spec cannot capture, and the error it fails with.
+    struct ErrorFixture {
+        language: Language,
+        path: &'static str,
+        source: &'static str,
+        error: &'static str,
+    }
+
+    impl ErrorFixture {
+        fn check(&self) {
+            let error = FileSurface::parse(PathBuf::from(self.path), self.language, self.source)
+                .err()
+                .expect("uncapturable fixture");
+            assert_eq!(format!("{error:#}\n"), self.error);
+        }
     }
 
     #[test]
@@ -649,6 +1054,11 @@ mod tests {
     }
 
     #[test]
+    fn bodiless_fns() {
+        rust_fixture!("bodiless_fns").check();
+    }
+
+    #[test]
     fn nested() {
         rust_fixture!("nested").check();
     }
@@ -669,17 +1079,18 @@ mod tests {
     }
 
     #[test]
+    fn changes() {
+        change_fixture!(Rust, "rust", "rs", "changes").check();
+    }
+
+    #[test]
     fn syntax_error() {
-        error(Language::Rust, "error.rs", "fn f( {}\n");
+        rust_error_fixture!("syntax_error").check();
     }
 
     #[test]
     fn safe_foreign_fn() {
-        let source = "unsafe extern \"C\" {\n    fn f(x: i32) -> i32;\n    pub safe fn g();\n}\n";
-        assert_eq!(
-            error(Language::Rust, "error.rs", source).to_string(),
-            "parsing error.rs:3:5: surface-spec cannot capture this foreign item"
-        );
+        rust_error_fixture!("safe_foreign_fn").check();
     }
 
     #[test]
@@ -708,11 +1119,12 @@ mod tests {
     }
 
     #[test]
+    fn python_changes() {
+        change_fixture!(Python, "python", "py", "changes").check();
+    }
+
+    #[test]
     fn python_syntax_error() {
-        let message = error(Language::Python, "error.py", "def f(:\n    pass\n").to_string();
-        assert!(
-            message.starts_with("parsing error.py:1:"),
-            "unexpected error: {message}"
-        );
+        python_error_fixture!("syntax_error").check();
     }
 }

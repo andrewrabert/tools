@@ -1,0 +1,8 @@
+# Surface Spec: Python
+The set of `def` and `class`
+declarations in each file under `## Declarations` must equal the
+declarations under that file.
+
+## Declarations
+
+No declarations.

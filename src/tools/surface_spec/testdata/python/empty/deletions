@@ -1,0 +1,13 @@
+# Surface Spec: Python
+The set of `def` and `class`
+declarations the resulting combined diff adds must equal the declarations
+under `## Additions`, and the set it deletes must equal the declarations
+under `## Deletions`.
+
+## Additions
+
+No additions.
+
+## Deletions
+
+No deletions.

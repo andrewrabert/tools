@@ -1,0 +1,17 @@
+class Config:
+    name: str
+    debug: bool = False
+
+    def load(self, path: Path) -> None:
+        pass
+
+    def save(self) -> None:
+        pass
+
+
+class Empty:
+    pass
+
+
+def kept(value: int) -> int:
+    return value + 1

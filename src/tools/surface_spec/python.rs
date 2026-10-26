@@ -1,6 +1,7 @@
 //! Python surfaces: a model of the captured defs and classes holding syntax facts only, printed
 //! back as Python and laid out by the Ruff formatter.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
@@ -13,10 +14,7 @@ use ruff_source_file::{LineColumn, LineIndex};
 use ruff_text_size::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 
-use super::{Position, RecordId, Span};
-
-/// The spec template for Python surfaces.
-pub(super) const SPEC: &str = include_str!("python.md.j2");
+use super::{Part, Position, RecordId, Span};
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct FileSurface {
@@ -71,23 +69,70 @@ impl FileSurface {
         self.records.is_empty()
     }
 
-    /// The file's declarations as Python text in the spec's stub style, in record order, laid
-    /// out by the Ruff formatter. Every record renders inside its parent.
-    pub(super) fn declarations(&self) -> Result<String> {
-        let mut printer = Printer::default();
-        let top_level = self.records.iter().filter(|record| record.parent.is_none());
-        // A blank line apart, since the formatter keeps consecutive stubs together as overloads
-        // when the source has none between them.
-        self.block(&mut printer, top_level);
-        let formatted = format_module_source(&printer.text, PyFormatOptions::default())
+    /// The declarations a change adds or deletes as a whole: every def, every class attribute,
+    /// and every class with neither attributes nor records inside it. A class holding either is
+    /// no part of its own, since what it holds is.
+    pub(super) fn parts(&self) -> Vec<Part> {
+        let mut parts = Vec::new();
+        for record in &self.records {
+            match &record.node {
+                Node::Def(_) => parts.push(Part::Record(record.id)),
+                Node::Class(class) => {
+                    parts.extend(
+                        (0..class.attributes.len()).map(|index| Part::Attribute(record.id, index)),
+                    );
+                    if class.attributes.is_empty() && self.children(record.id).next().is_none() {
+                        parts.push(Part::Record(record.id));
+                    }
+                }
+            }
+        }
+        parts
+    }
+
+    /// The declarations of `parts` as Python text in the spec's stub style, in record order,
+    /// laid out by the Ruff formatter.
+    pub(super) fn declarations(&self, parts: &BTreeSet<Part>) -> Result<String> {
+        let formatted = format_module_source(&self.text(parts), PyFormatOptions::default())
             .with_context(|| format!("formatting the declarations of {}", self.path.display()))?;
         Ok(formatted.into_code().trim_end().to_owned())
     }
 
-    /// Prints `record` with the records it encloses inside it: a function's body holds them,
-    /// or is `...` without them, and a class's body holds its attributes and then them.
-    fn declaration(&self, printer: &mut Printer, record: &Record) {
-        let mut children = self.children(record.id).peekable();
+    pub(super) fn text(&self, parts: &BTreeSet<Part>) -> String {
+        let selected = Selected {
+            parts,
+            records: self.enclosing(parts),
+        };
+        let mut printer = Printer::default();
+        let top_level = self
+            .records
+            .iter()
+            .filter(|record| record.parent.is_none() && selected.records.contains(&record.id));
+        self.block(&mut printer, top_level, &selected);
+        printer.text
+    }
+
+    fn enclosing(&self, parts: &BTreeSet<Part>) -> BTreeSet<RecordId> {
+        let mut records = BTreeSet::new();
+        for part in parts {
+            let mut next = Some(part.record());
+            while let Some(id) = next
+                && records.insert(id)
+            {
+                next = self.records[id.0].parent;
+            }
+        }
+        records
+    }
+
+    /// Prints `record` with the selected records it encloses inside it: a function's body
+    /// holds them, or is `...` without them, and a class's body holds its selected attributes
+    /// and then them.
+    fn declaration(&self, printer: &mut Printer, record: &Record, selected: &Selected) {
+        let mut children = self
+            .children(record.id)
+            .filter(|child| selected.records.contains(&child.id))
+            .peekable();
         match &record.node {
             Node::Def(function) => {
                 printer.function_header(function);
@@ -97,44 +142,63 @@ impl FileSurface {
                 }
                 printer.push("\n");
                 printer.indent += 1;
-                self.block(printer, children);
+                self.block(printer, children, selected);
                 printer.indent -= 1;
             }
             Node::Class(class) => {
+                let attributes: Vec<&Attribute> = class
+                    .attributes
+                    .iter()
+                    .enumerate()
+                    .filter(|(index, _)| {
+                        selected.parts.contains(&Part::Attribute(record.id, *index))
+                    })
+                    .map(|(_, attribute)| attribute)
+                    .collect();
                 printer.class_header(class);
                 printer.push("\n");
                 printer.indent += 1;
-                for attribute in &class.attributes {
+                for attribute in &attributes {
                     printer.attribute(attribute);
                 }
-                if class.attributes.is_empty() && children.peek().is_none() {
+                if attributes.is_empty() && children.peek().is_none() {
                     printer.indentation();
                     printer.push("...\n");
-                } else if !class.attributes.is_empty() && children.peek().is_some() {
+                } else if !attributes.is_empty() && children.peek().is_some() {
                     printer.push("\n");
                 }
-                self.block(printer, children);
+                self.block(printer, children, selected);
                 printer.indent -= 1;
             }
         }
     }
 
-    /// Prints `records` a blank line apart.
-    fn block<'a>(&'a self, printer: &mut Printer, records: impl Iterator<Item = &'a Record>) {
+    fn block<'a>(
+        &'a self,
+        printer: &mut Printer,
+        records: impl Iterator<Item = &'a Record>,
+        selected: &Selected,
+    ) {
         for (index, record) in records.enumerate() {
             if index > 0 {
+                // The formatter keeps consecutive stubs together as overloads when the source has
+                // no blank line between them.
                 printer.push("\n");
             }
-            self.declaration(printer, record);
+            self.declaration(printer, record, selected);
         }
     }
 
-    /// The records whose innermost enclosing record is `id`.
     fn children(&self, id: RecordId) -> impl Iterator<Item = &Record> {
         self.records
             .iter()
             .filter(move |record| record.parent == Some(id))
     }
+}
+
+struct Selected<'a> {
+    parts: &'a BTreeSet<Part>,
+    records: BTreeSet<RecordId>,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -1,0 +1,18 @@
+pub struct Player {
+    position: i64,
+}
+
+#[interface(name = "org.mpris.MediaPlayer2.Player")]
+impl Player {
+    fn play(&self) {}
+
+    #[zbus(signal)]
+    async fn seeked(emitter: &SignalEmitter<'_>, position: i64) -> zbus::Result<()>;
+
+    pub fn stop(&self);
+
+    #[zbus(property)]
+    fn position(&self) -> i64 {
+        self.position
+    }
+}

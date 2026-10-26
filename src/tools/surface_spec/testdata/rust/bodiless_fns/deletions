@@ -1,0 +1,28 @@
+# Surface Spec: Rust
+The set of `fn`, `struct`, `enum`, `trait`, and `impl`
+declarations the resulting combined diff adds must equal the declarations
+under `## Additions`, and the set it deletes must equal the declarations
+under `## Deletions`.
+
+## Additions
+
+No additions.
+
+## Deletions
+
+### bodiless_fns.rs
+```rust
+pub struct Player {
+    position: i64,
+}
+
+#[interface(name = "org.mpris.MediaPlayer2.Player")]
+impl Player {
+    fn play(&self);
+    #[zbus(signal)]
+    async fn seeked(emitter: &SignalEmitter<'_>, position: i64) -> zbus::Result<()>;
+    pub fn stop(&self);
+    #[zbus(property)]
+    fn position(&self) -> i64;
+}
+```

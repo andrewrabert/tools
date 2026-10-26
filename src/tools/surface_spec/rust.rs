@@ -1,5 +1,6 @@
 //! Rust surfaces: syn syntax trees of the captured items, rendered with prettyplease.
 
+use std::collections::BTreeSet;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
@@ -7,18 +8,17 @@ use anyhow::{Context, Result, bail};
 use proc_macro2::{LineColumn, TokenStream};
 use quote::quote;
 use serde::{Deserialize, Serialize};
+use syn::parse::{ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
 use syn::visit_mut::{self, VisitMut};
 use syn::{
-    AttrStyle, Attribute, ForeignItem, ImplItem, Item, Signature, Stmt, TraitItem, Visibility,
+    AttrStyle, Attribute, ForeignItem, ImplItem, Item, Signature, Stmt, Token, TraitItem,
+    Visibility,
 };
 use syn_serde3::Syn;
 
-use super::{Position, RecordId, Span};
-
-/// The spec template for Rust surfaces.
-pub(super) const SPEC: &str = include_str!("rust.md.j2");
+use super::{Part, Position, RecordId, Span};
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct FileSurface {
@@ -56,11 +56,44 @@ impl FileSurface {
         self.records.is_empty()
     }
 
-    /// The file's declarations as Rust text in the spec's stub style, in record order, one
-    /// blank line apart. Consecutive foreign fns of one `extern` block share a single block.
-    pub(super) fn declarations(&self) -> String {
+    /// The declarations a change adds or deletes as a whole: every record but a trait's method,
+    /// which its trait holds, and a trait impl's method, which its one-line impl leaves out. An
+    /// inherent impl holding methods is no part of its own, since its methods are.
+    pub(super) fn parts(&self) -> Vec<Part> {
+        self.records
+            .iter()
+            .filter(|record| match &record.node {
+                Node::ImplItemFn { .. } => record.parent.is_some_and(|parent| {
+                    matches!(self.records[parent.0].node, Node::InherentImpl { .. })
+                }),
+                Node::TraitItemFn { .. } => false,
+                Node::InherentImpl { .. } => !self
+                    .children(record.id)
+                    .any(|child| matches!(child.node, Node::ImplItemFn { .. })),
+                Node::ItemFn { .. }
+                | Node::ForeignItemFn { .. }
+                | Node::ItemStruct { .. }
+                | Node::ItemEnum { .. }
+                | Node::ItemTrait { .. }
+                | Node::TraitImpl { .. } => true,
+            })
+            .map(|record| Part::Record(record.id))
+            .collect()
+    }
+
+    /// The declarations of `parts` as Rust text in the spec's stub style, in record order, one
+    /// blank line apart. An inherent impl holds only its methods among `parts`, and consecutive
+    /// foreign fns of one `extern` block share a single block.
+    pub(super) fn declarations(&self, parts: &BTreeSet<Part>) -> String {
         let mut groups: Vec<Group> = Vec::new();
-        for record in &self.records {
+        let shown = |record: &Record| {
+            parts.contains(&Part::Record(record.id))
+                || (matches!(record.node, Node::InherentImpl { .. })
+                    && self
+                        .children(record.id)
+                        .any(|child| parts.contains(&Part::Record(child.id))))
+        };
+        for record in self.records.iter().filter(|record| shown(record)) {
             match (&record.node, groups.last_mut()) {
                 (Node::ForeignItemFn { foreign_mod, node }, Some(Group::Extern(block, fns)))
                     if block.id == foreign_mod.id =>
@@ -77,7 +110,8 @@ impl FileSurface {
                     | Node::ItemStruct { .. }
                     | Node::ItemEnum { .. }
                     | Node::ItemTrait { .. }
-                    | Node::ItemImpl { .. },
+                    | Node::InherentImpl { .. }
+                    | Node::TraitImpl { .. },
                     _,
                 ) => groups.push(Group::Record(record)),
             }
@@ -86,15 +120,16 @@ impl FileSurface {
             .into_iter()
             .filter_map(|group| match group {
                 Group::Extern(block, fns) => Some(block.declaration(fns)),
-                Group::Record(record) => self.declaration(record),
+                Group::Record(record) => self.declaration(record, parts),
             })
             .map(|text| text.trim_end().to_owned())
             .collect::<Vec<_>>()
             .join("\n\n")
     }
 
-    /// `record` as Rust text, or `None` for a method, which its impl or trait renders.
-    fn declaration(&self, record: &Record) -> Option<String> {
+    /// `record` as Rust text, or `None` for a method, which its impl or trait renders. An
+    /// inherent impl holds only its methods among `parts`.
+    fn declaration(&self, record: &Record, parts: &BTreeSet<Part>) -> Option<String> {
         let item = match &record.node {
             Node::ItemFn { node } => {
                 let node = syn::ItemFn::from_adapter(node);
@@ -124,18 +159,18 @@ impl FileSurface {
                             | Node::ItemStruct { .. }
                             | Node::ItemEnum { .. }
                             | Node::ItemTrait { .. }
-                            | Node::ItemImpl { .. } => None,
+                            | Node::InherentImpl { .. }
+                            | Node::TraitImpl { .. } => None,
                         }),
                 );
                 Item::Trait(node)
             }
-            Node::ItemImpl { node } => {
+            Node::TraitImpl { node } => return Some(trait_impl(syn::ItemImpl::from_adapter(node))),
+            Node::InherentImpl { node } => {
                 let mut node = syn::ItemImpl::from_adapter(node);
-                if node.trait_.is_some() {
-                    return Some(trait_impl(node));
-                }
                 node.items = self
                     .children(record.id)
+                    .filter(|child| parts.contains(&Part::Record(child.id)))
                     .filter_map(|child| match &child.node {
                         Node::ImplItemFn { node } => {
                             let method = syn::ImplItemFn::from_adapter(node);
@@ -153,7 +188,8 @@ impl FileSurface {
                         | Node::ItemStruct { .. }
                         | Node::ItemEnum { .. }
                         | Node::ItemTrait { .. }
-                        | Node::ItemImpl { .. } => None,
+                        | Node::InherentImpl { .. }
+                        | Node::TraitImpl { .. } => None,
                     })
                     .collect();
                 Item::Impl(node)
@@ -267,7 +303,10 @@ enum Node {
     ItemTrait {
         node: <syn::ItemTrait as Syn>::Adapter,
     },
-    ItemImpl {
+    InherentImpl {
+        node: <syn::ItemImpl as Syn>::Adapter,
+    },
+    TraitImpl {
         node: <syn::ItemImpl as Syn>::Adapter,
     },
 }
@@ -282,7 +321,7 @@ impl Node {
             Node::ItemStruct { .. } => Kind::Struct,
             Node::ItemEnum { .. } => Kind::Enum,
             Node::ItemTrait { .. } => Kind::Trait,
-            Node::ItemImpl { .. } => Kind::Impl,
+            Node::InherentImpl { .. } | Node::TraitImpl { .. } => Kind::Impl,
         }
     }
 }
@@ -391,6 +430,15 @@ impl Collector {
         self.parents.pop();
     }
 
+    fn capture_impl_item_fn(&mut self, span: proc_macro2::Span, node: &syn::ImplItemFn) {
+        let pruned = Node::ImplItemFn {
+            node: pruned(node, Prune::visit_impl_item_fn_mut),
+        };
+        self.capture(span, pruned, |collector| {
+            visit::visit_impl_item_fn(collector, node)
+        });
+    }
+
     fn capture_foreign_fn(&mut self, foreign_mod: ForeignMod, node: &syn::ForeignItemFn) {
         // The capture's signature records only `unsafe`, so `safe` would vanish from the spec.
         if let syn::Safety::Safe(_) = node.sig.safety {
@@ -406,8 +454,8 @@ impl Collector {
     }
 }
 
-// Each variant syn models is listed, so verbatim tokens and any variant added after this code
-// fail the file instead of passing unwalked.
+// Each variant syn models is listed, so verbatim tokens other than a bodiless method and any
+// variant added after this code fail the file instead of passing unwalked.
 impl<'ast> Visit<'ast> for Collector {
     fn visit_item(&mut self, node: &'ast Item) {
         match node {
@@ -435,6 +483,10 @@ impl<'ast> Visit<'ast> for Collector {
             ImplItem::Const(_) | ImplItem::Fn(_) | ImplItem::Type(_) | ImplItem::Macro(_) => {
                 visit::visit_impl_item(self, node)
             }
+            ImplItem::Verbatim(tokens) => match bodiless_fn(tokens) {
+                Some(method) => self.capture_impl_item_fn(node.span(), &method),
+                None => self.unmodeled(Slot::ImplItem, node.span()),
+            },
             _ => self.unmodeled(Slot::ImplItem, node.span()),
         }
     }
@@ -479,12 +531,7 @@ impl<'ast> Visit<'ast> for Collector {
     }
 
     fn visit_impl_item_fn(&mut self, node: &'ast syn::ImplItemFn) {
-        let pruned = Node::ImplItemFn {
-            node: pruned(node, Prune::visit_impl_item_fn_mut),
-        };
-        self.capture(node.span(), pruned, |collector| {
-            visit::visit_impl_item_fn(collector, node)
-        });
+        self.capture_impl_item_fn(node.span(), node);
     }
 
     fn visit_trait_item_fn(&mut self, node: &'ast syn::TraitItemFn) {
@@ -524,13 +571,42 @@ impl<'ast> Visit<'ast> for Collector {
     }
 
     fn visit_item_impl(&mut self, node: &'ast syn::ItemImpl) {
-        let pruned = Node::ItemImpl {
-            node: pruned(node, Prune::visit_item_impl_mut),
+        let pruned = pruned(node, Prune::visit_item_impl_mut);
+        let pruned = if node.trait_.is_some() {
+            Node::TraitImpl { node: pruned }
+        } else {
+            Node::InherentImpl { node: pruned }
         };
         self.capture(node.span(), pruned, |collector| {
             visit::visit_item_impl(collector, node)
         });
     }
+}
+
+/// The method in `tokens` when they are an impl fn without a body, which syn parses but keeps
+/// only as verbatim tokens, given an empty body.
+fn bodiless_fn(tokens: &TokenStream) -> Option<syn::ImplItemFn> {
+    parse_bodiless_fn.parse2(tokens.clone()).ok()
+}
+
+/// syn's grammar for an impl fn without a body: `Attribute* Visibility default? Signature ;`.
+fn parse_bodiless_fn(input: ParseStream) -> syn::Result<syn::ImplItemFn> {
+    let attrs = input.call(Attribute::parse_outer)?;
+    let vis = input.parse()?;
+    let mut modifiers = syn::FnModifiers::default();
+    modifiers.defaultness = input.parse()?;
+    let sig = input.parse()?;
+    input.parse::<Token![;]>()?;
+    Ok(syn::ImplItemFn {
+        attrs,
+        vis,
+        modifiers,
+        sig,
+        block: syn::Block {
+            brace_token: Default::default(),
+            stmts: Vec::new(),
+        },
+    })
 }
 
 /// A clone of `node` with `prune` applied, as syn-serde serializes it.
@@ -681,7 +757,11 @@ impl VisitMut for Prune {
 
     fn visit_item_impl_mut(&mut self, node: &mut syn::ItemImpl) {
         strip_attrs(&mut node.attrs);
-        node.items.retain(|item| !matches!(item, ImplItem::Fn(_)));
+        node.items.retain(|item| match item {
+            ImplItem::Fn(_) => false,
+            ImplItem::Verbatim(tokens) => bodiless_fn(tokens).is_none(),
+            _ => true,
+        });
         visit_mut::visit_item_impl_mut(self, node);
     }
 
