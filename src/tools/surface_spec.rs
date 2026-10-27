@@ -63,10 +63,22 @@ pub struct SurfaceSpec {
     #[arg(long)]
     input_json: bool,
     /// Print the declarations of PATH as JSON syntax trees instead of a Markdown surface spec
-    #[arg(long, conflicts_with_all = ["additions", "deletions", "git", "language"])]
+    #[arg(
+        long,
+        conflicts_with_all = [
+            "additions",
+            "deletions",
+            "git",
+            "language",
+            "include_rust_private",
+            "include_rust_tests",
+        ],
+    )]
     json: bool,
     #[command(flatten)]
     filter: Filter,
+    #[command(flatten)]
+    rust: rust::Includes,
     /// Render the spec for this language's files [default: every language captured]
     #[arg(short, long, value_enum)]
     language: Option<Language>,
@@ -353,7 +365,7 @@ impl SurfaceSpec {
         };
         match write_specs(
             languages,
-            |language| FileChange::spec(&changes, language),
+            |language| FileChange::spec(&changes, language, &self.rust),
             self.output.as_deref(),
         ) {
             Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
@@ -376,7 +388,7 @@ impl SurfaceSpec {
         };
         match write_specs(
             languages,
-            |language| surface.spec(language),
+            |language| surface.spec(language, &self.rust),
             self.output.as_deref(),
         ) {
             Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
@@ -583,12 +595,19 @@ impl CapturedSurface {
         self.files.iter().map(FileSurface::language).collect()
     }
 
-    fn spec(&self, language: Language) -> Result<(String, Vec<anyhow::Error>)> {
+    fn spec(
+        &self,
+        language: Language,
+        rust: &rust::Includes,
+    ) -> Result<(String, Vec<anyhow::Error>)> {
         let (declarations, errors) = split(
             self.files
                 .iter()
                 .filter(|file| file.language() == language && !file.is_empty())
-                .map(|file| file.declarations(&file.parts().into_iter().collect())),
+                .filter_map(|file| {
+                    let parts = BTreeSet::from_iter(file.parts(rust));
+                    (!parts.is_empty()).then(|| file.declarations(&parts))
+                }),
         );
         Ok((Spec::SurfaceSpec { declarations }.render(language)?, errors))
     }
@@ -628,7 +647,11 @@ impl FileChange {
         (changes, errors)
     }
 
-    fn spec(changes: &[Self], language: Language) -> Result<(String, Vec<anyhow::Error>)> {
+    fn spec(
+        changes: &[Self],
+        language: Language,
+        rust: &rust::Includes,
+    ) -> Result<(String, Vec<anyhow::Error>)> {
         let mut additions = Vec::new();
         let mut deletions = Vec::new();
         let mut errors = Vec::new();
@@ -636,7 +659,7 @@ impl FileChange {
             .iter()
             .filter(|change| change.language() == language)
         {
-            match change.declarations() {
+            match change.declarations(rust) {
                 Ok((added, deleted)) => {
                     additions.extend(added);
                     deletions.extend(deleted);
@@ -651,13 +674,16 @@ impl FileChange {
         Ok((spec.render(language)?, errors))
     }
 
-    fn declarations(&self) -> Result<(Option<FileDeclarations>, Option<FileDeclarations>)> {
+    fn declarations(
+        &self,
+        rust: &rust::Includes,
+    ) -> Result<(Option<FileDeclarations>, Option<FileDeclarations>)> {
         Ok(match self {
-            Self::Added(head) => (head.declarations_lacking(None)?, None),
-            Self::Deleted(base) => (None, base.declarations_lacking(None)?),
+            Self::Added(head) => (head.declarations_lacking(None, rust)?, None),
+            Self::Deleted(base) => (None, base.declarations_lacking(None, rust)?),
             Self::Kept { base, head } => (
-                head.declarations_lacking(Some(base))?,
-                base.declarations_lacking(Some(head))?,
+                head.declarations_lacking(Some(base), rust)?,
+                base.declarations_lacking(Some(head), rust)?,
             ),
         })
     }
@@ -789,9 +815,10 @@ impl FileSurface {
         }
     }
 
-    fn parts(&self) -> Vec<Part> {
+    /// The parts of the file, among the records `rust` keeps when it is a Rust file.
+    fn parts(&self, rust: &rust::Includes) -> Vec<Part> {
         match self {
-            Self::Rust(file) => file.parts(),
+            Self::Rust(file) => file.parts(rust),
             Self::Python(file) => file.parts(),
         }
     }
@@ -811,15 +838,19 @@ impl FileSurface {
 
     /// The declarations of the parts `other` lacks, each part matching one equal to it in
     /// `other` by text; `None` when `other` has them all.
-    fn declarations_lacking(&self, other: Option<&Self>) -> Result<Option<FileDeclarations>> {
+    fn declarations_lacking(
+        &self,
+        other: Option<&Self>,
+        rust: &rust::Includes,
+    ) -> Result<Option<FileDeclarations>> {
         let mut unmatched: BTreeMap<String, usize> = BTreeMap::new();
         if let Some(other) = other {
-            for part in other.parts() {
+            for part in other.parts(rust) {
                 *unmatched.entry(other.text(part)?).or_default() += 1;
             }
         }
         let mut lacking = BTreeSet::new();
-        for part in self.parts() {
+        for part in self.parts(rust) {
             match unmatched.get_mut(&self.text(part)?) {
                 Some(count) if *count > 0 => *count -= 1,
                 Some(_) | None => {
@@ -959,11 +990,14 @@ mod tests {
             ] {
                 let changes = Vec::from_iter(surface().files.into_iter().map(change));
                 let (spec, errors) =
-                    FileChange::spec(&changes, self.language).expect("rendered spec");
+                    FileChange::spec(&changes, self.language, &rust::Includes::default())
+                        .expect("rendered spec");
                 assert!(errors.is_empty());
                 assert_eq!(spec, expected);
             }
-            let (surface_spec, errors) = surface().spec(self.language).expect("rendered spec");
+            let (surface_spec, errors) = surface()
+                .spec(self.language, &rust::Includes::default())
+                .expect("rendered spec");
             assert!(errors.is_empty());
             assert_eq!(surface_spec, self.surface_spec);
         }
@@ -1000,7 +1034,9 @@ mod tests {
                 base: parse(self.base),
                 head: parse(self.head),
             };
-            let (spec, errors) = FileChange::spec(&[change], self.language).expect("rendered spec");
+            let (spec, errors) =
+                FileChange::spec(&[change], self.language, &rust::Includes::default())
+                    .expect("rendered spec");
             assert!(errors.is_empty());
             assert_eq!(spec, self.change);
         }

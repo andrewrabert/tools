@@ -5,20 +5,74 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
+use clap::{Args, ValueEnum};
 use proc_macro2::{LineColumn, TokenStream};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 use syn::parse::{ParseStream, Parser};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
 use syn::visit_mut::{self, VisitMut};
 use syn::{
-    AttrStyle, Attribute, ForeignItem, ImplItem, Item, Signature, Stmt, Token, TraitItem,
+    AttrStyle, Attribute, ForeignItem, ImplItem, Item, Meta, Signature, Stmt, Token, TraitItem,
     Visibility,
 };
 use syn_serde3::Syn;
 
 use super::{Part, Position, RecordId, Span};
+
+/// The Rust items a spec includes, by their visibility and by whether they exist only in test
+/// builds.
+#[derive(Args, Default)]
+pub(super) struct Includes {
+    /// Include Rust items limited to their own module: with no visibility, `pub(self)`, or
+    /// `pub(in self)`
+    #[arg(
+        id = "include_rust_private",
+        long = "include-rust-private",
+        value_enum,
+        default_value_t
+    )]
+    private: Include,
+    /// Include Rust items that exist only in test builds, such as `#[cfg(test)]` modules and
+    /// `#[test]` functions
+    #[arg(
+        id = "include_rust_tests",
+        long = "include-rust-tests",
+        value_enum,
+        default_value_t
+    )]
+    tests: Include,
+}
+
+impl Includes {
+    fn keeps(&self, file: &FileSurface, record: &Record) -> bool {
+        self.private.keeps(file.private(record)) && self.tests.keeps(record.test)
+    }
+}
+
+#[derive(Clone, Copy, Default, ValueEnum)]
+enum Include {
+    /// Include them with the other items
+    #[default]
+    Yes,
+    /// Leave them out
+    No,
+    /// Include them and leave out the other items
+    Only,
+}
+
+impl Include {
+    /// Whether an item is included, given whether it is one of the items this includes.
+    fn keeps(self, applies: bool) -> bool {
+        match self {
+            Self::Yes => true,
+            Self::No => !applies,
+            Self::Only => applies,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct FileSurface {
@@ -32,7 +86,9 @@ impl FileSurface {
         let file =
             syn::parse_file(source).with_context(|| format!("parsing {}", path.display()))?;
         let mut collector = Collector::default();
-        collector.visit_file(&file);
+        collector.within(test_only(&file.attrs), |collector| {
+            collector.visit_file(&file)
+        });
         if let Some(unmodeled) = collector.unmodeled {
             bail!(
                 "parsing {}:{}:{}: surface-spec cannot capture this {}",
@@ -56,12 +112,14 @@ impl FileSurface {
         self.records.is_empty()
     }
 
-    /// The declarations a change adds or deletes as a whole: every record but a trait's method,
-    /// which its trait holds, and a trait impl's method, which its one-line impl leaves out. An
-    /// inherent impl holding methods is no part of its own, since its methods are.
-    pub(super) fn parts(&self) -> Vec<Part> {
+    /// The declarations a change adds or deletes as a whole, among the records `includes` keeps:
+    /// every record but a trait's method, which its trait holds, and a trait impl's method, which
+    /// its one-line impl leaves out. An inherent impl holding methods is no part of its own,
+    /// since its methods are.
+    pub(super) fn parts(&self, includes: &Includes) -> Vec<Part> {
         self.records
             .iter()
+            .filter(|record| includes.keeps(self, record))
             .filter(|record| match &record.node {
                 Node::ImplItemFn { .. } => record.parent.is_some_and(|parent| {
                     matches!(self.records[parent.0].node, Node::InherentImpl { .. })
@@ -198,6 +256,26 @@ impl FileSurface {
         Some(unparse(item))
     }
 
+    /// Whether `record` is limited to its own module: a trait's method by its trait, and an
+    /// impl, which has no visibility of its own, never.
+    fn private(&self, record: &Record) -> bool {
+        let vis = match &record.node {
+            Node::ItemFn { node } => syn::ItemFn::from_adapter(node).vis,
+            Node::ImplItemFn { node } => syn::ImplItemFn::from_adapter(node).vis,
+            Node::ForeignItemFn { node, .. } => syn::ForeignItemFn::from_adapter(node).vis,
+            Node::ItemStruct { node } => syn::ItemStruct::from_adapter(node).vis,
+            Node::ItemEnum { node } => syn::ItemEnum::from_adapter(node).vis,
+            Node::ItemTrait { node } => syn::ItemTrait::from_adapter(node).vis,
+            Node::TraitItemFn { .. } => {
+                return record
+                    .parent
+                    .is_some_and(|parent| self.private(&self.records[parent.0]));
+            }
+            Node::InherentImpl { .. } | Node::TraitImpl { .. } => return false,
+        };
+        private(&vis)
+    }
+
     /// The records whose innermost enclosing record is `id`.
     fn children(&self, id: RecordId) -> impl Iterator<Item = &Record> {
         self.records
@@ -213,6 +291,10 @@ struct Record {
     mod_path: Vec<String>,
     kind: Kind,
     span: Span,
+    /// Whether the record exists only in test builds, by its own attributes or those of an
+    /// enclosing item or the file.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    test: bool,
     #[serde(flatten)]
     node: Node,
 }
@@ -378,6 +460,8 @@ struct Collector {
     foreign_mods: usize,
     /// The first node surface-spec cannot capture.
     unmodeled: Option<Unmodeled>,
+    /// Whether the current node exists only in test builds.
+    test: bool,
 }
 
 /// A node surface-spec cannot capture, such as syn's verbatim tokens for syntax newer than syn, which
@@ -423,6 +507,7 @@ impl Collector {
             mod_path: self.mod_path.clone(),
             kind: node.kind(),
             span: span.into(),
+            test: self.test,
             node,
         });
         self.parents.push(id);
@@ -437,6 +522,15 @@ impl Collector {
         self.capture(span, pruned, |collector| {
             visit::visit_impl_item_fn(collector, node)
         });
+    }
+
+    /// Walks `descend`, within which nodes exist only in test builds when `test` or the current
+    /// node does.
+    fn within(&mut self, test: bool, descend: impl FnOnce(&mut Self)) {
+        let enclosing = self.test;
+        self.test |= test;
+        descend(self);
+        self.test = enclosing;
     }
 
     fn capture_foreign_fn(&mut self, foreign_mod: ForeignMod, node: &syn::ForeignItemFn) {
@@ -458,7 +552,7 @@ impl Collector {
 // variant added after this code fail the file instead of passing unwalked.
 impl<'ast> Visit<'ast> for Collector {
     fn visit_item(&mut self, node: &'ast Item) {
-        match node {
+        self.within(test_item(node), |collector| match node {
             Item::Const(_)
             | Item::Enum(_)
             | Item::ExternCrate(_)
@@ -473,31 +567,31 @@ impl<'ast> Visit<'ast> for Collector {
             | Item::TraitAlias(_)
             | Item::Type(_)
             | Item::Union(_)
-            | Item::Use(_) => visit::visit_item(self, node),
-            _ => self.unmodeled(Slot::Item, node.span()),
-        }
+            | Item::Use(_) => visit::visit_item(collector, node),
+            _ => collector.unmodeled(Slot::Item, node.span()),
+        });
     }
 
     fn visit_impl_item(&mut self, node: &'ast ImplItem) {
-        match node {
+        self.within(test_impl_item(node), |collector| match node {
             ImplItem::Const(_) | ImplItem::Fn(_) | ImplItem::Type(_) | ImplItem::Macro(_) => {
-                visit::visit_impl_item(self, node)
+                visit::visit_impl_item(collector, node)
             }
             ImplItem::Verbatim(tokens) => match bodiless_fn(tokens) {
-                Some(method) => self.capture_impl_item_fn(node.span(), &method),
-                None => self.unmodeled(Slot::ImplItem, node.span()),
+                Some(method) => collector.capture_impl_item_fn(node.span(), &method),
+                None => collector.unmodeled(Slot::ImplItem, node.span()),
             },
-            _ => self.unmodeled(Slot::ImplItem, node.span()),
-        }
+            _ => collector.unmodeled(Slot::ImplItem, node.span()),
+        });
     }
 
     fn visit_trait_item(&mut self, node: &'ast TraitItem) {
-        match node {
+        self.within(test_trait_item(node), |collector| match node {
             TraitItem::Const(_) | TraitItem::Fn(_) | TraitItem::Type(_) | TraitItem::Macro(_) => {
-                visit::visit_trait_item(self, node)
+                visit::visit_trait_item(collector, node)
             }
-            _ => self.unmodeled(Slot::TraitItem, node.span()),
-        }
+            _ => collector.unmodeled(Slot::TraitItem, node.span()),
+        });
     }
 
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
@@ -512,7 +606,9 @@ impl<'ast> Visit<'ast> for Collector {
         self.foreign_mods += 1;
         for item in &node.items {
             match item {
-                ForeignItem::Fn(item) => self.capture_foreign_fn(ForeignMod::new(id, node), item),
+                ForeignItem::Fn(item) => self.within(test_only(&item.attrs), |collector| {
+                    collector.capture_foreign_fn(ForeignMod::new(id, node), item)
+                }),
                 ForeignItem::Static(_) | ForeignItem::Type(_) | ForeignItem::Macro(_) => {
                     visit::visit_foreign_item(self, item)
                 }
@@ -800,4 +896,97 @@ fn captured(item: &Item) -> bool {
         item,
         Item::Fn(_) | Item::Struct(_) | Item::Enum(_) | Item::Trait(_) | Item::Impl(_)
     )
+}
+
+/// Whether `item` exists only in test builds.
+fn test_item(item: &Item) -> bool {
+    test_only(match item {
+        Item::Const(node) => &node.attrs,
+        Item::Enum(node) => &node.attrs,
+        Item::ExternCrate(node) => &node.attrs,
+        Item::Fn(node) => &node.attrs,
+        Item::ForeignMod(node) => &node.attrs,
+        Item::Impl(node) => &node.attrs,
+        Item::Macro(node) => &node.attrs,
+        Item::Mod(node) => &node.attrs,
+        Item::Static(node) => &node.attrs,
+        Item::Struct(node) => &node.attrs,
+        Item::Trait(node) => &node.attrs,
+        Item::TraitAlias(node) => &node.attrs,
+        Item::Type(node) => &node.attrs,
+        Item::Union(node) => &node.attrs,
+        Item::Use(node) => &node.attrs,
+        _ => &[],
+    })
+}
+
+/// Whether `item` exists only in test builds.
+fn test_impl_item(item: &ImplItem) -> bool {
+    match item {
+        ImplItem::Const(node) => test_only(&node.attrs),
+        ImplItem::Fn(node) => test_only(&node.attrs),
+        ImplItem::Type(node) => test_only(&node.attrs),
+        ImplItem::Macro(node) => test_only(&node.attrs),
+        ImplItem::Verbatim(tokens) => {
+            bodiless_fn(tokens).is_some_and(|node| test_only(&node.attrs))
+        }
+        _ => false,
+    }
+}
+
+/// Whether `item` exists only in test builds.
+fn test_trait_item(item: &TraitItem) -> bool {
+    test_only(match item {
+        TraitItem::Const(node) => &node.attrs,
+        TraitItem::Fn(node) => &node.attrs,
+        TraitItem::Type(node) => &node.attrs,
+        TraitItem::Macro(node) => &node.attrs,
+        _ => &[],
+    })
+}
+
+/// Whether `attrs` keep their item out of non-test builds: a test attribute such as `#[test]` or
+/// `#[tokio::test]`, or a `#[cfg(...)]` whose predicate holds only when `test` is set.
+fn test_only(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| match &attr.meta {
+        Meta::List(list) if list.path.is_ident("cfg") => list
+            .parse_args::<Meta>()
+            .is_ok_and(|predicate| requires_test(&predicate)),
+        meta => meta
+            .path()
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == "test"),
+    })
+}
+
+/// Whether a cfg predicate is false whenever `test` is unset.
+fn requires_test(predicate: &Meta) -> bool {
+    match predicate {
+        Meta::Path(path) => path.is_ident("test"),
+        Meta::List(list) => {
+            let Ok(predicates) =
+                list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+            else {
+                return false;
+            };
+            if list.path.is_ident("all") {
+                predicates.iter().any(requires_test)
+            } else if list.path.is_ident("any") {
+                !predicates.is_empty() && predicates.iter().all(requires_test)
+            } else {
+                false
+            }
+        }
+        Meta::NameValue(_) => false,
+    }
+}
+
+/// Whether `vis` limits an item to its own module: no visibility, `pub(self)`, or `pub(in self)`.
+fn private(vis: &Visibility) -> bool {
+    match vis {
+        Visibility::Inherited => true,
+        Visibility::Restricted(restricted) => restricted.path.is_ident("self"),
+        Visibility::Public(_) => false,
+    }
 }
