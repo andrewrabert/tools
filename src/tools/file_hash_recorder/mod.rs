@@ -12,7 +12,7 @@ mod verify;
 pub(crate) mod walk;
 
 use std::path::{self, Path};
-use std::process::ExitCode;
+use std::process::{ExitCode, Termination};
 
 use anyhow::{Context, Result, bail};
 
@@ -23,22 +23,15 @@ use crate::tools::file_hash_recorder::db::{FileInfoDb, Scope};
 
 impl Tool for FileHashRecorder {
     fn run(self) -> ExitCode {
-        match run(self) {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(error) => {
-                eprintln!("Error: {error:?}");
-                ExitCode::FAILURE
-            }
-        }
+        Config::try_from(self)
+            .and_then(|config| {
+                config
+                    .roots
+                    .iter()
+                    .try_for_each(|root| recorded(root, &config))
+            })
+            .report()
     }
-}
-
-fn run(args: FileHashRecorder) -> Result<()> {
-    let config = Config::try_from(args)?;
-    for root in &config.roots {
-        recorded(root, &config)?;
-    }
-    Ok(())
 }
 
 fn recorded(root: &Path, config: &Config) -> Result<()> {
@@ -61,11 +54,11 @@ fn recorded(root: &Path, config: &Config) -> Result<()> {
         match &config.action {
             Action::Size => report::size(&records, &root, config.naming)?,
             Action::List => {
-                let listing = report::list(records, &scope, db.dir(), config.naming);
+                let listing = report::renamed(records, &scope, db.dir(), config.naming)?;
                 report::print_json(&listing, config.json)?;
             }
             Action::Dupes => {
-                let dupes = report::dupes(records, &scope, db.dir(), config.naming);
+                let dupes = report::dupes(records, &scope, db.dir(), config.naming)?;
                 report::print_json(&dupes, config.json)?;
             }
             Action::Verify => verify::run(&records, &root, db.dir())?,
@@ -88,10 +81,10 @@ fn scope_of(root: &Path, db_dir: &Path) -> Result<Scope> {
     if root == db_dir {
         return Ok(Scope::All);
     }
-    let Ok(relative) = root.strip_prefix(db_dir) else {
+    if !root.starts_with(db_dir) {
         return Ok(Scope::Outside);
-    };
-    let relative = scan::utf8_name(relative)?;
+    }
+    let relative = scan::relative_name(root, db_dir)?;
     Ok(if root.is_dir() {
         Scope::Under(format!("{relative}/"))
     } else {

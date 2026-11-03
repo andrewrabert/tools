@@ -1,4 +1,4 @@
-use std::fs;
+use std::fs::{self, File};
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -13,7 +13,9 @@ pub fn fingerprint(path: &Path) -> Result<Fingerprint> {
 }
 
 pub fn fingerprint_as_of(path: &Path, stamp: Stamp) -> Result<Fingerprint> {
-    let hashes = Hashes::of_file(path).with_context(|| format!("hashing {}", path.display()))?;
+    let hashes = File::open(path)
+        .and_then(Hashes::of_reader)
+        .with_context(|| format!("hashing {}", path.display()))?;
     Ok(Fingerprint { stamp, hashes })
 }
 

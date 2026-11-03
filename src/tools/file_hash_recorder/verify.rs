@@ -1,7 +1,7 @@
-use std::fs;
+use std::fs::{self, File};
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use indicatif::ProgressBar;
 
 use crate::tools::file_hash_recorder::hash::Hashes;
@@ -11,26 +11,29 @@ pub fn run(records: &Records, root: &Path, db_dir: &Path) -> Result<()> {
     println!("Verifying {}", root.display());
     let progress = ProgressBar::new(records.len() as u64);
     let mut failed = false;
+    let mut error = |message: String| {
+        failed = true;
+        progress.suspend(|| tracing::error!("{message}"));
+    };
     for (name, record) in records {
         let path = db_dir.join(name);
-        let mut report = |problem: &str| {
-            failed = true;
-            progress.suspend(|| eprintln!("{problem}: {}", path.display()));
-        };
         match fs::metadata(&path) {
-            Err(_) => report("File not found"),
+            Err(_) => error(format!("File not found: {}", path.display())),
             Ok(metadata) => {
                 if metadata.len() != record.fingerprint.stamp.size {
-                    report("size mismatch");
+                    error(format!("size mismatch: {}", path.display()));
                 }
-                let computed = Hashes::of_file(&path)
-                    .with_context(|| format!("hashing {}", path.display()))?;
-                let recorded = record.fingerprint.hashes.named();
-                for ((algorithm, actual), (_, expected)) in
-                    computed.named().into_iter().zip(recorded)
-                {
-                    if actual != expected {
-                        report(&format!("{algorithm} mismatch"));
+                match File::open(&path).and_then(Hashes::of_reader) {
+                    Err(hashing) => error(format!("hashing {}: {hashing}", path.display())),
+                    Ok(computed) => {
+                        let recorded = record.fingerprint.hashes.named();
+                        for ((algorithm, actual), (_, expected)) in
+                            computed.named().into_iter().zip(recorded)
+                        {
+                            if actual != expected {
+                                error(format!("{algorithm} mismatch: {}", path.display()));
+                            }
+                        }
                     }
                 }
             }

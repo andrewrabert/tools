@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -9,8 +9,7 @@ use crate::tools::file_hash_recorder::config::{JsonStyle, Naming};
 use crate::tools::file_hash_recorder::db::Scope;
 use crate::tools::file_hash_recorder::record::{ContentKey, FileRecord};
 
-const UNITS: [&str; 6] = ["", "K", "M", "G", "T", "P"];
-const UNIT_STEP: f64 = 1024.0;
+const UNIT_STEP: u64 = 1024;
 
 pub type Records = BTreeMap<String, FileRecord>;
 
@@ -43,14 +42,15 @@ pub fn size(records: &Records, root: &Path, naming: Naming) -> Result<()> {
     Ok(())
 }
 
-pub fn list(records: Records, scope: &Scope, db_dir: &Path, naming: Naming) -> Records {
-    renamed(records, scope, db_dir, naming)
-}
-
-pub fn dupes(records: Records, scope: &Scope, db_dir: &Path, naming: Naming) -> Vec<Vec<String>> {
+pub fn dupes(
+    records: Records,
+    scope: &Scope,
+    db_dir: &Path,
+    naming: Naming,
+) -> Result<Vec<Vec<PathBuf>>> {
     let mut group_of: HashMap<ContentKey, usize> = HashMap::new();
-    let mut groups: Vec<Vec<String>> = Vec::new();
-    for (name, record) in renamed(records, scope, db_dir, naming) {
+    let mut groups: Vec<Vec<PathBuf>> = Vec::new();
+    for (name, record) in renamed(records, scope, db_dir, naming)? {
         let next = groups.len();
         let group = *group_of
             .entry(record.fingerprint.content_key())
@@ -60,36 +60,44 @@ pub fn dupes(records: Records, scope: &Scope, db_dir: &Path, naming: Naming) -> 
         }
         groups[group].push(name);
     }
-    groups.into_iter().filter(|names| names.len() > 1).collect()
+    Ok(groups.into_iter().filter(|names| names.len() > 1).collect())
 }
 
-fn renamed(records: Records, scope: &Scope, db_dir: &Path, naming: Naming) -> Records {
+pub fn renamed(
+    records: Records,
+    scope: &Scope,
+    db_dir: &Path,
+    naming: Naming,
+) -> Result<BTreeMap<PathBuf, FileRecord>> {
     records
         .into_iter()
-        .map(|(name, record)| {
-            let name = match (naming, scope) {
-                (Naming::Absolute, _) => format!("{}/{name}", db_dir.display()),
-                (Naming::Relative, Scope::Under(prefix)) => name
-                    .strip_prefix(prefix.as_str())
-                    .map_or(name.clone(), str::to_owned),
-                (Naming::Relative, _) => name,
+        .map(|(name, record)| -> Result<(PathBuf, FileRecord)> {
+            let name = Path::new(&name);
+            let shown = match (naming, scope) {
+                (Naming::Absolute, _) => db_dir.join(name),
+                (Naming::Relative, Scope::Under(dir)) => name
+                    .strip_prefix(dir)
+                    .with_context(|| format!("{} is not under {dir}", name.display()))?
+                    .to_path_buf(),
+                (Naming::Relative, _) => name.to_path_buf(),
             };
-            (name, record)
+            Ok((shown, record))
         })
         .collect()
 }
 
 fn human_readable(size: u64) -> String {
-    let mut scaled = size as f64;
-    for unit in UNITS {
-        if scaled < UNIT_STEP {
-            return if unit.is_empty() {
-                size.to_string()
-            } else {
-                format!("{scaled:.1}{unit}")
-            };
-        }
-        scaled /= UNIT_STEP;
-    }
-    format!("{scaled:.1}E")
+    let Some(exponent @ 1..) = size.checked_ilog(UNIT_STEP) else {
+        return size.to_string();
+    };
+    let unit = match exponent {
+        1 => 'K',
+        2 => 'M',
+        3 => 'G',
+        4 => 'T',
+        5 => 'P',
+        _ => 'E',
+    };
+    let scaled = size as f64 / (UNIT_STEP as f64).powi(exponent as i32);
+    format!("{scaled:.1}{unit}")
 }

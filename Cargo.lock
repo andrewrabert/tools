@@ -523,6 +523,8 @@ dependencies = [
  "syn 3.0.9",
  "syn-serde3",
  "tempfile",
+ "tracing",
+ "tracing-subscriber",
  "uncomment",
  "unicode-normalization",
  "url",

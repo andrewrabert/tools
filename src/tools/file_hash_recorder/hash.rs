@@ -1,6 +1,4 @@
-use std::fs::File;
 use std::io::{self, Read};
-use std::path::Path;
 
 use md5::Md5;
 use serde::Serialize;
@@ -18,10 +16,6 @@ pub struct Hashes {
 }
 
 impl Hashes {
-    pub fn of_file(path: &Path) -> io::Result<Self> {
-        Hashes::of_reader(File::open(path)?)
-    }
-
     pub fn of_reader(mut reader: impl Read) -> io::Result<Self> {
         let mut crc32 = crc32fast::Hasher::new();
         let mut md5 = Md5::new();

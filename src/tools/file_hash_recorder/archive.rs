@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 
@@ -8,21 +9,36 @@ use crate::tools::file_hash_recorder::hash::Hashes;
 use crate::tools::file_hash_recorder::record::{ArchiveContents, Fingerprint, Stamp};
 use crate::tools::file_hash_recorder::scan;
 
-const SUFFIXES: [&str; 11] = [
-    ".7z", ".bz2", ".cbz", ".gz", ".nsz", ".rar", ".rvz", ".tgz", ".xz", ".zip", ".zst",
+const EXTENSIONS: [&str; 11] = [
+    "7z", "bz2", "cbz", "gz", "nsz", "rar", "rvz", "tgz", "xz", "zip", "zst",
 ];
+
+#[derive(Clone, Copy)]
+pub enum FileKind {
+    Archive,
+    Plain,
+}
+
+impl FileKind {
+    pub fn of(path: &Path) -> Self {
+        let name = path.file_name().map(OsStr::to_string_lossy);
+        match name.as_deref().and_then(|name| name.rsplit_once('.')) {
+            Some((_, extension))
+                if EXTENSIONS
+                    .iter()
+                    .any(|known| extension.eq_ignore_ascii_case(known)) =>
+            {
+                FileKind::Archive
+            }
+            Some(_) | None => FileKind::Plain,
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum Extraction {
     TempDir,
     Stream,
-}
-
-pub fn has_archive_suffix(path: &Path) -> bool {
-    path.file_name().is_some_and(|name| {
-        let name = name.to_string_lossy().to_lowercase();
-        SUFFIXES.iter().any(|suffix| name.ends_with(suffix))
-    })
 }
 
 pub fn contents(archive: &Path, extraction: Extraction) -> Result<ArchiveContents> {

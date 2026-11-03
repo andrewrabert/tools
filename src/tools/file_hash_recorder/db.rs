@@ -49,13 +49,12 @@ pub enum Scope {
 }
 
 pub struct FileInfoDb {
-    path: PathBuf,
+    pub path: PathBuf,
     db: Db,
     modified: bool,
 }
 
 impl FileInfoDb {
-    /// Opens the database at `path`, runs `body` on it, and always closes it.
     pub fn with<R>(path: &Path, body: impl FnOnce(&mut FileInfoDb) -> Result<R>) -> Result<R> {
         let mut db = Self::open(path)?;
         let result = body(&mut db);
@@ -74,10 +73,6 @@ impl FileInfoDb {
             db,
             modified: false,
         })
-    }
-
-    pub fn path(&self) -> &Path {
-        &self.path
     }
 
     pub fn dir(&self) -> &Path {
@@ -102,7 +97,7 @@ impl FileInfoDb {
         while let Some(row) = rows.next()? {
             let name: String = row.get(0)?;
             let record = FileRecord {
-                fingerprint: fingerprint(row, 1)?,
+                fingerprint: fingerprint(row)?,
                 archive_contents: BTreeMap::new(),
             };
             records.insert(name, record);
@@ -117,7 +112,7 @@ impl FileInfoDb {
         while let Some(row) = rows.next()? {
             let parent: String = row.get(0)?;
             let path: String = row.get(1)?;
-            let entry = fingerprint(row, 2)?;
+            let entry = fingerprint(row)?;
             let record = records
                 .get_mut(&parent)
                 .with_context(|| format!("archive contents recorded for unknown file {parent}"))?;
@@ -201,18 +196,17 @@ impl FileInfoDb {
     }
 }
 
-/// The fingerprint in the `FINGERPRINT_COLUMNS` starting at column `base`.
-fn fingerprint(row: &Row, base: usize) -> Result<Fingerprint> {
+fn fingerprint(row: &Row) -> Result<Fingerprint> {
     Ok(Fingerprint {
         hashes: Hashes {
-            crc32: row.get(base)?,
-            md5: row.get(base + 1)?,
-            sha1: row.get(base + 3)?,
-            sha256: row.get(base + 4)?,
+            crc32: row.get("crc32")?,
+            md5: row.get("md5")?,
+            sha1: row.get("sha1")?,
+            sha256: row.get("sha256")?,
         },
         stamp: Stamp {
-            mtime: row.get(base + 2)?,
-            size: row.get(base + 5)?,
+            mtime: row.get("mtime")?,
+            size: row.get("size")?,
         },
     })
 }

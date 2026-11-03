@@ -332,6 +332,9 @@ pub fn take_as_bertbox() -> Result<bool> {
 }
 
 fn main() -> ExitCode {
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .init();
     let as_bertbox = match take_as_bertbox() {
         Ok(as_bertbox) => as_bertbox,
         Err(error) => {

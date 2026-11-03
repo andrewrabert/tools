@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use indicatif::ProgressBar;
 
 use crate::pool;
-use crate::tools::file_hash_recorder::archive;
+use crate::tools::file_hash_recorder::archive::{self, FileKind};
 use crate::tools::file_hash_recorder::config::{
     ArchivePolicy, Feedback, Naming, OnError, Rehash, UpdateOptions,
 };
@@ -21,6 +21,7 @@ struct Pending {
     path: PathBuf,
     name: String,
     stamp: Stamp,
+    kind: FileKind,
 }
 
 type ArchiveCache = Mutex<HashMap<ContentKey, ArchiveContents>>;
@@ -36,7 +37,7 @@ pub fn run(
     let mut found = BTreeSet::new();
     let mut pending = Vec::new();
     for path in walk::files_under(root)? {
-        if path == db.path() {
+        if path == db.path {
             continue;
         }
         let name = match naming {
@@ -45,9 +46,20 @@ pub fn run(
         };
         let metadata = fs::metadata(&path).with_context(|| format!("stat {}", path.display()))?;
         let stamp = Stamp::from(&metadata);
+        let kind = FileKind::of(&path);
         found.insert(name.clone());
-        if !is_current(recorded.get(&name), &path, stamp, options) {
-            pending.push(Pending { path, name, stamp });
+        match (recorded.get(&name), options.rehash, options.archives, kind) {
+            (Some(record), Rehash::Changed, ArchivePolicy::Record(_), FileKind::Archive)
+                if record.fingerprint.stamp == stamp && !record.archive_contents.is_empty() => {}
+            (Some(record), Rehash::Changed, ArchivePolicy::Ignore, _)
+            | (Some(record), Rehash::Changed, _, FileKind::Plain)
+                if record.fingerprint.stamp == stamp => {}
+            _ => pending.push(Pending {
+                path,
+                name,
+                stamp,
+                kind,
+            }),
         }
     }
 
@@ -85,11 +97,11 @@ pub fn run(
             match (record, options.on_error) {
                 (Ok(record), _) => db.upsert(&pending.name, &record)?,
                 (Err(error), on_error) => {
-                    progress.suspend(|| {
-                        eprintln!("error processing \"{}\": {error:#}", pending.path.display());
-                    });
-                    if let OnError::Abort = on_error {
-                        return Err(error);
+                    let error =
+                        error.context(format!("error processing \"{}\"", pending.path.display()));
+                    match on_error {
+                        OnError::Abort => return Err(error),
+                        OnError::Skip => progress.suspend(|| tracing::error!("{error:#}")),
                     }
                 }
             }
@@ -104,29 +116,6 @@ pub fn run(
     Ok(())
 }
 
-fn is_current(
-    recorded: Option<&FileRecord>,
-    path: &Path,
-    stamp: Stamp,
-    options: &UpdateOptions,
-) -> bool {
-    let Some(recorded) = recorded else {
-        return false;
-    };
-    if let Rehash::Everything = options.rehash {
-        return false;
-    }
-    if recorded.fingerprint.stamp != stamp {
-        return false;
-    }
-    match options.archives {
-        ArchivePolicy::Record(_) if archive::has_archive_suffix(path) => {
-            !recorded.archive_contents.is_empty()
-        }
-        ArchivePolicy::Record(_) | ArchivePolicy::Ignore => true,
-    }
-}
-
 fn process(pending: &Pending, archives: ArchivePolicy, cache: &ArchiveCache) -> Result<FileRecord> {
     let fingerprint = scan::fingerprint_as_of(&pending.path, pending.stamp)?;
     let archive_contents = match archives {
@@ -139,10 +128,11 @@ fn process(pending: &Pending, archives: ArchivePolicy, cache: &ArchiveCache) -> 
                 .get(&key)
                 .cloned()
                 .unwrap_or_default();
-            let contents = if known.is_empty() && archive::has_archive_suffix(&pending.path) {
-                archive::contents(&pending.path, extraction)?
-            } else {
-                known
+            let contents = match pending.kind {
+                FileKind::Archive if known.is_empty() => {
+                    archive::contents(&pending.path, extraction)?
+                }
+                FileKind::Archive | FileKind::Plain => known,
             };
             cache
                 .lock()
