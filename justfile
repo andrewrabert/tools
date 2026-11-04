@@ -33,6 +33,12 @@ fmt:
 test *args:
     cargo test "$@"
 
+# Rewrite every snapshot file from what the tests produce
+[positional-arguments]
+[env("SNAPSHOTS", "overwrite")]
+update-snapshots *args:
+    {{just_executable()}} test "$@"
+
 # Regenerate the surface-spec fixture outputs from their Rust and Python sources and changes with the debug binary
 surface-spec-fixtures: build
     #!/usr/bin/env bash

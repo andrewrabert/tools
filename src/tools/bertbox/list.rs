@@ -16,7 +16,11 @@ pub struct List {
     json: bool,
 }
 
-// Fields are declared in the order they are printed.
+#[derive(Serialize)]
+struct Listing {
+    groups: Vec<GroupEntry>,
+}
+
 #[derive(Serialize)]
 struct GroupEntry {
     description: Option<&'static str>,
@@ -53,9 +57,18 @@ fn names() -> Result<()> {
 }
 
 fn json() -> Result<()> {
+    let rendered = listing()?;
+    let mut stdout = io::stdout().lock();
+    writeln!(stdout, "{rendered}")?;
+    stdout.flush()?;
+    Ok(())
+}
+
+/// The groups, their descriptions, and their tools, rendered as pretty-printed JSON.
+fn listing() -> Result<String> {
     let commands = AnyTool::augment_subcommands(Command::new(APP_NAME));
 
-    let groups: Vec<GroupEntry> = AnyTool::groups()
+    let groups = AnyTool::groups()
         .map(|group| GroupEntry {
             description: group.description,
             group: group.heading,
@@ -73,9 +86,36 @@ fn json() -> Result<()> {
         })
         .collect();
 
-    let rendered = serde_json::to_string_pretty(&groups).context("rendering the tool list")?;
-    let mut stdout = io::stdout().lock();
-    writeln!(stdout, "{rendered}")?;
-    stdout.flush()?;
-    Ok(())
+    serde_json::to_string_pretty(&Listing { groups }).context("rendering the tool list")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use snapbox::{Data, assert_data_eq};
+
+    const README_TEMPLATE: &str =
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md.j2"));
+
+    /// A file at the repository root, as the expected value of an assert.
+    fn root_file(name: &str) -> Data {
+        Data::read_from(&Path::new(env!("CARGO_MANIFEST_DIR")).join(name), None).raw()
+    }
+
+    #[test]
+    fn committed_readme_matches_tools() {
+        let listing: serde_json::Value = serde_json::from_str(&super::listing().unwrap()).unwrap();
+        let mut env = minijinja::Environment::new();
+        env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
+        env.set_syntax(
+            minijinja::syntax::SyntaxConfig::builder()
+                .keep_trailing_newline(true)
+                .build()
+                .unwrap(),
+        );
+        let context = minijinja::Value::from(minijinja::value::Serde(&listing));
+        let rendered = env.render_str(README_TEMPLATE, context).unwrap();
+        assert_data_eq!(rendered, root_file("README.md"));
+    }
 }

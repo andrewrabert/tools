@@ -80,6 +80,9 @@ winnow = "1"
 zbus = "6"
 zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
 
+[dev-dependencies]
+snapbox = "1"
+
 [target.'cfg(target_os = "android")'.dependencies]
 webpki-root-certs = "1"
 

@@ -1,0 +1,20 @@
+# bertbox
+
+A multicall binary of personal command-line tools.
+Run a tool as `bertbox <tool>`, `bertbox-<tool>`, or `<tool>`.
+
+`bertbox install DIR` links each tool name in `DIR` to the binary.
+The External group is linked only when selected with `--group` or `--tool`.
+
+## Tools
+{%- for group in groups %}
+
+### {{ group.group }}
+{%- if group.description %}
+
+{{ group.description }}
+{%- endif %}
+{% for tool in group.tools %}
+- `{{ tool.name }}`: {{ tool.description }}
+{%- endfor %}
+{%- endfor %}
