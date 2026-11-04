@@ -195,6 +195,7 @@ tool_groups! {
         "tmux-ssh" => tmux::Ssh,
     }
     "Text" {
+        "minijinja" => minijinja::Minijinja,
         "txt-alternating" => txt::Alternating,
         "txt-line-end" => txt::LineEnd,
         "txt-lower" => txt::Lower,

@@ -37,7 +37,8 @@ linkify = "0.11"
 lofty = "0.25"
 mailparse = "0.18"
 md-5 = "0.11"
-minijinja = "3"
+minijinja = { version = "3", features = ["json", "loop_controls", "preserve_order", "serde", "unicode", "urlencode"] }
+minijinja-contrib = { version = "3", features = ["datetime", "html_entities", "pycompat", "rand", "timezone", "unicode_wordwrap", "wordcount"] }
 mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
 nix = { version = "0.31", features = ["fs", "signal", "user"] }
 nucleo-matcher = "0.3"

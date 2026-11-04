@@ -33,6 +33,7 @@ pub mod lust;
 pub mod mac_address;
 pub mod mime;
 pub mod mime_ext;
+pub mod minijinja;
 pub mod mkv_convert;
 pub mod mkv_extract_languages;
 pub mod mkv_find_lang;
