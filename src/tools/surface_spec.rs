@@ -7,7 +7,6 @@ use std::env;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{self, Write};
-use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::slice;
@@ -564,21 +563,6 @@ fn sources(paths: &[PathBuf], selection: &Selection) -> Vec<Result<(PathBuf, Lan
         .collect()
 }
 
-fn unwind<T>(f: impl FnOnce() -> T) -> Result<T> {
-    let hook = panic::take_hook();
-    panic::set_hook(Box::new(|_| {}));
-    let result = panic::catch_unwind(AssertUnwindSafe(f));
-    panic::set_hook(hook);
-    result.map_err(|payload| {
-        let message = payload
-            .downcast_ref::<&str>()
-            .map(|message| message.to_string())
-            .or_else(|| payload.downcast_ref::<String>().cloned())
-            .unwrap_or_default();
-        anyhow!("panicked: {message}")
-    })
-}
-
 #[derive(Serialize, Deserialize)]
 struct CapturedSurface {
     files: Vec<FileSurface>,
@@ -784,14 +768,10 @@ impl FileSurface {
     }
 
     fn parse(path: PathBuf, language: Language, source: &str) -> Result<Self> {
-        let name = path.display().to_string();
-        unwind(|| {
-            Ok(match language {
-                Language::Rust => Self::Rust(rust::FileSurface::parse(path, source)?),
-                Language::Python => Self::Python(python::FileSurface::parse(path, source)?),
-            })
-        })
-        .with_context(|| format!("parsing {name}"))?
+        match language {
+            Language::Rust => rust::FileSurface::parse(path, source).map(Self::Rust),
+            Language::Python => python::FileSurface::parse(path, source).map(Self::Python),
+        }
     }
 
     fn language(&self) -> Language {
@@ -824,11 +804,10 @@ impl FileSurface {
     }
 
     fn declarations(&self, parts: &BTreeSet<Part>) -> Result<FileDeclarations> {
-        let code = unwind(|| match self {
+        let code = match self {
             Self::Rust(file) => Ok(file.declarations(parts)),
             Self::Python(file) => file.declarations(parts),
-        })
-        .and_then(|declarations| declarations)
+        }
         .with_context(|| format!("rendering {}", self.path().display()))?;
         Ok(FileDeclarations {
             path: self.path().display().to_string(),
@@ -867,11 +846,10 @@ impl FileSurface {
     /// `part` as text, inside the records enclosing it, which equals the text of an equal part.
     fn text(&self, part: Part) -> Result<String> {
         let parts = BTreeSet::from([part]);
-        unwind(|| match self {
+        Ok(match self {
             Self::Rust(file) => file.declarations(&parts),
             Self::Python(file) => file.text(&parts),
         })
-        .with_context(|| format!("rendering {}", self.path().display()))
     }
 }
 
