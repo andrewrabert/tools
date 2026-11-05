@@ -5,6 +5,7 @@ mod cue;
 mod dirs;
 mod dispatch;
 mod env_file;
+mod ffmpeg;
 mod git;
 mod http;
 mod input;
@@ -152,6 +153,10 @@ tool_groups! {
     "Media" {
         "audio-tag" => audio_tag::AudioTag,
         "cue-tool" => cue_tool::CueTool,
+        "ffmpeg-concat" => ffmpeg_concat::FfmpegConcat,
+        "ffmpeg-cropdetect" => ffmpeg_cropdetect::FfmpegCropdetect,
+        "ffmpeg-extract-slice" => ffmpeg_extract_slice::FfmpegExtractSlice,
+        "ffmpeg-remove-duplicate-frames" => ffmpeg_remove_duplicate_frames::FfmpegRemoveDuplicateFrames,
         "img-compare" => img::Compare,
         "img-convert" => img::Convert,
         "img-fixcolorspace" => img::Fixcolorspace,

@@ -34,6 +34,7 @@ Helpers that many tools share.
 
 Wrappers for external programs and services.
 - `src/clipboard.rs` clipboard copy & paste
+- `src/ffmpeg.rs` using ffmpeg & ffprobe
 - `src/git.rs` using git
 - `src/http.rs` HTTP client
 - `src/mkvmerge.rs` using mkvmerge

@@ -89,6 +89,10 @@ Create and unpack archives
 
 - `audio-tag`: Dump and restore music tags to/from JSON
 - `cue-tool`: Check, format, print, and list cue sheets
+- `ffmpeg-concat`: Join the videos under a directory, in path order, into one Matroska file
+- `ffmpeg-cropdetect`: Detect the crop that removes a video's black borders, as JSON
+- `ffmpeg-extract-slice`: Extract a span of a video, without audio, as lossless FFV1
+- `ffmpeg-remove-duplicate-frames`: Remove duplicate frames from videos in place
 - `img-compare`: Print a hash of each image's decoded pixels
 - `img-convert`: Convert or resize images
 - `img-fixcolorspace`: Recode PNGs whose pixels are gray but stored as color
