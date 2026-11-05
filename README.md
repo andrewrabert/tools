@@ -130,7 +130,10 @@ Create and unpack archives
 - `cdemu-tool`: Load disc images into CDEmu daemons run as systemd user units
 - `exit-code`: Run a command, then print its exit status and the time
 - `fanpipe`: Fan messages out to subscribers over named pipes
+- `fat32-bootsector`: Print the fields of a FAT32 boot sector as JSON
+- `fat32-format-for-windows98`: Format a partition as FAT32 that Windows 98 can boot from
 - `lmk`: Rerun a command whenever lmk is run without one
+- `ntfs-fix-boot-sector`: Set an NTFS boot sector's partition start, so Windows can boot from it
 - `open`: Open files or URLs with the desktop opener, detached from the terminal
 - `pending-sync`: Print how much data is waiting to be written to disk
 - `ud`: Mount disk images, or pick a device, disc image, or sshfs mount to (un)mount
