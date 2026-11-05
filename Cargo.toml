@@ -70,6 +70,7 @@ socket2 = "0.6"
 syn = { version = "3", features = ["full", "visit", "visit-mut"] }
 syn-serde3 = "0.0.1"
 tempfile = "3"
+toml = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 uncomment = "=3.10.3"

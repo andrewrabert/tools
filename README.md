@@ -61,6 +61,10 @@ Create and unpack archives
 - `syncthing-conflicts`: List Syncthing conflict files
 - `syncthing-stversions`: List, prune, and restore Syncthing's .stversions files
 
+### Games
+
+- `proton`: Run programs through Proton or Wine in a managed prefix
+
 ### Git
 
 - `git-auto-update`: Merge upstream, commit every change, and push
@@ -122,6 +126,7 @@ Create and unpack archives
 
 ### System
 
+- `bwrapped`: Run a program inside a sandbox with filesystem isolation
 - `cdemu-tool`: Load disc images into CDEmu daemons run as systemd user units
 - `exit-code`: Run a command, then print its exit status and the time
 - `fanpipe`: Fan messages out to subscribers over named pipes

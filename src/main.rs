@@ -20,6 +20,7 @@ mod tools;
 mod urls;
 mod walk;
 mod wayland;
+mod which;
 
 use std::env;
 use std::process::ExitCode;
@@ -129,6 +130,9 @@ tool_groups! {
         "syncthing-conflicts" => syncthing_conflicts::SyncthingConflicts,
         "syncthing-stversions" => syncthing_stversions::SyncthingStversions,
     }
+    "Games" {
+        "proton" => proton::Proton,
+    }
     "Git" {
         "git-auto-update" => git::AutoUpdate,
         "git-check-tag-is-pushed" => git::CheckTagIsPushed,
@@ -184,6 +188,7 @@ tool_groups! {
         "publicipv6" => publicip::PublicIpv6,
     }
     "System" {
+        "bwrapped" => bwrapped::Bwrapped,
         "cdemu-tool" => cdemu_tool::CdemuTool,
         "exit-code" => exit_code::ExitCodeTool,
         "fanpipe" => fanpipe::Fanpipe,
