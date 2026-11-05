@@ -10,6 +10,8 @@ Code that runs bertbox executes `dispatch::program()` with `BERTBOX_AS_BERTBOX=1
 
 Use or create `just` (`justfile`) recipes for _any_ repeatable development task.
 
+Before commiting changes, ensure the `fmt`, `clippy`, `test`, and `build` recipes all pass.
+
 ### Organization
 Starts the binary and dispatches to a tool.
 - `src/main.rs` entry point & tool registry
