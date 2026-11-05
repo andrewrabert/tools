@@ -31,7 +31,7 @@ imagesize = "0.15"
 indicatif = "0.18"
 infer = "0.22"
 ipnet = "2"
-jiff = "0.2"
+jiff = { version = "0.2", features = ["serde"] }
 libc = "0.2"
 linkify = "0.11"
 lofty = "0.25"

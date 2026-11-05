@@ -198,6 +198,7 @@ tool_groups! {
         "ntfs-fix-boot-sector" => ntfs_fix_boot_sector::NtfsFixBootSector,
         "open" => open::Open,
         "pending-sync" => pending_sync::PendingSync,
+        "powerz-logger" => powerz_logger::PowerzLogger,
         "ud" => ud::Ud,
     }
     "Tmux" {

@@ -136,6 +136,7 @@ Create and unpack archives
 - `ntfs-fix-boot-sector`: Set an NTFS boot sector's partition start, so Windows can boot from it
 - `open`: Open files or URLs with the desktop opener, detached from the terminal
 - `pending-sync`: Print how much data is waiting to be written to disk
+- `powerz-logger`: Print the voltage, current, and power a POWER-Z KM003C USB meter reads
 - `ud`: Mount disk images, or pick a device, disc image, or sshfs mount to (un)mount
 
 ### Tmux
