@@ -220,7 +220,6 @@ tool_groups! {
         "urlextract" => urlextract::Urlextract,
     }
     "External": "Commands from upstream crates" {
-        "ast-grep" => external::AstGrep,
         "dotenvy" => external::Dotenvy,
         "qrencode" => external::Qrencode,
         "uncomment" => external::Uncomment,

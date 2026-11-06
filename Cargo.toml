@@ -7,7 +7,6 @@ edition = "2024"
 aes = "0.9"
 anstream = "1"
 anyhow = "1"
-ast-grep = "0.51"
 ast-grep-config = "0.51"
 ast-grep-core = "0.51"
 ast-grep-language = { version = "0.51", default-features = false, features = ["tree-sitter-rust"] }

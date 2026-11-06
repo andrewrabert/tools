@@ -163,7 +163,6 @@ Create and unpack archives
 
 Commands from upstream crates
 
-- `ast-grep`: Search and rewrite code by syntax (upstream ast-grep)
 - `dotenvy`: Run a command using the environment in a .env file (upstream dotenvy)
 - `qrencode`: Print text as a QR code to the terminal (upstream qrcode)
 - `uncomment`: Remove comments from source files (upstream uncomment)
