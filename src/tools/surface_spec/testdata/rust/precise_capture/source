@@ -1,0 +1,7 @@
+pub fn f() -> u8 {
+    0
+}
+
+pub fn g() -> impl Fn() + use<> {
+    || {}
+}

@@ -2,7 +2,9 @@
 
 use std::collections::BTreeSet;
 use std::fmt;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::sync::Once;
 
 use anyhow::{Context, Result, bail};
 use clap::{Args, ValueEnum};
@@ -84,6 +86,7 @@ impl FileSurface {
     pub(super) fn parse(path: PathBuf, source: &str) -> Result<Self> {
         let file =
             syn::parse_file(source).with_context(|| format!("parsing {}", path.display()))?;
+        silence_syn_serde_panics();
         let mut collector = Collector::default();
         collector.within(test_only(&file.attrs), |collector| {
             collector.visit_file(&file)
@@ -601,6 +604,14 @@ impl Collector {
         });
     }
 
+    /// Walks `descend` for the node at `span`, which surface-spec cannot capture when syn-serde
+    /// panics converting it, as it does on syntax its adapters do not model.
+    fn guarded(&mut self, slot: Slot, span: proc_macro2::Span, descend: impl FnOnce(&mut Self)) {
+        if panic::catch_unwind(AssertUnwindSafe(|| descend(self))).is_err() {
+            self.unmodeled(slot, span);
+        }
+    }
+
     fn capture(
         &mut self,
         span: proc_macro2::Span,
@@ -674,7 +685,9 @@ impl<'ast> Visit<'ast> for Collector {
             | Item::TraitAlias(_)
             | Item::Type(_)
             | Item::Union(_)
-            | Item::Use(_) => visit::visit_item(collector, node),
+            | Item::Use(_) => collector.guarded(Slot::Item, node.span(), |collector| {
+                visit::visit_item(collector, node)
+            }),
             _ => collector.unmodeled(Slot::Item, node.span()),
         });
     }
@@ -682,10 +695,14 @@ impl<'ast> Visit<'ast> for Collector {
     fn visit_impl_item(&mut self, node: &'ast ImplItem) {
         self.within(test_impl_item(node), |collector| match node {
             ImplItem::Const(_) | ImplItem::Fn(_) | ImplItem::Type(_) | ImplItem::Macro(_) => {
-                visit::visit_impl_item(collector, node)
+                collector.guarded(Slot::ImplItem, node.span(), |collector| {
+                    visit::visit_impl_item(collector, node)
+                })
             }
             ImplItem::Verbatim(tokens) => match bodiless_fn(tokens) {
-                Some(method) => collector.capture_impl_item_fn(node.span(), &method),
+                Some(method) => collector.guarded(Slot::ImplItem, node.span(), |collector| {
+                    collector.capture_impl_item_fn(node.span(), &method)
+                }),
                 None => collector.unmodeled(Slot::ImplItem, node.span()),
             },
             _ => collector.unmodeled(Slot::ImplItem, node.span()),
@@ -695,7 +712,9 @@ impl<'ast> Visit<'ast> for Collector {
     fn visit_trait_item(&mut self, node: &'ast TraitItem) {
         self.within(test_trait_item(node), |collector| match node {
             TraitItem::Const(_) | TraitItem::Fn(_) | TraitItem::Type(_) | TraitItem::Macro(_) => {
-                visit::visit_trait_item(collector, node)
+                collector.guarded(Slot::TraitItem, node.span(), |collector| {
+                    visit::visit_trait_item(collector, node)
+                })
             }
             _ => collector.unmodeled(Slot::TraitItem, node.span()),
         });
@@ -713,12 +732,15 @@ impl<'ast> Visit<'ast> for Collector {
         self.foreign_mods += 1;
         for item in &node.items {
             match item {
-                ForeignItem::Fn(item) => self.within(test_only(&item.attrs), |collector| {
-                    collector.capture_foreign_fn(ForeignMod::new(id, node), item)
+                ForeignItem::Fn(fn_item) => self.within(test_only(&fn_item.attrs), |collector| {
+                    collector.guarded(Slot::ForeignItem, item.span(), |collector| {
+                        collector.capture_foreign_fn(ForeignMod::new(id, node), fn_item)
+                    })
                 }),
-                ForeignItem::Static(_) | ForeignItem::Type(_) | ForeignItem::Macro(_) => {
-                    visit::visit_foreign_item(self, item)
-                }
+                ForeignItem::Static(_) | ForeignItem::Type(_) | ForeignItem::Macro(_) => self
+                    .guarded(Slot::ForeignItem, item.span(), |collector| {
+                        visit::visit_foreign_item(collector, item)
+                    }),
                 _ => self.unmodeled(Slot::ForeignItem, item.span()),
             }
         }
@@ -840,6 +862,23 @@ fn parse_bodiless_fn(input: ParseStream) -> syn::Result<syn::ImplItemFn> {
             stmts: Vec::new(),
         },
     })
+}
+
+/// Keeps syn-serde's panics on syntax it does not model off stderr, since `Collector::guarded`
+/// reports them as nodes surface-spec cannot capture. Other panics still reach the previous hook.
+fn silence_syn_serde_panics() {
+    static INSTALL: Once = Once::new();
+    INSTALL.call_once(|| {
+        let previous = panic::take_hook();
+        panic::set_hook(Box::new(move |info| {
+            let in_syn_serde = info
+                .location()
+                .is_some_and(|location| location.file().contains("syn-serde3"));
+            if !in_syn_serde {
+                previous(info);
+            }
+        }));
+    });
 }
 
 /// A clone of `node` with `prune` applied, as syn-serde serializes it.

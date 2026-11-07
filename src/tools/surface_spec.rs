@@ -1634,6 +1634,11 @@ mod tests {
     }
 
     #[test]
+    fn precise_capture() {
+        rust_error_fixture!("precise_capture").check();
+    }
+
+    #[test]
     fn python_functions() {
         python_fixture!("functions").check();
     }
