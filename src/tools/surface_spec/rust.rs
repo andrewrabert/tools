@@ -22,7 +22,7 @@ use syn::{
 };
 use syn_serde3::Syn;
 
-use super::{NodeId, Position, Span};
+use super::{Justification, NodeId, Position, Span};
 
 /// The Rust items a spec includes, by their visibility and by whether they exist only in test
 /// builds.
@@ -164,20 +164,14 @@ impl FileSurface {
         };
         for node in self.nodes.iter().filter(|node| shown(node)) {
             match (&node.syntax, groups.last_mut()) {
-                (
-                    Syntax::ForeignItemFn {
-                        foreign_mod,
-                        syntax,
-                    },
-                    Some(Group::Extern(block, fns)),
-                ) if block.id == foreign_mod.id => fns.push(syntax),
-                (
-                    Syntax::ForeignItemFn {
-                        foreign_mod,
-                        syntax,
-                    },
-                    _,
-                ) => groups.push(Group::Extern(foreign_mod, vec![syntax])),
+                (Syntax::ForeignItemFn { foreign_mod, .. }, Some(Group::Extern(block, fns)))
+                    if block.id == foreign_mod.id =>
+                {
+                    fns.push(node)
+                }
+                (Syntax::ForeignItemFn { foreign_mod, .. }, _) => {
+                    groups.push(Group::Extern(foreign_mod, vec![node]))
+                }
                 (
                     Syntax::ItemFn { .. }
                     | Syntax::ImplItemFn { .. }
@@ -197,26 +191,45 @@ impl FileSurface {
             .into_iter()
             .filter_map(|group| match group {
                 Group::Extern(block, fns) => Some(block.declaration(fns)),
-                Group::Node(node) => self.declaration(node, parts),
+                Group::Node(node) => self.declaration(node, Holding::Parts(parts)),
             })
             .map(|text| text.trim_end().to_owned())
             .collect::<Vec<_>>()
             .join("\n\n")
     }
 
+    /// The declaration of node `id` inside the declarations enclosing it that render it, each
+    /// holding only the nodes on the way to it, and holding every node it renders but a trait
+    /// impl's methods.
+    pub(super) fn surface(&self, id: NodeId) -> String {
+        let target = self.node(id);
+        let mut held = BTreeSet::from([id]);
+        if !matches!(target.syntax, Syntax::TraitImpl { .. }) {
+            held.extend(self.descendants(id));
+        }
+        let mut top = target;
+        while let Some(parent) = top.parent.map(|parent| self.node(parent))
+            && renders(parent, top)
+        {
+            held.insert(parent.id);
+            top = parent;
+        }
+        self.declaration(top, Holding::Only(&held))
+            .expect("a method, field, or variant climbs to the node rendering it")
+    }
+
     /// `node` as Rust text, or `None` for a method, field, or variant, which its impl, trait,
-    /// struct, or enum renders. An inherent impl holds only its methods among `parts`.
-    fn declaration(&self, node: &Node, parts: &BTreeSet<NodeId>) -> Option<String> {
+    /// struct, or enum renders, holding the children `holding` names.
+    fn declaration(&self, node: &Node, holding: Holding) -> Option<String> {
+        let held = |child: &&Node| holding.holds(node, child);
         let item = match &node.syntax {
             Syntax::ItemFn { syntax } => {
-                let syntax = syn::ItemFn::from_adapter(syntax);
+                let mut syntax = syn::ItemFn::from_adapter(syntax);
+                justify(&mut syntax.attrs, node);
                 Item::Verbatim(stub(&syntax.attrs, &syntax.vis, &syntax.sig))
             }
-            Syntax::ForeignItemFn {
-                foreign_mod,
-                syntax,
-            } => {
-                return Some(foreign_mod.declaration(vec![syntax]));
+            Syntax::ForeignItemFn { foreign_mod, .. } => {
+                return Some(foreign_mod.declaration(vec![node]));
             }
             Syntax::ImplItemFn { .. }
             | Syntax::TraitItemFn { .. }
@@ -224,69 +237,77 @@ impl FileSurface {
             | Syntax::Variant { .. } => return None,
             Syntax::ItemStruct { syntax } => {
                 let mut syntax = syn::ItemStruct::from_adapter(syntax);
-                self.fill_fields(&mut syntax.fields, node.id);
+                justify(&mut syntax.attrs, node);
+                self.fill_fields(&mut syntax.fields, node, holding);
                 Item::Struct(syntax)
             }
             Syntax::ItemEnum { syntax } => {
                 let mut syntax = syn::ItemEnum::from_adapter(syntax);
-                syntax.variants.extend(self.children(node.id).filter_map(
-                    |child| match &child.syntax {
-                        Syntax::Variant { syntax } => {
-                            let mut variant = syn::Variant::from_adapter(syntax);
-                            self.fill_fields(&mut variant.fields, child.id);
-                            Some(variant)
+                justify(&mut syntax.attrs, node);
+                syntax
+                    .variants
+                    .extend(self.children(node.id).filter(held).filter_map(|child| {
+                        match &child.syntax {
+                            Syntax::Variant { syntax } => {
+                                let mut variant = syn::Variant::from_adapter(syntax);
+                                justify(&mut variant.attrs, child);
+                                self.fill_fields(&mut variant.fields, child, holding);
+                                Some(variant)
+                            }
+                            // Children outside the enum's own variants render on their own.
+                            Syntax::ItemFn { .. }
+                            | Syntax::ImplItemFn { .. }
+                            | Syntax::TraitItemFn { .. }
+                            | Syntax::ForeignItemFn { .. }
+                            | Syntax::Field { .. }
+                            | Syntax::ItemStruct { .. }
+                            | Syntax::ItemEnum { .. }
+                            | Syntax::ItemTrait { .. }
+                            | Syntax::InherentImpl { .. }
+                            | Syntax::TraitImpl { .. } => None,
                         }
-                        // Children outside the enum's own variants render on their own.
-                        Syntax::ItemFn { .. }
-                        | Syntax::ImplItemFn { .. }
-                        | Syntax::TraitItemFn { .. }
-                        | Syntax::ForeignItemFn { .. }
-                        | Syntax::Field { .. }
-                        | Syntax::ItemStruct { .. }
-                        | Syntax::ItemEnum { .. }
-                        | Syntax::ItemTrait { .. }
-                        | Syntax::InherentImpl { .. }
-                        | Syntax::TraitImpl { .. } => None,
-                    },
-                ));
+                    }));
                 Item::Enum(syntax)
             }
             Syntax::ItemTrait { syntax } => {
                 let mut syntax = syn::ItemTrait::from_adapter(syntax);
-                syntax.items.extend(self.children(node.id).filter_map(
-                    |child| match &child.syntax {
-                        Syntax::TraitItemFn { syntax } => {
-                            let mut method = syn::TraitItemFn::from_adapter(syntax);
-                            method.default = None;
-                            method.semi_token = Some(Default::default());
-                            Some(TraitItem::Fn(method))
+                justify(&mut syntax.attrs, node);
+                syntax
+                    .items
+                    .extend(self.children(node.id).filter(held).filter_map(|child| {
+                        match &child.syntax {
+                            Syntax::TraitItemFn { syntax } => {
+                                let mut method = syn::TraitItemFn::from_adapter(syntax);
+                                justify(&mut method.attrs, child);
+                                method.default = None;
+                                method.semi_token = Some(Default::default());
+                                Some(TraitItem::Fn(method))
+                            }
+                            // Children outside the trait's own items render on their own.
+                            Syntax::ItemFn { .. }
+                            | Syntax::ImplItemFn { .. }
+                            | Syntax::ForeignItemFn { .. }
+                            | Syntax::Field { .. }
+                            | Syntax::Variant { .. }
+                            | Syntax::ItemStruct { .. }
+                            | Syntax::ItemEnum { .. }
+                            | Syntax::ItemTrait { .. }
+                            | Syntax::InherentImpl { .. }
+                            | Syntax::TraitImpl { .. } => None,
                         }
-                        // Children outside the trait's own items render on their own.
-                        Syntax::ItemFn { .. }
-                        | Syntax::ImplItemFn { .. }
-                        | Syntax::ForeignItemFn { .. }
-                        | Syntax::Field { .. }
-                        | Syntax::Variant { .. }
-                        | Syntax::ItemStruct { .. }
-                        | Syntax::ItemEnum { .. }
-                        | Syntax::ItemTrait { .. }
-                        | Syntax::InherentImpl { .. }
-                        | Syntax::TraitImpl { .. } => None,
-                    },
-                ));
+                    }));
                 Item::Trait(syntax)
             }
-            Syntax::TraitImpl { syntax } => {
-                return Some(trait_impl(syn::ItemImpl::from_adapter(syntax)));
-            }
-            Syntax::InherentImpl { syntax } => {
+            Syntax::TraitImpl { syntax } | Syntax::InherentImpl { syntax } => {
                 let mut syntax = syn::ItemImpl::from_adapter(syntax);
+                justify(&mut syntax.attrs, node);
                 syntax.items = self
                     .children(node.id)
-                    .filter(|child| parts.contains(&child.id))
+                    .filter(held)
                     .filter_map(|child| match &child.syntax {
                         Syntax::ImplItemFn { syntax } => {
-                            let method = syn::ImplItemFn::from_adapter(syntax);
+                            let mut method = syn::ImplItemFn::from_adapter(syntax);
+                            justify(&mut method.attrs, child);
                             let attrs = &method.attrs;
                             let defaultness = method.modifiers.defaultness;
                             let signature = stub(&[], &method.vis, &method.sig);
@@ -307,6 +328,9 @@ impl FileSurface {
                         | Syntax::TraitImpl { .. } => None,
                     })
                     .collect();
+                if matches!(node.syntax, Syntax::TraitImpl { .. }) && syntax.items.is_empty() {
+                    return Some(trait_impl(syntax));
+                }
                 Item::Impl(syntax)
             }
         };
@@ -334,22 +358,30 @@ impl FileSurface {
         private(&vis)
     }
 
-    /// Fills `fields`, which holds none, with the fields that are children of `id`.
-    fn fill_fields(&self, fields: &mut syn::Fields, id: NodeId) {
-        let children = self.children(id).filter_map(|child| match &child.syntax {
-            Syntax::Field { syntax } => Some(syn::Field::from_adapter(syntax)),
-            // Children outside the fields render on their own.
-            Syntax::ItemFn { .. }
-            | Syntax::ImplItemFn { .. }
-            | Syntax::TraitItemFn { .. }
-            | Syntax::ForeignItemFn { .. }
-            | Syntax::Variant { .. }
-            | Syntax::ItemStruct { .. }
-            | Syntax::ItemEnum { .. }
-            | Syntax::ItemTrait { .. }
-            | Syntax::InherentImpl { .. }
-            | Syntax::TraitImpl { .. } => None,
-        });
+    /// Fills `fields`, which holds none, with the fields among the children of `parent` that
+    /// `holding` names.
+    fn fill_fields(&self, fields: &mut syn::Fields, parent: &Node, holding: Holding) {
+        let children = self
+            .children(parent.id)
+            .filter(|child| holding.holds(parent, child))
+            .filter_map(|child| match &child.syntax {
+                Syntax::Field { syntax } => {
+                    let mut field = syn::Field::from_adapter(syntax);
+                    justify(&mut field.attrs, child);
+                    Some(field)
+                }
+                // Children outside the fields render on their own.
+                Syntax::ItemFn { .. }
+                | Syntax::ImplItemFn { .. }
+                | Syntax::TraitItemFn { .. }
+                | Syntax::ForeignItemFn { .. }
+                | Syntax::Variant { .. }
+                | Syntax::ItemStruct { .. }
+                | Syntax::ItemEnum { .. }
+                | Syntax::ItemTrait { .. }
+                | Syntax::InherentImpl { .. }
+                | Syntax::TraitImpl { .. } => None,
+            });
         match fields {
             syn::Fields::Named(fields) => fields.named.extend(children),
             syn::Fields::Unnamed(fields) => fields.unnamed.extend(children),
@@ -371,6 +403,77 @@ impl FileSurface {
             .iter()
             .filter(move |node| node.parent == Some(id))
     }
+
+    /// The nodes inside node `id`, at any depth.
+    fn descendants(&self, id: NodeId) -> BTreeSet<NodeId> {
+        let mut descendants = BTreeSet::new();
+        // Nodes in id order follow their parents.
+        for node in &self.nodes {
+            if node
+                .parent
+                .is_some_and(|parent| parent == id || descendants.contains(&parent))
+            {
+                descendants.insert(node.id);
+            }
+        }
+        descendants
+    }
+}
+
+/// Which of a node's children its declaration holds.
+#[derive(Clone, Copy)]
+enum Holding<'a> {
+    /// The spec's: the methods among these parts for an inherent impl, none for a trait impl's
+    /// one line, and every field, variant, or method for any other node.
+    Parts(&'a BTreeSet<NodeId>),
+    /// The children among these nodes, for any node.
+    Only(&'a BTreeSet<NodeId>),
+}
+
+impl Holding<'_> {
+    fn holds(self, parent: &Node, child: &Node) -> bool {
+        match self {
+            Self::Parts(parts) => match parent.syntax {
+                Syntax::InherentImpl { .. } => parts.contains(&child.id),
+                Syntax::TraitImpl { .. } => false,
+                Syntax::ItemFn { .. }
+                | Syntax::ImplItemFn { .. }
+                | Syntax::TraitItemFn { .. }
+                | Syntax::ForeignItemFn { .. }
+                | Syntax::ItemStruct { .. }
+                | Syntax::Field { .. }
+                | Syntax::ItemEnum { .. }
+                | Syntax::Variant { .. }
+                | Syntax::ItemTrait { .. } => true,
+            },
+            Self::Only(nodes) => nodes.contains(&child.id),
+        }
+    }
+}
+
+/// Whether `parent`'s declaration renders `child` inside it.
+fn renders(parent: &Node, child: &Node) -> bool {
+    matches!(
+        (&parent.syntax, &child.syntax),
+        (
+            Syntax::ItemStruct { .. } | Syntax::Variant { .. },
+            Syntax::Field { .. }
+        ) | (Syntax::ItemEnum { .. }, Syntax::Variant { .. })
+            | (Syntax::ItemTrait { .. }, Syntax::TraitItemFn { .. })
+            | (
+                Syntax::InherentImpl { .. } | Syntax::TraitImpl { .. },
+                Syntax::ImplItemFn { .. }
+            )
+    )
+}
+
+/// Puts `node`'s justification first among `attrs`, as a doc comment, which the spec otherwise
+/// leaves out.
+fn justify(attrs: &mut Vec<Attribute>, node: &Node) {
+    if let Some(justification) = &node.justification {
+        let text = format!(" {}", justification.as_ref());
+        attrs.insert(0, syn::parse_quote!(#[doc = #text]));
+    }
 }
 
 /// A captured part of the surface. The capture's JSON maps it by an id of the capture's own and
@@ -381,6 +484,9 @@ pub(super) struct Node {
     pub(super) id: NodeId,
     #[serde(skip)]
     pub(super) parent: Option<NodeId>,
+    /// The node's justification, which the capture's JSON keeps beside its nodes.
+    #[serde(skip)]
+    pub(super) justification: Option<Justification>,
     mod_path: Vec<String>,
     kind: Kind,
     span: Span,
@@ -396,10 +502,7 @@ pub(super) struct Node {
 enum Group<'a> {
     Node(&'a Node),
     /// Consecutive foreign fns of one `extern` block.
-    Extern(
-        &'a ForeignMod,
-        Vec<&'a <syn::ForeignItemFn as Syn>::Adapter>,
-    ),
+    Extern(&'a ForeignMod, Vec<&'a Node>),
 }
 
 /// An `extern` block, which is not a captured kind of its own.
@@ -420,11 +523,28 @@ impl ForeignMod {
         }
     }
 
-    /// The block holding the stubs of `fns`, which must all come from this block.
-    fn declaration(&self, fns: Vec<&<syn::ForeignItemFn as Syn>::Adapter>) -> String {
+    /// The block holding the stubs of `fns`, foreign fns which must all come from this block.
+    fn declaration(&self, fns: Vec<&Node>) -> String {
         let items = fns
             .into_iter()
-            .map(|syntax| ForeignItem::Fn(syn::ForeignItemFn::from_adapter(syntax)))
+            .filter_map(|node| match &node.syntax {
+                Syntax::ForeignItemFn { syntax, .. } => {
+                    let mut syntax = syn::ForeignItemFn::from_adapter(syntax);
+                    justify(&mut syntax.attrs, node);
+                    Some(ForeignItem::Fn(syntax))
+                }
+                // A block holds only foreign fns.
+                Syntax::ItemFn { .. }
+                | Syntax::ImplItemFn { .. }
+                | Syntax::TraitItemFn { .. }
+                | Syntax::ItemStruct { .. }
+                | Syntax::Field { .. }
+                | Syntax::ItemEnum { .. }
+                | Syntax::Variant { .. }
+                | Syntax::ItemTrait { .. }
+                | Syntax::InherentImpl { .. }
+                | Syntax::TraitImpl { .. } => None,
+            })
             .collect();
         unparse(Item::ForeignMod(syn::ItemForeignMod {
             attrs: Vec::new(),
@@ -622,6 +742,7 @@ impl Collector {
         self.nodes.push(Node {
             id,
             parent: self.parents.last().copied(),
+            justification: None,
             mod_path: self.mod_path.clone(),
             kind: syntax.kind(),
             span: span.into(),

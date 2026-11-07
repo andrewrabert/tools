@@ -14,7 +14,7 @@ use ruff_source_file::{LineColumn, LineIndex};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 
-use super::{NodeId, Position, Span};
+use super::{Justification, NodeId, Position, Span};
 
 pub(super) struct FileSurface {
     path: PathBuf,
@@ -99,6 +99,19 @@ impl FileSurface {
         Ok(formatted.into_code().trim_end().to_owned())
     }
 
+    /// The declaration of node `id` inside the declarations enclosing it, holding every node
+    /// inside it.
+    pub(super) fn surface(&self, id: NodeId) -> Result<String> {
+        let mut parts = BTreeSet::from([id]);
+        // Nodes in id order follow their parents.
+        for node in &self.nodes {
+            if node.parent.is_some_and(|parent| parts.contains(&parent)) {
+                parts.insert(node.id);
+            }
+        }
+        self.declarations(&parts)
+    }
+
     pub(super) fn text(&self, parts: &BTreeSet<NodeId>) -> String {
         let selected = self.enclosing(parts);
         let mut printer = Printer::default();
@@ -132,6 +145,12 @@ impl FileSurface {
             .filter(|child| selected.contains(&child.id))
             .partition(|child| matches!(child.syntax, Syntax::Attribute(_)));
         let mut children = children.into_iter().peekable();
+        if let Some(justification) = &node.justification {
+            printer.indentation();
+            printer.push("# ");
+            printer.push(justification.as_ref());
+            printer.push("\n");
+        }
         match &node.syntax {
             Syntax::Def(function) => {
                 printer.function_header(function);
@@ -204,6 +223,9 @@ pub(super) struct Node {
     pub(super) id: NodeId,
     #[serde(skip)]
     pub(super) parent: Option<NodeId>,
+    /// The node's justification, which the capture's JSON keeps beside its nodes.
+    #[serde(skip)]
+    pub(super) justification: Option<Justification>,
     span: Span,
     #[serde(flatten)]
     syntax: Syntax,
@@ -783,6 +805,7 @@ impl Collector<'_> {
         self.nodes.push(Node {
             id,
             parent: self.parents.last().copied(),
+            justification: None,
             span: self.source.span(range),
             syntax,
         });

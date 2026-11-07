@@ -1,3 +1,4 @@
+mod justification;
 mod python;
 mod rust;
 
@@ -27,15 +28,21 @@ use crate::atomic_write;
 use crate::git::Git;
 use crate::tools::Tool;
 
+use justification::{Command, Justification};
+
 const CHANGE: &str = include_str!("surface_spec/templates/surface_spec_change.md.j2");
 const SURFACE_SPEC: &str = include_str!("surface_spec/templates/surface_spec.md.j2");
 const COMMON: &str = include_str!("surface_spec/templates/common.md.j2");
 
 #[derive(ClapArgs)]
 #[command(
-    about = "Render the declarations in Rust and Python source files as a surface spec, or as the additions and deletions of a change"
+    about = "Render the declarations in Rust and Python source files as a surface spec, or as the additions and deletions of a change",
+    args_conflicts_with_subcommands = true,
+    subcommand_negates_reqs = true
 )]
 pub struct SurfaceSpec {
+    #[command(subcommand)]
+    command: Option<Command>,
     /// A source file or directory to list every declaration of; with --git, one to limit the
     /// change to [default with --git: .]
     #[arg(
@@ -77,6 +84,13 @@ pub struct SurfaceSpec {
         ],
     )]
     json: bool,
+    /// Print each declaration's justification above it
+    #[arg(
+        long,
+        requires = "input_json",
+        conflicts_with_all = ["additions", "deletions", "git", "json"],
+    )]
+    why: bool,
     #[command(flatten)]
     filter: Filter,
     #[command(flatten)]
@@ -303,7 +317,11 @@ impl Language {
 
 impl Tool for SurfaceSpec {
     fn run(self) -> ExitCode {
-        match self.print() {
+        let result = match self.command {
+            Some(command) => command.run(),
+            None => self.print(),
+        };
+        match result {
             Ok(()) => ExitCode::SUCCESS,
             Err(Errors(errors)) => {
                 for error in &errors {
@@ -353,11 +371,21 @@ impl SurfaceSpec {
                 (changes, errors)
             }
             (None, Some(additions), None) => {
-                let (files, errors) = load(slice::from_ref(additions), self.input_json, &selection);
+                let (files, errors) = load(
+                    slice::from_ref(additions),
+                    self.input_json,
+                    false,
+                    &selection,
+                );
                 (files.into_iter().map(FileChange::Added).collect(), errors)
             }
             (None, None, Some(deletions)) => {
-                let (files, errors) = load(slice::from_ref(deletions), self.input_json, &selection);
+                let (files, errors) = load(
+                    slice::from_ref(deletions),
+                    self.input_json,
+                    false,
+                    &selection,
+                );
                 (files.into_iter().map(FileChange::Deleted).collect(), errors)
             }
             (None, None, None) => return self.print_surface(&selection),
@@ -377,7 +405,7 @@ impl SurfaceSpec {
     }
 
     fn print_surface(&self, selection: &Selection) -> Result<(), Errors> {
-        let (files, mut errors) = load(&self.paths, self.input_json, selection);
+        let (files, mut errors) = load(&self.paths, self.input_json, self.why, selection);
         let surface = CapturedSurface { files };
         if self.json {
             if let Err(error) = write_capture(&surface, self.output.as_deref()) {
@@ -400,9 +428,12 @@ impl SurfaceSpec {
     }
 }
 
+/// The surfaces of the sources under `paths`, or with `input_json` of the captures at `paths`,
+/// their nodes holding the capture's justifications with `why`.
 fn load(
     paths: &[PathBuf],
     input_json: bool,
+    why: bool,
     selection: &Selection,
 ) -> (Vec<FileSurface>, Vec<anyhow::Error>) {
     if !input_json {
@@ -411,7 +442,7 @@ fn load(
     let mut files = Vec::new();
     let mut errors = Vec::new();
     for path in paths {
-        match CapturedSurface::load(path) {
+        match CapturedSurface::load(path, why) {
             Ok(surface) => files.extend(
                 surface
                     .files
@@ -430,7 +461,7 @@ fn side(
     selection: &Selection,
 ) -> (BTreeMap<PathBuf, Result<FileSurface>>, Vec<anyhow::Error>) {
     if input_json {
-        let (files, errors) = load(&[root.to_path_buf()], true, selection);
+        let (files, errors) = load(&[root.to_path_buf()], true, false, selection);
         let files = files
             .into_iter()
             .map(|file| (file.path().to_path_buf(), Ok(file)))
@@ -574,17 +605,61 @@ struct CapturedSurface {
 /// A capture as JSON: every node by its id, beside the id of the root, the node of the path that
 /// contains every captured file. Each node lists the ids of the nodes it encloses: the path's node
 /// and a directory's node the directories and files in it on the way to a captured file, a file's
-/// node its top-level declarations.
-#[derive(Deserialize)]
+/// node its top-level declarations. Beside them, the justification of each node justified so far.
+#[derive(Serialize, Deserialize)]
 struct CaptureJson {
     root: CaptureId,
     #[serde(deserialize_with = "unique_nodes")]
     nodes: BTreeMap<CaptureId, serde_json::Value>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    justifications: BTreeMap<CaptureId, Justification>,
 }
 
 /// A node's id in a capture's JSON, unique across the capture.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 struct CaptureId(usize);
+
+impl FromStr for CaptureId {
+    type Err = std::num::ParseIntError;
+
+    fn from_str(id: &str) -> Result<Self, Self::Err> {
+        id.parse().map(Self)
+    }
+}
+
+impl fmt::Display for CaptureId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl CaptureJson {
+    /// The surface of file node `id`, the file at `path`, beside the id within the file of each
+    /// node the file holds.
+    fn file(
+        &self,
+        id: CaptureId,
+        path: PathBuf,
+    ) -> Result<(FileSurface, BTreeMap<CaptureId, NodeId>)> {
+        let mut unplaced = Unplaced {
+            nodes: self.nodes.clone(),
+            placed: BTreeSet::new(),
+            justifications: BTreeMap::new(),
+        };
+        let (file, children) = match unplaced.place(id)? {
+            (Placed::File(file), children) => (file, children),
+            (Placed::Path(_) | Placed::Dir(_) | Placed::Declaration(_), _) => {
+                bail!("node {id} is not a file node")
+            }
+        };
+        let nodes = unplaced.place_file(children)?;
+        let ids = nodes
+            .iter()
+            .map(|node| (node.capture_id, node.id))
+            .collect();
+        Ok((FileSurface::from_json(path, file.language, nodes)?, ids))
+    }
+}
 
 /// In source order.
 #[derive(Deserialize)]
@@ -953,21 +1028,27 @@ impl Serialize for CapturedSurface {
 }
 
 impl CapturedSurface {
-    fn load(path: &Path) -> Result<Self> {
+    fn load(path: &Path, why: bool) -> Result<Self> {
         let json =
             fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
-        Self::parse(&json).with_context(|| format!("parsing {}", path.display()))
+        Self::parse(&json, why).with_context(|| format!("parsing {}", path.display()))
     }
 
     /// The capture `json` holds, its files in the order the directories from the root list
     /// them, each at the root's path joined with the names of the directories on the way to it
     /// and its own. Every node is listed exactly once: the path's node as `root`, and every
-    /// other node among the children of another.
-    fn parse(json: &str) -> Result<Self> {
-        let CaptureJson { root, nodes } = serde_json::from_str(json)?;
+    /// other node among the children of another. With `why`, each declaration holds its
+    /// justification.
+    fn parse(json: &str, why: bool) -> Result<Self> {
+        let CaptureJson {
+            root,
+            nodes,
+            justifications,
+        } = serde_json::from_str(json)?;
         let mut unplaced = Unplaced {
             nodes,
             placed: BTreeSet::new(),
+            justifications: if why { justifications } else { BTreeMap::new() },
         };
         let (path, children) = match unplaced.place(root)? {
             (Placed::Path(path), children) => (path.path, children),
@@ -1030,6 +1111,8 @@ impl CapturedSurface {
 struct Unplaced {
     nodes: BTreeMap<CaptureId, serde_json::Value>,
     placed: BTreeSet<CaptureId>,
+    /// The justifications to give the declarations placed.
+    justifications: BTreeMap<CaptureId, Justification>,
 }
 
 impl Unplaced {
@@ -1078,6 +1161,7 @@ impl Unplaced {
                 capture_id,
                 id,
                 parent,
+                justification: self.justifications.remove(&capture_id),
                 json,
             });
             pending.extend(children.into_iter().rev().map(|child| (child, Some(id))));
@@ -1099,6 +1183,7 @@ struct PlacedNode {
     capture_id: CaptureId,
     id: NodeId,
     parent: Option<NodeId>,
+    justification: Option<Justification>,
     json: serde_json::Value,
 }
 
@@ -1264,18 +1349,25 @@ impl FileSurface {
 
     /// The surface of the `language` file at `path`, holding `nodes` in source order.
     fn from_json(path: PathBuf, language: Language, nodes: Vec<PlacedNode>) -> Result<Self> {
+        type Links<'a> = (
+            &'a mut NodeId,
+            &'a mut Option<NodeId>,
+            &'a mut Option<Justification>,
+        );
+
         fn typed<N: DeserializeOwned>(
             nodes: Vec<PlacedNode>,
-            links: fn(&mut N) -> (&mut NodeId, &mut Option<NodeId>),
+            links: fn(&mut N) -> Links<'_>,
         ) -> Result<Vec<N>> {
             nodes
                 .into_iter()
                 .map(|placed| {
                     let mut node = N::deserialize(placed.json)
                         .with_context(|| format!("parsing node {}", placed.capture_id.0))?;
-                    let (id, parent) = links(&mut node);
+                    let (id, parent, justification) = links(&mut node);
                     *id = placed.id;
                     *parent = placed.parent;
+                    *justification = placed.justification;
                     Ok(node)
                 })
                 .collect()
@@ -1285,13 +1377,13 @@ impl FileSurface {
             Language::Rust => Self::Rust(rust::FileSurface::new(
                 path,
                 typed(nodes, |node: &mut rust::Node| {
-                    (&mut node.id, &mut node.parent)
+                    (&mut node.id, &mut node.parent, &mut node.justification)
                 })?,
             )),
             Language::Python => Self::Python(python::FileSurface::new(
                 path,
                 typed(nodes, |node: &mut python::Node| {
-                    (&mut node.id, &mut node.parent)
+                    (&mut node.id, &mut node.parent, &mut node.justification)
                 })?,
             )),
         })
@@ -1365,6 +1457,24 @@ impl FileSurface {
             return Ok(None);
         }
         self.declarations(&lacking).map(Some)
+    }
+
+    /// The declaration of node `id` inside the declarations enclosing it, holding what it
+    /// encloses.
+    fn surface(&self, id: NodeId) -> Result<String> {
+        match self {
+            Self::Rust(file) => Ok(file.surface(id)),
+            Self::Python(file) => file.surface(id),
+        }
+    }
+
+    /// The declarations of every node in the file.
+    fn every_declaration(&self) -> Result<String> {
+        let nodes = match self {
+            Self::Rust(file) => file.nodes().iter().map(|node| node.id).collect(),
+            Self::Python(file) => file.nodes().iter().map(|node| node.id).collect(),
+        };
+        Ok(self.declarations(&nodes)?.code)
     }
 
     /// `part` as text, inside the nodes enclosing it, which equals the text of an equal part.
@@ -1483,7 +1593,7 @@ mod tests {
             assert_eq!(captured, expected);
 
             let surface = || -> CapturedSurface {
-                CapturedSurface::parse(self.capture).expect("captured surface")
+                CapturedSurface::parse(self.capture, false).expect("captured surface")
             };
             for (change, expected) in [
                 (
@@ -1744,7 +1854,7 @@ mod tests {
                 .all(|node| node.get("id").is_none() && node.get("parent").is_none())
         );
 
-        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        let parsed = CapturedSurface::parse(&json.to_string(), false).expect("capture");
         assert_eq!(
             links(&parsed),
             [
@@ -1780,7 +1890,7 @@ mod tests {
                 },
             }),
         );
-        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        let parsed = CapturedSurface::parse(&json.to_string(), false).expect("capture");
         assert_eq!(
             Vec::from_iter(parsed.files.iter().map(FileSurface::path)),
             [
@@ -1826,7 +1936,7 @@ mod tests {
             json,
             serde_json::json!({"root": 0, "nodes": {"0": {"kind": "path", "path": ""}}}),
         );
-        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        let parsed = CapturedSurface::parse(&json.to_string(), false).expect("capture");
         assert!(parsed.files.is_empty());
     }
 
@@ -1862,20 +1972,16 @@ mod tests {
 
     #[test]
     fn capture_ids_renumber_loaded_files() {
-        let parsed = CapturedSurface::parse(&capture(
-            [5, 4, 9, 7],
-            5,
-            &[(5, &[4]), (4, &[9]), (9, &[7])],
-            &[],
-        ))
+        let parsed = CapturedSurface::parse(
+            &capture([5, 4, 9, 7], 5, &[(5, &[4]), (4, &[9]), (9, &[7])], &[]),
+            false,
+        )
         .expect("capture");
         assert_eq!(links(&parsed), [vec![(0, None), (1, Some(0))]]);
-        let canonical = CapturedSurface::parse(&capture(
-            [0, 1, 2, 3],
-            0,
-            &[(0, &[1]), (1, &[2]), (2, &[3])],
-            &[],
-        ))
+        let canonical = CapturedSurface::parse(
+            &capture([0, 1, 2, 3], 0, &[(0, &[1]), (1, &[2]), (2, &[3])], &[]),
+            false,
+        )
         .expect("capture");
         assert_eq!(
             serde_json::to_value(&parsed).expect("JSON surface"),
@@ -1900,7 +2006,7 @@ mod tests {
             nodes.insert(id.to_string(), class);
         }
         let json = serde_json::json!({"root": 0, "nodes": nodes});
-        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        let parsed = CapturedSurface::parse(&json.to_string(), false).expect("capture");
         assert_eq!(links(&parsed)[0].len(), DEPTH);
         assert_eq!(links(&parsed)[0][DEPTH - 1], (DEPTH - 1, Some(DEPTH - 2)));
     }
@@ -1975,7 +2081,7 @@ mod tests {
             ),
             (linked(&[], &[]), "node 3 is not reachable from the root"),
         ] {
-            let parsed = CapturedSurface::parse(&json)
+            let parsed = CapturedSurface::parse(&json, false)
                 .err()
                 .expect("invalid capture");
             assert!(
