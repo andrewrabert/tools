@@ -94,6 +94,7 @@ impl Api {
     pub fn downloads(&self) -> Result<Vec<DownloadLink>> {
         let query = json!({
             "addedDate": true,
+            "advancedStatus": true,
             "bytesLoaded": true,
             "bytesTotal": true,
             "enabled": true,

@@ -2,6 +2,7 @@ mod api;
 mod cli;
 mod model;
 mod output;
+mod tui;
 
 use std::cmp::Reverse;
 use std::fs;
@@ -19,7 +20,7 @@ use crate::tools::jdownloader_remote::cli::{
     RenameTarget, Sort,
 };
 use crate::tools::jdownloader_remote::model::{
-    AddLinks, CleanupAction, DupesAction, LinkCollectingJob, VariantId,
+    AddLinks, CleanupAction, DownloadLink, DupesAction, LinkCollectingJob, VariantId,
 };
 use crate::tools::jdownloader_remote::output::{Cell, Format, Table};
 use crate::urls::{Scheme, unique_urls};
@@ -71,6 +72,7 @@ fn run(args: JdownloaderRemote) -> Result<()> {
         Command::Extract(command) => extract(&api, format, command, &mut out)?,
         Command::Config(command) => config(&api, format, command, &mut out)?,
         Command::Plugins(command) => plugins(&api, format, command, &mut out)?,
+        Command::Tui => return tui::run(api),
     }
     out.flush()?;
     Ok(())
@@ -242,13 +244,7 @@ fn list_downloads(
     links.retain(|link| {
         (!running || link.running) && status.is_none_or(|status| link.status.contains(status))
     });
-    match sort {
-        Sort::Name => links.sort_by(|a, b| a.name.cmp(&b.name)),
-        Sort::Status => links.sort_by(|a, b| a.status.cmp(&b.status)),
-        Sort::Percent => links.sort_by_key(|link| Reverse(link.percent())),
-        Sort::Speed => links.sort_by_key(|link| Reverse(link.speed)),
-        Sort::Eta => links.sort_by_key(|link| (link.eta.is_none(), link.eta)),
-    }
+    sort_links(&mut links, sort);
     let rows = links
         .iter()
         .map(|l| {
@@ -268,6 +264,16 @@ fn list_downloads(
     ];
     let table = Table::new(headers, rows).text_columns(3);
     output::write_items(out, format, &links, table)
+}
+
+fn sort_links(links: &mut [DownloadLink], sort: Sort) {
+    match sort {
+        Sort::Name => links.sort_by(|a, b| a.name.cmp(&b.name)),
+        Sort::Status => links.sort_by(|a, b| a.status.cmp(&b.status)),
+        Sort::Percent => links.sort_by_key(|link| Reverse(link.percent())),
+        Sort::Speed => links.sort_by_key(|link| Reverse(link.speed)),
+        Sort::Eta => links.sort_by_key(|link| (link.eta.is_none(), link.eta)),
+    }
 }
 
 fn grabber(api: &Api, format: Format, command: Grabber, out: &mut impl Write) -> Result<()> {

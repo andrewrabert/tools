@@ -177,12 +177,163 @@ pub struct DownloadLink {
     pub added_date: i64,
     pub finished_date: Option<i64>,
     pub comment: Option<String>,
+    pub advanced_status: Option<AdvancedStatus>,
 }
 
 impl DownloadLink {
     pub fn percent(&self) -> i64 {
         percent(self.bytes_loaded, self.bytes_total)
     }
+
+    /// The link's state; a running link counts as running whatever else it reports.
+    pub fn state(&self) -> LinkState {
+        let status = self.advanced_status.as_ref();
+        let failed = status
+            .and_then(|status| status.final_link_state.as_ref())
+            .is_some_and(|entry| entry.id.is_failed());
+        let skipped_for_error = status
+            .and_then(|status| status.skip_reason.as_ref())
+            .is_some_and(|entry| entry.id != SkipReason::Manual);
+        if self.running {
+            LinkState::Running
+        } else if failed || skipped_for_error {
+            LinkState::Error
+        } else if self.finished {
+            LinkState::Complete
+        } else {
+            LinkState::NotRunning
+        }
+    }
+}
+
+/// What a link or package is doing, reduced to the four states the download list shows.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LinkState {
+    Running,
+    Error,
+    Complete,
+    NotRunning,
+}
+
+impl LinkState {
+    /// The state of a package from its own running flag and the states of its links.
+    pub fn of_package(running: bool, links: &[LinkState]) -> Self {
+        if running || links.contains(&LinkState::Running) {
+            LinkState::Running
+        } else if links.contains(&LinkState::Error) {
+            LinkState::Error
+        } else if !links.is_empty() && links.iter().all(|&state| state == LinkState::Complete) {
+            LinkState::Complete
+        } else {
+            LinkState::NotRunning
+        }
+    }
+}
+
+/// The parts of a link's `advancedStatus` map that decide its state.
+#[derive(Serialize, Deserialize)]
+pub struct AdvancedStatus {
+    #[serde(rename = "FinalLinkState")]
+    pub final_link_state: Option<StatusEntry<FinalLinkState>>,
+    #[serde(rename = "SkipReason")]
+    pub skip_reason: Option<StatusEntry<SkipReason>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StatusEntry<T> {
+    pub id: T,
+}
+
+/// JDownloader's `FinalLinkState`: how a link ended.
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FinalLinkState {
+    Finished,
+    FinishedMirror,
+    FinishedCrc32,
+    FinishedMd5,
+    FinishedSha1,
+    FinishedSha224,
+    FinishedSha256,
+    FinishedSha384,
+    FinishedSha512,
+    FinishedWhirlpool,
+    Failed,
+    FailedCrc32,
+    FailedMd5,
+    FailedSha1,
+    FailedSha224,
+    FailedSha256,
+    FailedSha384,
+    FailedSha512,
+    FailedWhirlpool,
+    FailedExists,
+    Offline,
+    FailedFatal,
+    PluginDefect,
+    /// A state this tool does not know.
+    #[serde(other)]
+    Unknown,
+}
+
+impl FinalLinkState {
+    /// Whether the link ended in failure, going by each state's name.
+    ///
+    /// JDownloader's own `isFinished` swaps the two WHIRLPOOL states.
+    fn is_failed(self) -> bool {
+        match self {
+            FinalLinkState::Finished
+            | FinalLinkState::FinishedMirror
+            | FinalLinkState::FinishedCrc32
+            | FinalLinkState::FinishedMd5
+            | FinalLinkState::FinishedSha1
+            | FinalLinkState::FinishedSha224
+            | FinalLinkState::FinishedSha256
+            | FinalLinkState::FinishedSha384
+            | FinalLinkState::FinishedSha512
+            | FinalLinkState::FinishedWhirlpool
+            | FinalLinkState::Unknown => false,
+            FinalLinkState::Failed
+            | FinalLinkState::FailedCrc32
+            | FinalLinkState::FailedMd5
+            | FinalLinkState::FailedSha1
+            | FinalLinkState::FailedSha224
+            | FinalLinkState::FailedSha256
+            | FinalLinkState::FailedSha384
+            | FinalLinkState::FailedSha512
+            | FinalLinkState::FailedWhirlpool
+            | FinalLinkState::FailedExists
+            | FinalLinkState::Offline
+            | FinalLinkState::FailedFatal
+            | FinalLinkState::PluginDefect => true,
+        }
+    }
+}
+
+/// JDownloader's `SkipReason`: why a link is not being downloaded.
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SkipReason {
+    ConnectionUnavailable,
+    TooManyRetries,
+    Captcha,
+    /// The user skipped the link.
+    Manual,
+    DiskFull,
+    NoAccount,
+    InvalidDestination,
+    InvalidDestinationPermissionIssue,
+    InvalidDestinationTooLongFilename,
+    InvalidDestinationTooLongPath,
+    FileExists,
+    UpdateRestartRequired,
+    FfmpegMissing,
+    FfprobeMissing,
+    PhantomJsMissing,
+    PluginDefect,
+    /// A reason this tool does not know.
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize)]

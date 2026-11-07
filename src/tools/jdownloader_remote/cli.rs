@@ -115,6 +115,8 @@ pub enum Command {
     Config(Config),
     #[command(subcommand, about = "Show hoster plugins")]
     Plugins(Plugins),
+    #[command(about = "Browse and control JDownloader in a terminal UI")]
+    Tui,
 }
 
 #[derive(ClapArgs)]
