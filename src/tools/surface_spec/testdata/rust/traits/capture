@@ -1,19 +1,24 @@
 {
-  "roots": [
-    0
-  ],
+  "root": 0,
   "nodes": {
     "0": {
-      "kind": "file",
-      "language": "rust",
-      "path": "traits.rs",
+      "kind": "path",
+      "path": "",
       "children": [
-        1,
-        3,
-        8
+        1
       ]
     },
     "1": {
+      "kind": "file",
+      "language": "rust",
+      "name": "traits.rs",
+      "children": [
+        2,
+        4,
+        9
+      ]
+    },
+    "2": {
       "mod_path": [],
       "kind": "trait",
       "span": {
@@ -33,10 +38,10 @@
         "items": []
       },
       "children": [
-        2
+        3
       ]
     },
-    "2": {
+    "3": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -83,7 +88,7 @@
         }
       }
     },
-    "3": {
+    "4": {
       "mod_path": [],
       "kind": "trait",
       "span": {
@@ -220,13 +225,13 @@
         ]
       },
       "children": [
-        4,
         5,
         6,
-        7
+        7,
+        8
       ]
     },
-    "4": {
+    "5": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -273,7 +278,7 @@
         }
       }
     },
-    "5": {
+    "6": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -321,7 +326,7 @@
         "default": []
       }
     },
-    "6": {
+    "7": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -454,7 +459,7 @@
         }
       }
     },
-    "7": {
+    "8": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -598,7 +603,7 @@
         "default": []
       }
     },
-    "8": {
+    "9": {
       "mod_path": [],
       "kind": "trait",
       "span": {
@@ -653,10 +658,10 @@
         "items": []
       },
       "children": [
-        9
+        10
       ]
     },
-    "9": {
+    "10": {
       "mod_path": [],
       "kind": "fn",
       "span": {

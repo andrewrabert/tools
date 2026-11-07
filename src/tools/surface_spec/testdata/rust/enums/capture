@@ -1,20 +1,25 @@
 {
-  "roots": [
-    0
-  ],
+  "root": 0,
   "nodes": {
     "0": {
-      "kind": "file",
-      "language": "rust",
-      "path": "enums.rs",
+      "kind": "path",
+      "path": "",
       "children": [
-        1,
-        6,
-        13,
-        17
+        1
       ]
     },
     "1": {
+      "kind": "file",
+      "language": "rust",
+      "name": "enums.rs",
+      "children": [
+        2,
+        7,
+        14,
+        18
+      ]
+    },
+    "2": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -74,13 +79,13 @@
         "variants": []
       },
       "children": [
-        2,
         3,
         4,
-        5
+        5,
+        6
       ]
     },
-    "2": {
+    "3": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -99,7 +104,7 @@
         "fields": "unit"
       }
     },
-    "3": {
+    "4": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -118,7 +123,7 @@
         "fields": "unit"
       }
     },
-    "4": {
+    "5": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -137,7 +142,7 @@
         "fields": "unit"
       }
     },
-    "5": {
+    "6": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -156,7 +161,7 @@
         "fields": "unit"
       }
     },
-    "6": {
+    "7": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -176,12 +181,12 @@
         "variants": []
       },
       "children": [
-        7,
-        9,
-        12
+        8,
+        10,
+        13
       ]
     },
-    "7": {
+    "8": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -202,10 +207,10 @@
         }
       },
       "children": [
-        8
+        9
       ]
     },
-    "8": {
+    "9": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -231,7 +236,7 @@
         }
       }
     },
-    "9": {
+    "10": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -252,11 +257,11 @@
         }
       },
       "children": [
-        10,
-        11
+        11,
+        12
       ]
     },
-    "10": {
+    "11": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -284,7 +289,7 @@
         }
       }
     },
-    "11": {
+    "12": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -312,7 +317,7 @@
         }
       }
     },
-    "12": {
+    "13": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -331,7 +336,7 @@
         "fields": "unit"
       }
     },
-    "13": {
+    "14": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -372,12 +377,12 @@
         "variants": []
       },
       "children": [
-        14,
         15,
-        16
+        16,
+        17
       ]
     },
-    "14": {
+    "15": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -401,7 +406,7 @@
         }
       }
     },
-    "15": {
+    "16": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -425,7 +430,7 @@
         }
       }
     },
-    "16": {
+    "17": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -459,7 +464,7 @@
         }
       }
     },
-    "17": {
+    "18": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -522,12 +527,12 @@
         "variants": []
       },
       "children": [
-        18,
-        20,
-        23
+        19,
+        21,
+        24
       ]
     },
-    "18": {
+    "19": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -548,10 +553,10 @@
         }
       },
       "children": [
-        19
+        20
       ]
     },
-    "19": {
+    "20": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -582,7 +587,7 @@
         }
       }
     },
-    "20": {
+    "21": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -603,11 +608,11 @@
         }
       },
       "children": [
-        21,
-        22
+        22,
+        23
       ]
     },
-    "21": {
+    "22": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -672,7 +677,7 @@
         }
       }
     },
-    "22": {
+    "23": {
       "mod_path": [],
       "kind": "field",
       "span": {
@@ -737,7 +742,7 @@
         }
       }
     },
-    "23": {
+    "24": {
       "mod_path": [],
       "kind": "variant",
       "span": {

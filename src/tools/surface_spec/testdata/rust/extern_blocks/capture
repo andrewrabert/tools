@@ -1,24 +1,29 @@
 {
-  "roots": [
-    0
-  ],
+  "root": 0,
   "nodes": {
     "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
       "kind": "file",
       "language": "rust",
-      "path": "extern_blocks.rs",
+      "name": "extern_blocks.rs",
       "children": [
-        1,
         2,
         3,
         4,
         5,
         6,
         7,
-        8
+        8,
+        9
       ]
     },
-    "1": {
+    "2": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -73,7 +78,7 @@
         }
       }
     },
-    "2": {
+    "3": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -127,7 +132,7 @@
         }
       }
     },
-    "3": {
+    "4": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -187,7 +192,7 @@
         }
       }
     },
-    "4": {
+    "5": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -212,7 +217,7 @@
         "output": null
       }
     },
-    "5": {
+    "6": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -247,7 +252,7 @@
         }
       }
     },
-    "6": {
+    "7": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -306,7 +311,7 @@
         }
       }
     },
-    "7": {
+    "8": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -328,7 +333,7 @@
         "stmts": []
       }
     },
-    "8": {
+    "9": {
       "mod_path": [],
       "kind": "fn",
       "span": {

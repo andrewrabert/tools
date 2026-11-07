@@ -1,12 +1,17 @@
 {
-  "roots": [
-    0
-  ],
+  "root": 0,
   "nodes": {
     "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
       "kind": "file",
       "language": "rust",
-      "path": "empty.rs"
+      "name": "empty.rs"
     }
   }
 }

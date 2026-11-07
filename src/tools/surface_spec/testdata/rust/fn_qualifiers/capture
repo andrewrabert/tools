@@ -1,14 +1,18 @@
 {
-  "roots": [
-    0
-  ],
+  "root": 0,
   "nodes": {
     "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
       "kind": "file",
       "language": "rust",
-      "path": "fn_qualifiers.rs",
+      "name": "fn_qualifiers.rs",
       "children": [
-        1,
         2,
         3,
         4,
@@ -16,10 +20,11 @@
         6,
         7,
         8,
-        9
+        9,
+        10
       ]
     },
-    "1": {
+    "2": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -68,7 +73,7 @@
         "stmts": []
       }
     },
-    "2": {
+    "3": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -156,7 +161,7 @@
         "stmts": []
       }
     },
-    "3": {
+    "4": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -206,7 +211,7 @@
         "stmts": []
       }
     },
-    "4": {
+    "5": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -261,7 +266,7 @@
         "stmts": []
       }
     },
-    "5": {
+    "6": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -335,7 +340,7 @@
         "stmts": []
       }
     },
-    "6": {
+    "7": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -401,7 +406,7 @@
         "stmts": []
       }
     },
-    "7": {
+    "8": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -454,7 +459,7 @@
         "stmts": []
       }
     },
-    "8": {
+    "9": {
       "mod_path": [],
       "kind": "fn",
       "span": {
@@ -613,7 +618,7 @@
         "stmts": []
       }
     },
-    "9": {
+    "10": {
       "mod_path": [],
       "kind": "fn",
       "span": {
