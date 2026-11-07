@@ -1,725 +1,726 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "rust",
       "path": "traits.rs",
-      "records": [
-        {
-          "id": 0,
-          "parent": null,
-          "mod_path": [],
-          "kind": "trait",
-          "span": {
-            "start": {
-              "line": 3,
-              "column": 0
-            },
-            "end": {
-              "line": 5,
-              "column": 1
-            }
-          },
-          "syn": "ItemTrait",
-          "node": {
-            "vis": "pub",
-            "ident": "Named",
-            "items": []
-          }
+      "children": [
+        1,
+        3,
+        8
+      ]
+    },
+    "1": {
+      "mod_path": [],
+      "kind": "trait",
+      "span": {
+        "start": {
+          "line": 3,
+          "column": 0
         },
-        {
-          "id": 1,
-          "parent": 0,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 4,
-              "column": 4
-            },
-            "end": {
-              "line": 4,
-              "column": 29
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "ident": "name",
-            "inputs": [
-              {
-                "receiver": {
-                  "ref": true,
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Self"
-                            }
-                          ]
+        "end": {
+          "line": 5,
+          "column": 1
+        }
+      },
+      "syn": "ItemTrait",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Named",
+        "items": []
+      },
+      "children": [
+        2
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 4,
+          "column": 4
+        },
+        "end": {
+          "line": 4,
+          "column": 29
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "name",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
                         }
-                      }
+                      ]
                     }
                   }
                 }
               }
-            ],
-            "output": {
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "String"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "trait",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 0
+        },
+        "end": {
+          "line": 31,
+          "column": 1
+        }
+      },
+      "syn": "ItemTrait",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Shape",
+        "colon_token": true,
+        "supertraits": [
+          {
+            "trait": {
               "path": {
                 "segments": [
                   {
-                    "ident": "String"
+                    "ident": "Named"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "trait": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Clone"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "trait": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "Debug"
                   }
                 ]
               }
             }
           }
-        },
-        {
-          "id": 2,
-          "parent": null,
-          "mod_path": [],
-          "kind": "trait",
-          "span": {
-            "start": {
-              "line": 7,
-              "column": 0
-            },
-            "end": {
-              "line": 31,
-              "column": 1
+        ],
+        "items": [
+          {
+            "type": {
+              "ident": "Unit"
             }
           },
-          "syn": "ItemTrait",
-          "node": {
-            "vis": "pub",
-            "ident": "Shape",
-            "colon_token": true,
-            "supertraits": [
-              {
-                "trait": {
-                  "path": {
-                    "segments": [
-                      {
-                        "ident": "Named"
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "trait": {
-                  "path": {
-                    "segments": [
-                      {
-                        "ident": "Clone"
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "trait": {
-                  "path": {
-                    "segments": [
-                      {
-                        "ident": "Debug"
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "items": [
-              {
-                "type": {
-                  "ident": "Unit"
-                }
-              },
-              {
-                "type": {
-                  "ident": "Scaled",
-                  "colon_token": true,
-                  "bounds": [
-                    {
-                      "trait": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Shape",
-                              "arguments": {
-                                "angle_bracketed": {
-                                  "args": [
-                                    {
-                                      "assoc_type": {
-                                        "ident": "Unit",
-                                        "ty": {
-                                          "path": {
-                                            "segments": [
-                                              {
-                                                "ident": "Self"
-                                              },
-                                              {
-                                                "ident": "Unit"
-                                              }
-                                            ]
+          {
+            "type": {
+              "ident": "Scaled",
+              "colon_token": true,
+              "bounds": [
+                {
+                  "trait": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Shape",
+                          "arguments": {
+                            "angle_bracketed": {
+                              "args": [
+                                {
+                                  "assoc_type": {
+                                    "ident": "Unit",
+                                    "ty": {
+                                      "path": {
+                                        "segments": [
+                                          {
+                                            "ident": "Self"
+                                          },
+                                          {
+                                            "ident": "Unit"
                                           }
-                                        }
+                                        ]
                                       }
                                     }
-                                  ]
+                                  }
                                 }
-                              }
+                              ]
                             }
-                          ]
+                          }
                         }
-                      }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "const": {
+              "ident": "SIDES",
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "usize"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "const": {
+              "ident": "SCALE",
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "f64"
                     }
                   ]
                 }
               },
-              {
-                "const": {
-                  "ident": "SIDES",
-                  "ty": {
+              "default": {
+                "lit": {
+                  "float": "1.0"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "children": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 15,
+          "column": 4
+        },
+        "end": {
+          "line": 15,
+          "column": 26
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "area",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
                     "path": {
                       "segments": [
                         {
-                          "ident": "usize"
+                          "ident": "Self"
                         }
                       ]
                     }
                   }
                 }
-              },
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
               {
-                "const": {
-                  "ident": "SCALE",
-                  "ty": {
+                "ident": "f64"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 4
+        },
+        "end": {
+          "line": 19,
+          "column": 5
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "describe",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
                     "path": {
                       "segments": [
                         {
-                          "ident": "f64"
+                          "ident": "Self"
                         }
                       ]
                     }
-                  },
-                  "default": {
-                    "lit": {
-                      "float": "1.0"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "String"
+              }
+            ]
+          }
+        },
+        "default": []
+      }
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 21,
+          "column": 4
+        },
+        "end": {
+          "line": 23,
+          "column": 28
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "scale",
+        "generics": {
+          "params": [
+            {
+              "type": {
+                "ident": "F"
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "F"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Into",
+                            "arguments": {
+                              "angle_bracketed": {
+                                "args": [
+                                  {
+                                    "type": {
+                                      "path": {
+                                        "segments": [
+                                          {
+                                            "ident": "f64"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
                     }
+                  },
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Copy"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "factor"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "F"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Self"
+              },
+              {
+                "ident": "Scaled"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 25,
+          "column": 4
+        },
+        "end": {
+          "line": 30,
+          "column": 5
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "largest",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            },
+            {
+              "type": {
+                "ident": "I",
+                "colon_token": true,
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "IntoIterator",
+                            "arguments": {
+                              "angle_bracketed": {
+                                "args": [
+                                  {
+                                    "assoc_type": {
+                                      "ident": "Item",
+                                      "ty": {
+                                        "reference": {
+                                          "lifetime": "a",
+                                          "elem": {
+                                            "path": {
+                                              "segments": [
+                                                {
+                                                  "ident": "Self"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Self"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "lifetime": "a"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "shapes"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "I"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Option",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
+                      {
+                        "type": {
+                          "reference": {
+                            "lifetime": "a",
+                            "elem": {
+                              "path": {
+                                "segments": [
+                                  {
+                                    "ident": "Self"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               }
             ]
           }
         },
-        {
-          "id": 3,
-          "parent": 2,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 15,
-              "column": 4
-            },
-            "end": {
-              "line": 15,
-              "column": 26
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "ident": "area",
-            "inputs": [
-              {
-                "receiver": {
-                  "ref": true,
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Self"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
+        "default": []
+      }
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "trait",
+      "span": {
+        "start": {
+          "line": 33,
+          "column": 0
+        },
+        "end": {
+          "line": 35,
+          "column": 1
+        }
+      },
+      "syn": "ItemTrait",
+      "syntax": {
+        "vis": {
+          "restricted": {
+            "path": {
+              "segments": [
+                {
+                  "ident": "crate"
                 }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "f64"
-                  }
-                ]
-              }
+              ]
             }
           }
         },
-        {
-          "id": 4,
-          "parent": 2,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 17,
-              "column": 4
-            },
-            "end": {
-              "line": 19,
-              "column": 5
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "ident": "describe",
-            "inputs": [
-              {
-                "receiver": {
-                  "ref": true,
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Self"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
+        "unsafe": true,
+        "ident": "RawAccess",
+        "generics": {
+          "params": [
+            {
+              "type": {
+                "ident": "T",
+                "colon_token": true,
+                "bounds": [
                   {
-                    "ident": "String"
-                  }
-                ]
-              }
-            },
-            "default": []
-          }
-        },
-        {
-          "id": 5,
-          "parent": 2,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 21,
-              "column": 4
-            },
-            "end": {
-              "line": 23,
-              "column": 28
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "ident": "scale",
-            "generics": {
-              "params": [
-                {
-                  "type": {
-                    "ident": "F"
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
+                    "trait": {
+                      "modifier": "maybe",
                       "path": {
                         "segments": [
                           {
-                            "ident": "F"
+                            "ident": "Sized"
                           }
                         ]
                       }
-                    },
-                    "bounds": [
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Into",
-                                "arguments": {
-                                  "angle_bracketed": {
-                                    "args": [
-                                      {
-                                        "type": {
-                                          "path": {
-                                            "segments": [
-                                              {
-                                                "ident": "f64"
-                                              }
-                                            ]
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Copy"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "inputs": [
-              {
-                "receiver": {
-                  "ref": true,
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Self"
-                            }
-                          ]
-                        }
-                      }
                     }
                   }
+                ]
+              }
+            }
+          ]
+        },
+        "items": []
+      },
+      "children": [
+        9
+      ]
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 34,
+          "column": 4
+        },
+        "end": {
+          "line": 34,
+          "column": 46
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "unsafe": true,
+        "ident": "read",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "offset"
                 }
               },
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "factor"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "F"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "Self"
-                  },
-                  {
-                    "ident": "Scaled"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 6,
-          "parent": 2,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 25,
-              "column": 4
-            },
-            "end": {
-              "line": 30,
-              "column": 5
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "ident": "largest",
-            "generics": {
-              "params": [
-                {
-                  "lifetime": {
-                    "lifetime": "a",
-                    "bounds": []
-                  }
-                },
-                {
-                  "type": {
-                    "ident": "I",
-                    "colon_token": true,
-                    "bounds": [
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "IntoIterator",
-                                "arguments": {
-                                  "angle_bracketed": {
-                                    "args": [
-                                      {
-                                        "assoc_type": {
-                                          "ident": "Item",
-                                          "ty": {
-                                            "reference": {
-                                              "lifetime": "a",
-                                              "elem": {
-                                                "path": {
-                                                  "segments": [
-                                                    {
-                                                      "ident": "Self"
-                                                    }
-                                                  ]
-                                                }
-                                              }
-                                            }
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "Self"
-                          }
-                        ]
-                      }
-                    },
-                    "bounds": [
-                      {
-                        "lifetime": "a"
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "shapes"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "I"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "Option",
-                    "arguments": {
-                      "angle_bracketed": {
-                        "args": [
-                          {
-                            "type": {
-                              "reference": {
-                                "lifetime": "a",
-                                "elem": {
-                                  "path": {
-                                    "segments": [
-                                      {
-                                        "ident": "Self"
-                                      }
-                                    ]
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            },
-            "default": []
-          }
-        },
-        {
-          "id": 7,
-          "parent": null,
-          "mod_path": [],
-          "kind": "trait",
-          "span": {
-            "start": {
-              "line": 33,
-              "column": 0
-            },
-            "end": {
-              "line": 35,
-              "column": 1
-            }
-          },
-          "syn": "ItemTrait",
-          "node": {
-            "vis": {
-              "restricted": {
+              "ty": {
                 "path": {
                   "segments": [
                     {
-                      "ident": "crate"
+                      "ident": "usize"
                     }
                   ]
                 }
               }
-            },
-            "unsafe": true,
-            "ident": "RawAccess",
-            "generics": {
-              "params": [
-                {
-                  "type": {
-                    "ident": "T",
-                    "colon_token": true,
-                    "bounds": [
-                      {
-                        "trait": {
-                          "modifier": "maybe",
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Sized"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "items": []
+            }
           }
-        },
-        {
-          "id": 8,
-          "parent": 7,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 34,
-              "column": 4
-            },
-            "end": {
-              "line": 34,
-              "column": 46
-            }
-          },
-          "syn": "TraitItemFn",
-          "node": {
-            "unsafe": true,
-            "ident": "read",
-            "inputs": [
+        ],
+        "output": {
+          "path": {
+            "segments": [
               {
-                "receiver": {
-                  "ref": true,
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Self"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "offset"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "usize"
-                        }
-                      ]
-                    }
-                  }
-                }
+                "ident": "T"
               }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "T"
-                  }
-                ]
-              }
-            }
+            ]
           }
         }
-      ]
+      }
     }
-  ]
+  }
 }

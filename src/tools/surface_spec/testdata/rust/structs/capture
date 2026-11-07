@@ -1,585 +1,764 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "rust",
       "path": "structs.rs",
-      "records": [
-        {
-          "id": 0,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 3,
-              "column": 0
-            },
-            "end": {
-              "line": 9,
-              "column": 1
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "attrs": [
-              {
-                "style": "outer",
-                "meta": {
-                  "list": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "derive"
-                        }
-                      ]
-                    },
-                    "delimiter": "paren",
-                    "tokens": [
-                      {
-                        "ident": "Debug"
-                      },
-                      {
-                        "punct": {
-                          "op": ",",
-                          "spacing": "alone"
-                        }
-                      },
-                      {
-                        "ident": "Clone"
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "vis": "pub",
-            "ident": "Point",
-            "fields": {
-              "named": [
-                {
-                  "vis": "pub",
-                  "ident": "x",
-                  "colon_token": true,
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "i32"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "vis": "pub",
-                  "ident": "y",
-                  "colon_token": true,
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "i32"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "ident": "label",
-                  "colon_token": true,
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "String"
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          }
+      "children": [
+        1,
+        5,
+        8,
+        9,
+        12,
+        14,
+        17
+      ]
+    },
+    "1": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 3,
+          "column": 0
         },
-        {
-          "id": 1,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 11,
-              "column": 0
-            },
-            "end": {
-              "line": 11,
-              "column": 29
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "vis": "pub",
-            "ident": "Pair",
-            "fields": {
-              "unnamed": [
-                {
-                  "vis": "pub",
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "u8"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "u16"
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": 2,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 13,
-              "column": 0
-            },
-            "end": {
-              "line": 13,
-              "column": 16
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "vis": "pub",
-            "ident": "Unit",
-            "fields": "unit"
-          }
-        },
-        {
-          "id": 3,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 15,
-              "column": 0
-            },
-            "end": {
-              "line": 18,
-              "column": 1
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "vis": {
-              "restricted": {
+        "end": {
+          "line": 9,
+          "column": 1
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "attrs": [
+          {
+            "style": "outer",
+            "meta": {
+              "list": {
                 "path": {
                   "segments": [
                     {
-                      "ident": "crate"
+                      "ident": "derive"
                     }
                   ]
+                },
+                "delimiter": "paren",
+                "tokens": [
+                  {
+                    "ident": "Debug"
+                  },
+                  {
+                    "punct": {
+                      "op": ",",
+                      "spacing": "alone"
+                    }
+                  },
+                  {
+                    "ident": "Clone"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "vis": "pub",
+        "ident": "Point",
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        2,
+        3,
+        4
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 6,
+          "column": 4
+        },
+        "end": {
+          "line": 6,
+          "column": 14
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ident": "x",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "i32"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 4
+        },
+        "end": {
+          "line": 7,
+          "column": 14
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ident": "y",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "i32"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 8,
+          "column": 4
+        },
+        "end": {
+          "line": 8,
+          "column": 17
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "label",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "String"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 0
+        },
+        "end": {
+          "line": 11,
+          "column": 29
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Pair",
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        6,
+        7
+      ]
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 16
+        },
+        "end": {
+          "line": 11,
+          "column": 22
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "u8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 24
+        },
+        "end": {
+          "line": 11,
+          "column": 27
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "u16"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 13,
+          "column": 0
+        },
+        "end": {
+          "line": 13,
+          "column": 16
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Unit",
+        "fields": "unit"
+      }
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 15,
+          "column": 0
+        },
+        "end": {
+          "line": 18,
+          "column": 1
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": {
+          "restricted": {
+            "path": {
+              "segments": [
+                {
+                  "ident": "crate"
                 }
+              ]
+            }
+          }
+        },
+        "ident": "Borrowed",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
               }
             },
-            "ident": "Borrowed",
-            "generics": {
-              "params": [
-                {
-                  "lifetime": {
-                    "lifetime": "a",
-                    "bounds": []
-                  }
-                },
-                {
-                  "type": {
+            {
+              "type": {
+                "ident": "T"
+              }
+            }
+          ]
+        },
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        10,
+        11
+      ]
+    },
+    "10": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 16,
+          "column": 4
+        },
+        "end": {
+          "line": 16,
+          "column": 20
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ident": "value",
+        "colon_token": true,
+        "ty": {
+          "reference": {
+            "lifetime": "a",
+            "elem": {
+              "path": {
+                "segments": [
+                  {
                     "ident": "T"
                   }
-                }
-              ]
-            },
-            "fields": {
-              "named": [
-                {
-                  "vis": "pub",
-                  "ident": "value",
-                  "colon_token": true,
-                  "ty": {
-                    "reference": {
-                      "lifetime": "a",
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "T"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                },
-                {
-                  "ident": "count",
-                  "colon_token": true,
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "usize"
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": 4,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 20,
-              "column": 0
-            },
-            "end": {
-              "line": 22,
-              "column": 1
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "vis": "pub",
-            "ident": "Matrix",
-            "generics": {
-              "params": [
-                {
-                  "type": {
-                    "ident": "T"
-                  }
-                },
-                {
-                  "const": {
-                    "ident": "ROWS",
-                    "ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "usize"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                },
-                {
-                  "const": {
-                    "ident": "COLS",
-                    "ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "usize"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            "fields": {
-              "named": [
-                {
-                  "ident": "cells",
-                  "colon_token": true,
-                  "ty": {
-                    "array": {
-                      "elem": {
-                        "array": {
-                          "elem": {
-                            "path": {
-                              "segments": [
-                                {
-                                  "ident": "T"
-                                }
-                              ]
-                            }
-                          },
-                          "len": {
-                            "path": {
-                              "segments": [
-                                {
-                                  "ident": "COLS"
-                                }
-                              ]
-                            }
-                          }
-                        }
-                      },
-                      "len": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "ROWS"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": 5,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 24,
-              "column": 0
-            },
-            "end": {
-              "line": 31,
-              "column": 1
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "ident": "Bounded",
-            "generics": {
-              "params": [
-                {
-                  "lifetime": {
-                    "lifetime": "a",
-                    "bounds": []
-                  }
-                },
-                {
-                  "type": {
-                    "ident": "K"
-                  }
-                },
-                {
-                  "type": {
-                    "ident": "V",
-                    "eq_token": true,
-                    "default": {
-                      "tuple": {
-                        "elems": []
-                      }
-                    }
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "K"
-                          }
-                        ]
-                      }
-                    },
-                    "bounds": [
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Ord"
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Debug"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "type": {
-                    "bounded_ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "V"
-                          }
-                        ]
-                      }
-                    },
-                    "bounds": [
-                      {
-                        "lifetime": "a"
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "fields": {
-              "named": [
-                {
-                  "ident": "key",
-                  "colon_token": true,
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "K"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "ident": "value",
-                  "colon_token": true,
-                  "ty": {
-                    "reference": {
-                      "lifetime": "a",
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "V"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": 6,
-          "parent": null,
-          "mod_path": [],
-          "kind": "struct",
-          "span": {
-            "start": {
-              "line": 33,
-              "column": 0
-            },
-            "end": {
-              "line": 35,
-              "column": 15
-            }
-          },
-          "syn": "ItemStruct",
-          "node": {
-            "vis": "pub",
-            "ident": "Wrapped",
-            "generics": {
-              "params": [
-                {
-                  "type": {
-                    "ident": "T",
-                    "colon_token": true,
-                    "bounds": [
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Clone"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "T"
-                          }
-                        ]
-                      }
-                    },
-                    "bounds": [
-                      {
-                        "trait": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Default"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "fields": {
-              "unnamed": [
-                {
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "T"
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
+                ]
+              }
             }
           }
         }
+      }
+    },
+    "11": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 4
+        },
+        "end": {
+          "line": 17,
+          "column": 16
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "count",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "usize"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "12": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 20,
+          "column": 0
+        },
+        "end": {
+          "line": 22,
+          "column": 1
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Matrix",
+        "generics": {
+          "params": [
+            {
+              "type": {
+                "ident": "T"
+              }
+            },
+            {
+              "const": {
+                "ident": "ROWS",
+                "ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "usize"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "const": {
+                "ident": "COLS",
+                "ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "usize"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        13
       ]
+    },
+    "13": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 21,
+          "column": 4
+        },
+        "end": {
+          "line": 21,
+          "column": 28
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "cells",
+        "colon_token": true,
+        "ty": {
+          "array": {
+            "elem": {
+              "array": {
+                "elem": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "T"
+                      }
+                    ]
+                  }
+                },
+                "len": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "COLS"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "len": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "ROWS"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "14": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 24,
+          "column": 0
+        },
+        "end": {
+          "line": 31,
+          "column": 1
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "ident": "Bounded",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            },
+            {
+              "type": {
+                "ident": "K"
+              }
+            },
+            {
+              "type": {
+                "ident": "V",
+                "eq_token": true,
+                "default": {
+                  "tuple": {
+                    "elems": []
+                  }
+                }
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "K"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Ord"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Debug"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "V"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "lifetime": "a"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        15,
+        16
+      ]
+    },
+    "15": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 29,
+          "column": 4
+        },
+        "end": {
+          "line": 29,
+          "column": 10
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "key",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "K"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "16": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 30,
+          "column": 4
+        },
+        "end": {
+          "line": 30,
+          "column": 16
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "value",
+        "colon_token": true,
+        "ty": {
+          "reference": {
+            "lifetime": "a",
+            "elem": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "V"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "17": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 33,
+          "column": 0
+        },
+        "end": {
+          "line": 35,
+          "column": 15
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Wrapped",
+        "generics": {
+          "params": [
+            {
+              "type": {
+                "ident": "T",
+                "colon_token": true,
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Clone"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "T"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Default"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        18
+      ]
+    },
+    "18": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 33,
+          "column": 29
+        },
+        "end": {
+          "line": 33,
+          "column": 30
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "T"
+              }
+            ]
+          }
+        }
+      }
     }
-  ]
+  }
 }

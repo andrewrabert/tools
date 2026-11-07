@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::env;
 use std::ffi::OsString;
+use std::fmt;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -12,13 +13,14 @@ use std::process::ExitCode;
 use std::slice;
 use std::str::FromStr;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::{Args as ClapArgs, ValueEnum};
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{Walk, WalkBuilder};
 use minijinja::syntax::SyntaxConfig;
 use minijinja::{Environment, Value, context};
-use serde::{Deserialize, Serialize};
+use serde::de::{self, DeserializeOwned, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::atomic_write;
 use crate::git::Git;
@@ -267,7 +269,8 @@ impl Selection {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 enum Language {
     Rust,
     Python,
@@ -563,16 +566,192 @@ fn sources(paths: &[PathBuf], selection: &Selection) -> Vec<Result<(PathBuf, Lan
         .collect()
 }
 
-#[derive(Serialize, Deserialize)]
 struct CapturedSurface {
     files: Vec<FileSurface>,
+}
+
+/// A capture as JSON: every node by its id, each file being a node of its own, beside the ids
+/// of the file nodes. Each node lists the ids of the nodes it encloses.
+#[derive(Deserialize)]
+struct CaptureJson {
+    roots: Vec<CaptureId>,
+    #[serde(deserialize_with = "unique_nodes")]
+    nodes: BTreeMap<CaptureId, serde_json::Value>,
+}
+
+/// A node's id in a capture's JSON, unique across the capture.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+struct CaptureId(usize);
+
+/// In source order.
+#[derive(Deserialize)]
+struct Children {
+    #[serde(default)]
+    children: Vec<CaptureId>,
+}
+
+/// Whether a node's JSON is a file's node, which is the kind every root is and no child is.
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+enum NodeKind {
+    File(FileJson),
+    #[serde(other)]
+    Declaration,
+}
+
+/// A file's node, which encloses the file's top-level declarations.
+#[derive(Serialize, Deserialize)]
+struct FileJson {
+    language: Language,
+    path: PathBuf,
+}
+
+#[derive(Serialize)]
+struct NodeJson<'a> {
+    #[serde(flatten)]
+    node: AnyNode<'a>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    children: Vec<CaptureId>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum AnyNode<'a> {
+    File {
+        kind: &'static str,
+        #[serde(flatten)]
+        file: FileJson,
+    },
+    Rust(&'a rust::Node),
+    Python(&'a python::Node),
+}
+
+fn unique_nodes<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BTreeMap<CaptureId, serde_json::Value>, D::Error> {
+    struct Nodes;
+
+    impl<'de> Visitor<'de> for Nodes {
+        type Value = BTreeMap<CaptureId, serde_json::Value>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map of node ids to nodes")
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+            let mut nodes = BTreeMap::new();
+            while let Some((id, node)) = map.next_entry::<CaptureId, serde_json::Value>()? {
+                if nodes.insert(id, node).is_some() {
+                    return Err(de::Error::custom(format!(
+                        "node {} appears more than once",
+                        id.0
+                    )));
+                }
+            }
+            Ok(nodes)
+        }
+    }
+
+    deserializer.deserialize_map(Nodes)
+}
+
+/// Numbers the nodes in source order, each file's node before the nodes of the file.
+impl Serialize for CapturedSurface {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        #[derive(Serialize)]
+        struct Json<'a> {
+            roots: Vec<CaptureId>,
+            nodes: BTreeMap<CaptureId, NodeJson<'a>>,
+        }
+
+        let mut json = Json {
+            roots: Vec::new(),
+            nodes: BTreeMap::new(),
+        };
+        let mut next = 0;
+        let mut number = || {
+            next += 1;
+            CaptureId(next - 1)
+        };
+        for file in &self.files {
+            let file_id = number();
+            json.roots.push(file_id);
+            let nodes: Vec<(NodeId, Option<NodeId>, AnyNode)> = match file {
+                FileSurface::Rust(file) => file
+                    .nodes()
+                    .iter()
+                    .map(|node| (node.id, node.parent, AnyNode::Rust(node)))
+                    .collect(),
+                FileSurface::Python(file) => file
+                    .nodes()
+                    .iter()
+                    .map(|node| (node.id, node.parent, AnyNode::Python(node)))
+                    .collect(),
+            };
+            let ids = BTreeMap::from_iter(nodes.iter().map(|&(id, _, _)| (id, number())));
+            // The ids of the nodes each node encloses, the file's under `None`.
+            let mut children: BTreeMap<Option<NodeId>, Vec<CaptureId>> = BTreeMap::new();
+            for &(id, parent, _) in &nodes {
+                children.entry(parent).or_default().push(ids[&id]);
+            }
+            json.nodes.insert(
+                file_id,
+                NodeJson {
+                    node: AnyNode::File {
+                        kind: "file",
+                        file: FileJson {
+                            language: file.language(),
+                            path: file.path().to_path_buf(),
+                        },
+                    },
+                    children: children.remove(&None).unwrap_or_default(),
+                },
+            );
+            for (id, _, node) in nodes {
+                json.nodes.insert(
+                    ids[&id],
+                    NodeJson {
+                        node,
+                        children: children.remove(&Some(id)).unwrap_or_default(),
+                    },
+                );
+            }
+        }
+        json.serialize(serializer)
+    }
 }
 
 impl CapturedSurface {
     fn load(path: &Path) -> Result<Self> {
         let json =
             fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
-        serde_json::from_str(&json).with_context(|| format!("parsing {}", path.display()))
+        Self::parse(&json).with_context(|| format!("parsing {}", path.display()))
+    }
+
+    /// The capture `json` holds, its files in the order `roots` lists them. Every node is listed
+    /// exactly once, a file's node among `roots` and every other node among the children of
+    /// another.
+    fn parse(json: &str) -> Result<Self> {
+        let CaptureJson { roots, nodes } = serde_json::from_str(json)?;
+        let mut unplaced = Unplaced {
+            nodes,
+            placed: BTreeSet::new(),
+        };
+        let mut files = Vec::new();
+        for root in roots {
+            let (file, children) = match unplaced.place(root)? {
+                (Placed::File(file), children) => (file, children),
+                (Placed::Declaration(_), _) => bail!("root {} is not a file node", root.0),
+            };
+            files.push(FileSurface::from_json(
+                file,
+                unplaced.place_file(children)?,
+            )?);
+        }
+        if let Some(id) = unplaced.nodes.keys().next() {
+            bail!("node {} is not reachable from the roots", id.0);
+        }
+        Ok(Self { files })
     }
 
     fn languages(&self) -> BTreeSet<Language> {
@@ -595,6 +774,74 @@ impl CapturedSurface {
         );
         Ok((Spec::SurfaceSpec { declarations }.render(language)?, errors))
     }
+}
+
+/// The nodes of a capture's JSON not yet reached from its roots.
+struct Unplaced {
+    nodes: BTreeMap<CaptureId, serde_json::Value>,
+    placed: BTreeSet<CaptureId>,
+}
+
+impl Unplaced {
+    /// Takes node `id`, which a root or another node lists, beside the ids it lists.
+    fn place(&mut self, id: CaptureId) -> Result<(Placed, Vec<CaptureId>)> {
+        let Some(node) = self.nodes.remove(&id) else {
+            if self.placed.contains(&id) {
+                bail!(
+                    "node {} is listed more than once among the roots and children",
+                    id.0
+                );
+            }
+            bail!("node {} is listed but is not among the nodes", id.0);
+        };
+        self.placed.insert(id);
+        let parsing = || format!("parsing node {}", id.0);
+        let Children { children } = Children::deserialize(&node).with_context(parsing)?;
+        let placed = match NodeKind::deserialize(&node).with_context(parsing)? {
+            NodeKind::File(file) => Placed::File(file),
+            NodeKind::Declaration => Placed::Declaration(node),
+        };
+        Ok((placed, children))
+    }
+
+    /// Places the nodes a file's node lists as `children` and the nodes they enclose, in
+    /// source order, each numbered by its position in the file.
+    fn place_file(&mut self, children: Vec<CaptureId>) -> Result<Vec<PlacedNode>> {
+        let mut file = Vec::new();
+        // Nodes to place, beside the node enclosing each within the file; the next is last.
+        let mut pending = Vec::from_iter(children.into_iter().rev().map(|id| (id, None)));
+        while let Some((capture_id, parent)) = pending.pop() {
+            let (json, children) = match self.place(capture_id)? {
+                (Placed::Declaration(json), children) => (json, children),
+                (Placed::File(_), _) => {
+                    bail!("file node {} is listed as a child", capture_id.0)
+                }
+            };
+            let id = NodeId(file.len());
+            file.push(PlacedNode {
+                capture_id,
+                id,
+                parent,
+                json,
+            });
+            pending.extend(children.into_iter().rev().map(|child| (child, Some(id))));
+        }
+        Ok(file)
+    }
+}
+
+/// A node reached from the roots: a file's, or a declaration's JSON, read once its file is
+/// known.
+enum Placed {
+    File(FileJson),
+    Declaration(serde_json::Value),
+}
+
+struct PlacedNode {
+    capture_id: CaptureId,
+    id: NodeId,
+    parent: Option<NodeId>,
+    json: serde_json::Value,
 }
 
 enum FileChange {
@@ -727,21 +974,6 @@ impl Spec {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Part {
-    Record(RecordId),
-    /// A class attribute, by its index among the class's attributes.
-    Attribute(RecordId, usize),
-}
-
-impl Part {
-    fn record(self) -> RecordId {
-        match self {
-            Self::Record(id) | Self::Attribute(id, _) => id,
-        }
-    }
-}
-
 struct FileDeclarations {
     path: String,
     code: String,
@@ -753,8 +985,6 @@ impl From<FileDeclarations> for Value {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "language", rename_all = "lowercase")]
 enum FileSurface {
     Rust(rust::FileSurface),
     Python(python::FileSurface),
@@ -772,6 +1002,41 @@ impl FileSurface {
             Language::Rust => rust::FileSurface::parse(path, source).map(Self::Rust),
             Language::Python => python::FileSurface::parse(path, source).map(Self::Python),
         }
+    }
+
+    /// The surface of `file`, holding `nodes` in source order.
+    fn from_json(file: FileJson, nodes: Vec<PlacedNode>) -> Result<Self> {
+        fn typed<N: DeserializeOwned>(
+            nodes: Vec<PlacedNode>,
+            links: fn(&mut N) -> (&mut NodeId, &mut Option<NodeId>),
+        ) -> Result<Vec<N>> {
+            nodes
+                .into_iter()
+                .map(|placed| {
+                    let mut node = N::deserialize(placed.json)
+                        .with_context(|| format!("parsing node {}", placed.capture_id.0))?;
+                    let (id, parent) = links(&mut node);
+                    *id = placed.id;
+                    *parent = placed.parent;
+                    Ok(node)
+                })
+                .collect()
+        }
+
+        Ok(match file.language {
+            Language::Rust => Self::Rust(rust::FileSurface::new(
+                file.path,
+                typed(nodes, |node: &mut rust::Node| {
+                    (&mut node.id, &mut node.parent)
+                })?,
+            )),
+            Language::Python => Self::Python(python::FileSurface::new(
+                file.path,
+                typed(nodes, |node: &mut python::Node| {
+                    (&mut node.id, &mut node.parent)
+                })?,
+            )),
+        })
     }
 
     fn language(&self) -> Language {
@@ -795,15 +1060,16 @@ impl FileSurface {
         }
     }
 
-    /// The parts of the file, among the records `rust` keeps when it is a Rust file.
-    fn parts(&self, rust: &rust::Includes) -> Vec<Part> {
+    /// The nodes a change adds or deletes as a whole, among those `rust` keeps when it is a
+    /// Rust file.
+    fn parts(&self, rust: &rust::Includes) -> Vec<NodeId> {
         match self {
             Self::Rust(file) => file.parts(rust),
             Self::Python(file) => file.parts(),
         }
     }
 
-    fn declarations(&self, parts: &BTreeSet<Part>) -> Result<FileDeclarations> {
+    fn declarations(&self, parts: &BTreeSet<NodeId>) -> Result<FileDeclarations> {
         let code = match self {
             Self::Rust(file) => Ok(file.declarations(parts)),
             Self::Python(file) => file.declarations(parts),
@@ -843,8 +1109,8 @@ impl FileSurface {
         self.declarations(&lacking).map(Some)
     }
 
-    /// `part` as text, inside the records enclosing it, which equals the text of an equal part.
-    fn text(&self, part: Part) -> Result<String> {
+    /// `part` as text, inside the nodes enclosing it, which equals the text of an equal part.
+    fn text(&self, part: NodeId) -> Result<String> {
         let parts = BTreeSet::from([part]);
         Ok(match self {
             Self::Rust(file) => file.declarations(&parts),
@@ -853,8 +1119,10 @@ impl FileSurface {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-struct RecordId(usize);
+/// A node's position in its file, in source order, by which its children name it as their
+/// parent.
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+struct NodeId(usize);
 
 #[derive(Serialize, Deserialize)]
 struct Span {
@@ -957,7 +1225,7 @@ mod tests {
             assert_eq!(captured, expected);
 
             let surface = || -> CapturedSurface {
-                serde_json::from_str(self.capture).expect("captured surface")
+                CapturedSurface::parse(self.capture).expect("captured surface")
             };
             for (change, expected) in [
                 (
@@ -1140,5 +1408,188 @@ mod tests {
     #[test]
     fn python_syntax_error() {
         python_error_fixture!("syntax_error").check();
+    }
+    fn parse(path: &str, language: Language, source: &str) -> FileSurface {
+        FileSurface::parse(PathBuf::from(path), language, source).expect("capturable source")
+    }
+
+    /// The `(id, parent)` of each node of each file in `surface`.
+    fn links(surface: &CapturedSurface) -> Vec<Vec<(usize, Option<usize>)>> {
+        let link = |id: NodeId, parent: Option<NodeId>| (id.0, parent.map(|parent| parent.0));
+        surface
+            .files
+            .iter()
+            .map(|file| match file {
+                FileSurface::Rust(file) => {
+                    Vec::from_iter(file.nodes().iter().map(|node| link(node.id, node.parent)))
+                }
+                FileSurface::Python(file) => {
+                    Vec::from_iter(file.nodes().iter().map(|node| link(node.id, node.parent)))
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn capture_ids_are_unique_across_files() {
+        let surface = CapturedSurface {
+            files: vec![
+                parse("a.rs", Language::Rust, "struct A { x: u8 }"),
+                parse("b.py", Language::Python, "class B:\n    y: int\n"),
+                parse("c.rs", Language::Rust, "enum C { D(u8) }"),
+            ],
+        };
+        let json = serde_json::to_value(&surface).expect("JSON surface");
+        assert_eq!(json["roots"], serde_json::json!([0, 3, 6]));
+        let nodes = json["nodes"].as_object().expect("nodes by id");
+        let kinds = Vec::from_iter(nodes.iter().map(|(id, node)| {
+            (
+                id.as_str(),
+                node["kind"].as_str(),
+                node.get("children").cloned(),
+            )
+        }));
+        let children = |ids: &[usize]| Some(serde_json::json!(ids));
+        assert_eq!(
+            kinds,
+            [
+                ("0", Some("file"), children(&[1])),
+                ("1", Some("struct"), children(&[2])),
+                ("2", Some("field"), None),
+                ("3", Some("file"), children(&[4])),
+                ("4", Some("class"), children(&[5])),
+                ("5", Some("attribute"), None),
+                ("6", Some("file"), children(&[7])),
+                ("7", Some("enum"), children(&[8])),
+                ("8", Some("variant"), children(&[9])),
+                ("9", Some("field"), None),
+            ],
+        );
+        assert_eq!(
+            nodes["3"],
+            serde_json::json!({"kind": "file", "language": "python", "path": "b.py", "children": [4]}),
+        );
+        assert!(
+            nodes
+                .values()
+                .all(|node| node.get("id").is_none() && node.get("parent").is_none())
+        );
+
+        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        assert_eq!(
+            links(&parsed),
+            [
+                vec![(0, None), (1, Some(0))],
+                vec![(0, None), (1, Some(0))],
+                vec![(0, None), (1, Some(0)), (2, Some(1))],
+            ],
+        );
+        assert_eq!(serde_json::to_value(&parsed).expect("JSON surface"), json);
+    }
+
+    /// A capture of file `a.py` holding class `A` with attribute `y`: the file, class, and
+    /// attribute nodes keyed by `ids`, their children set by `children`, beside `extra` nodes,
+    /// with `roots` listed as roots.
+    fn capture(
+        ids: [usize; 3],
+        roots: &[usize],
+        children: &[(usize, &[usize])],
+        extra: &[(usize, serde_json::Value)],
+    ) -> String {
+        let surface = CapturedSurface {
+            files: vec![parse("a.py", Language::Python, "class A:\n    y: int\n")],
+        };
+        let mut json = serde_json::to_value(&surface).expect("JSON surface");
+        let mut nodes = serde_json::Map::new();
+        for (index, id) in ids.into_iter().enumerate() {
+            let mut node = json["nodes"][index.to_string()].take();
+            node.as_object_mut().expect("node").remove("children");
+            nodes.insert(id.to_string(), node);
+        }
+        for (id, node) in extra {
+            nodes.insert(id.to_string(), node.clone());
+        }
+        for (id, ids) in children {
+            nodes[&id.to_string()]["children"] = serde_json::json!(ids);
+        }
+        json["nodes"] = nodes.into();
+        json["roots"] = serde_json::json!(roots);
+        json.to_string()
+    }
+
+    #[test]
+    fn capture_ids_renumber_loaded_files() {
+        let parsed =
+            CapturedSurface::parse(&capture([4, 9, 7], &[4], &[(4, &[9]), (9, &[7])], &[]))
+                .expect("capture");
+        assert_eq!(links(&parsed), [vec![(0, None), (1, Some(0))]]);
+        let canonical =
+            CapturedSurface::parse(&capture([0, 1, 2], &[0], &[(0, &[1]), (1, &[2])], &[]))
+                .expect("capture");
+        assert_eq!(
+            serde_json::to_value(&parsed).expect("JSON surface"),
+            serde_json::to_value(&canonical).expect("JSON surface"),
+        );
+    }
+
+    #[test]
+    fn capture_loads_deep_nesting() {
+        const DEPTH: usize = 1000;
+        let base: serde_json::Value =
+            serde_json::from_str(&capture([0, 1, 2], &[0], &[(0, &[1])], &[])).expect("JSON");
+        let mut nodes = serde_json::Map::new();
+        nodes.insert("0".into(), base["nodes"]["0"].clone());
+        for id in 1..=DEPTH {
+            let mut class = base["nodes"]["1"].clone();
+            if id < DEPTH {
+                class["children"] = serde_json::json!([id + 1]);
+            }
+            nodes.insert(id.to_string(), class);
+        }
+        let json = serde_json::json!({"roots": [0], "nodes": nodes});
+        let parsed = CapturedSurface::parse(&json.to_string()).expect("capture");
+        assert_eq!(links(&parsed)[0].len(), DEPTH);
+        assert_eq!(links(&parsed)[0][DEPTH - 1], (DEPTH - 1, Some(DEPTH - 2)));
+    }
+
+    #[test]
+    fn capture_ids_reject_misplaced_nodes() {
+        let file = serde_json::json!({"kind": "file", "language": "python", "path": "b.py"});
+        let linked = |class: &[usize]| capture([0, 1, 2], &[0], &[(0, &[1]), (1, class)], &[]);
+        for (json, error) in [
+            (
+                linked(&[2]).replace(r#""2":"#, r#""1":"#),
+                "node 1 appears more than once at line 1 column ",
+            ),
+            (
+                linked(&[2, 2]),
+                "node 2 is listed more than once among the roots and children",
+            ),
+            (
+                capture([0, 1, 2], &[0], &[(0, &[1]), (1, &[2]), (2, &[1])], &[]),
+                "node 1 is listed more than once among the roots and children",
+            ),
+            (
+                linked(&[2, 5]),
+                "node 5 is listed but is not among the nodes",
+            ),
+            (
+                capture([0, 1, 2], &[1], &[(1, &[2])], &[]),
+                "root 1 is not a file node",
+            ),
+            (
+                capture([0, 1, 2], &[0], &[(0, &[1]), (1, &[2, 3])], &[(3, file)]),
+                "file node 3 is listed as a child",
+            ),
+            (linked(&[]), "node 2 is not reachable from the roots"),
+        ] {
+            let parsed = CapturedSurface::parse(&json)
+                .err()
+                .expect("invalid capture");
+            assert!(
+                parsed.to_string().starts_with(error),
+                "{parsed} does not start with {error}"
+            );
+        }
     }
 }

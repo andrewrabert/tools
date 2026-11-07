@@ -1,9 +1,12 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "python",
-      "path": "empty.py",
-      "records": []
+      "path": "empty.py"
     }
-  ]
+  }
 }

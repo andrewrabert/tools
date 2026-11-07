@@ -1,299 +1,663 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "rust",
       "path": "enums.rs",
-      "records": [
-        {
-          "id": 0,
-          "parent": null,
-          "mod_path": [],
-          "kind": "enum",
-          "span": {
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 7,
-              "column": 1
-            }
-          },
-          "syn": "ItemEnum",
-          "node": {
-            "attrs": [
-              {
-                "style": "outer",
-                "meta": {
-                  "list": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "derive"
-                        }
-                      ]
-                    },
-                    "delimiter": "paren",
-                    "tokens": [
-                      {
-                        "ident": "Debug"
-                      },
-                      {
-                        "punct": {
-                          "op": ",",
-                          "spacing": "alone"
-                        }
-                      },
-                      {
-                        "ident": "Clone"
-                      },
-                      {
-                        "punct": {
-                          "op": ",",
-                          "spacing": "alone"
-                        }
-                      },
-                      {
-                        "ident": "Copy"
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "vis": "pub",
-            "ident": "Direction",
-            "variants": [
-              {
-                "ident": "North",
-                "fields": "unit"
-              },
-              {
-                "ident": "East",
-                "fields": "unit"
-              },
-              {
-                "ident": "South",
-                "fields": "unit"
-              },
-              {
-                "ident": "West",
-                "fields": "unit"
-              }
-            ]
-          }
+      "children": [
+        1,
+        6,
+        13,
+        17
+      ]
+    },
+    "1": {
+      "mod_path": [],
+      "kind": "enum",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 0
         },
-        {
-          "id": 1,
-          "parent": null,
-          "mod_path": [],
-          "kind": "enum",
-          "span": {
-            "start": {
-              "line": 9,
-              "column": 0
-            },
-            "end": {
-              "line": 13,
-              "column": 1
-            }
-          },
-          "syn": "ItemEnum",
-          "node": {
-            "vis": "pub",
-            "ident": "Shape",
-            "variants": [
-              {
-                "ident": "Circle",
-                "fields": {
-                  "unnamed": [
+        "end": {
+          "line": 7,
+          "column": 1
+        }
+      },
+      "syn": "ItemEnum",
+      "syntax": {
+        "attrs": [
+          {
+            "style": "outer",
+            "meta": {
+              "list": {
+                "path": {
+                  "segments": [
                     {
-                      "ty": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "f64"
-                            }
-                          ]
-                        }
-                      }
+                      "ident": "derive"
                     }
                   ]
-                }
-              },
+                },
+                "delimiter": "paren",
+                "tokens": [
+                  {
+                    "ident": "Debug"
+                  },
+                  {
+                    "punct": {
+                      "op": ",",
+                      "spacing": "alone"
+                    }
+                  },
+                  {
+                    "ident": "Clone"
+                  },
+                  {
+                    "punct": {
+                      "op": ",",
+                      "spacing": "alone"
+                    }
+                  },
+                  {
+                    "ident": "Copy"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "vis": "pub",
+        "ident": "Direction",
+        "variants": []
+      },
+      "children": [
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 3,
+          "column": 4
+        },
+        "end": {
+          "line": 3,
+          "column": 9
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "North",
+        "fields": "unit"
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 4,
+          "column": 4
+        },
+        "end": {
+          "line": 4,
+          "column": 8
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "East",
+        "fields": "unit"
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 5,
+          "column": 4
+        },
+        "end": {
+          "line": 5,
+          "column": 9
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "South",
+        "fields": "unit"
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 6,
+          "column": 4
+        },
+        "end": {
+          "line": 6,
+          "column": 8
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "West",
+        "fields": "unit"
+      }
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "enum",
+      "span": {
+        "start": {
+          "line": 9,
+          "column": 0
+        },
+        "end": {
+          "line": 13,
+          "column": 1
+        }
+      },
+      "syn": "ItemEnum",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Shape",
+        "variants": []
+      },
+      "children": [
+        7,
+        9,
+        12
+      ]
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 10,
+          "column": 4
+        },
+        "end": {
+          "line": 10,
+          "column": 15
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Circle",
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        8
+      ]
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 10,
+          "column": 11
+        },
+        "end": {
+          "line": 10,
+          "column": 14
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ty": {
+          "path": {
+            "segments": [
               {
-                "ident": "Rectangle",
-                "fields": {
-                  "named": [
+                "ident": "f64"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 4
+        },
+        "end": {
+          "line": 11,
+          "column": 41
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Rectangle",
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        10,
+        11
+      ]
+    },
+    "10": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 16
+        },
+        "end": {
+          "line": 11,
+          "column": 26
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "width",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "f64"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "11": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 11,
+          "column": 28
+        },
+        "end": {
+          "line": 11,
+          "column": 39
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "height",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "f64"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "12": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 12,
+          "column": 4
+        },
+        "end": {
+          "line": 12,
+          "column": 9
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Point",
+        "fields": "unit"
+      }
+    },
+    "13": {
+      "mod_path": [],
+      "kind": "enum",
+      "span": {
+        "start": {
+          "line": 15,
+          "column": 0
+        },
+        "end": {
+          "line": 20,
+          "column": 1
+        }
+      },
+      "syn": "ItemEnum",
+      "syntax": {
+        "attrs": [
+          {
+            "style": "outer",
+            "meta": {
+              "list": {
+                "path": {
+                  "segments": [
                     {
-                      "ident": "width",
-                      "colon_token": true,
-                      "ty": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "f64"
-                            }
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      "ident": "height",
-                      "colon_token": true,
-                      "ty": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "f64"
-                            }
-                          ]
-                        }
-                      }
+                      "ident": "repr"
                     }
                   ]
-                }
-              },
-              {
-                "ident": "Point",
-                "fields": "unit"
+                },
+                "delimiter": "paren",
+                "tokens": [
+                  {
+                    "ident": "u8"
+                  }
+                ]
               }
-            ]
-          }
-        },
-        {
-          "id": 2,
-          "parent": null,
-          "mod_path": [],
-          "kind": "enum",
-          "span": {
-            "start": {
-              "line": 15,
-              "column": 0
-            },
-            "end": {
-              "line": 20,
-              "column": 1
             }
-          },
-          "syn": "ItemEnum",
-          "node": {
-            "attrs": [
-              {
-                "style": "outer",
-                "meta": {
-                  "list": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "repr"
-                        }
-                      ]
-                    },
-                    "delimiter": "paren",
-                    "tokens": [
+          }
+        ],
+        "ident": "Status",
+        "variants": []
+      },
+      "children": [
+        14,
+        15,
+        16
+      ]
+    },
+    "14": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 4
+        },
+        "end": {
+          "line": 17,
+          "column": 10
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Ok",
+        "fields": "unit",
+        "discriminant": {
+          "lit": {
+            "int": "0"
+          }
+        }
+      }
+    },
+    "15": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "end": {
+          "line": 18,
+          "column": 16
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "NotFound",
+        "fields": "unit",
+        "discriminant": {
+          "lit": {
+            "int": "4"
+          }
+        }
+      }
+    },
+    "16": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 19,
+          "column": 4
+        },
+        "end": {
+          "line": 19,
+          "column": 19
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Failed",
+        "fields": "unit",
+        "discriminant": {
+          "binary": {
+            "left": {
+              "lit": {
+                "int": "1"
+              }
+            },
+            "op": "<<",
+            "right": {
+              "lit": {
+                "int": "3"
+              }
+            }
+          }
+        }
+      }
+    },
+    "17": {
+      "mod_path": [],
+      "kind": "enum",
+      "span": {
+        "start": {
+          "line": 22,
+          "column": 0
+        },
+        "end": {
+          "line": 32,
+          "column": 1
+        }
+      },
+      "syn": "ItemEnum",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Tree",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            },
+            {
+              "type": {
+                "ident": "T"
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
                       {
-                        "ident": "u8"
+                        "ident": "T"
                       }
                     ]
-                  }
-                }
-              }
-            ],
-            "ident": "Status",
-            "variants": [
-              {
-                "ident": "Ok",
-                "fields": "unit",
-                "discriminant": {
-                  "lit": {
-                    "int": "0"
-                  }
-                }
-              },
-              {
-                "ident": "NotFound",
-                "fields": "unit",
-                "discriminant": {
-                  "lit": {
-                    "int": "4"
-                  }
-                }
-              },
-              {
-                "ident": "Failed",
-                "fields": "unit",
-                "discriminant": {
-                  "binary": {
-                    "left": {
-                      "lit": {
-                        "int": "1"
-                      }
-                    },
-                    "op": "<<",
-                    "right": {
-                      "lit": {
-                        "int": "3"
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        },
-        {
-          "id": 3,
-          "parent": null,
-          "mod_path": [],
-          "kind": "enum",
-          "span": {
-            "start": {
-              "line": 22,
-              "column": 0
-            },
-            "end": {
-              "line": 32,
-              "column": 1
-            }
-          },
-          "syn": "ItemEnum",
-          "node": {
-            "vis": "pub",
-            "ident": "Tree",
-            "generics": {
-              "params": [
-                {
-                  "lifetime": {
-                    "lifetime": "a",
-                    "bounds": []
                   }
                 },
-                {
-                  "type": {
-                    "ident": "T"
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
+                "bounds": [
+                  {
+                    "trait": {
                       "path": {
                         "segments": [
                           {
-                            "ident": "T"
+                            "ident": "PartialOrd"
                           }
                         ]
                       }
-                    },
-                    "bounds": [
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "variants": []
+      },
+      "children": [
+        18,
+        20,
+        23
+      ]
+    },
+    "18": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 26,
+          "column": 4
+        },
+        "end": {
+          "line": 26,
+          "column": 15
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Leaf",
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        19
+      ]
+    },
+    "19": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 26,
+          "column": 9
+        },
+        "end": {
+          "line": 26,
+          "column": 14
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ty": {
+          "reference": {
+            "lifetime": "a",
+            "elem": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "T"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "20": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 27,
+          "column": 4
+        },
+        "end": {
+          "line": 30,
+          "column": 5
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Node",
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        21,
+        22
+      ]
+    },
+    "21": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 28,
+          "column": 8
+        },
+        "end": {
+          "line": 28,
+          "column": 30
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "left",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Box",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
                       {
-                        "trait": {
+                        "type": {
                           "path": {
                             "segments": [
                               {
-                                "ident": "PartialOrd"
+                                "ident": "Tree",
+                                "arguments": {
+                                  "angle_bracketed": {
+                                    "args": [
+                                      {
+                                        "lifetime": "a"
+                                      },
+                                      {
+                                        "type": {
+                                          "path": {
+                                            "segments": [
+                                              {
+                                                "ident": "T"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
                               }
                             ]
                           }
@@ -302,147 +666,95 @@
                     ]
                   }
                 }
-              ]
-            },
-            "variants": [
-              {
-                "ident": "Leaf",
-                "fields": {
-                  "unnamed": [
-                    {
-                      "ty": {
-                        "reference": {
-                          "lifetime": "a",
-                          "elem": {
-                            "path": {
-                              "segments": [
-                                {
-                                  "ident": "T"
-                                }
-                              ]
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "ident": "Node",
-                "fields": {
-                  "named": [
-                    {
-                      "ident": "left",
-                      "colon_token": true,
-                      "ty": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Box",
-                              "arguments": {
-                                "angle_bracketed": {
-                                  "args": [
-                                    {
-                                      "type": {
-                                        "path": {
-                                          "segments": [
-                                            {
-                                              "ident": "Tree",
-                                              "arguments": {
-                                                "angle_bracketed": {
-                                                  "args": [
-                                                    {
-                                                      "lifetime": "a"
-                                                    },
-                                                    {
-                                                      "type": {
-                                                        "path": {
-                                                          "segments": [
-                                                            {
-                                                              "ident": "T"
-                                                            }
-                                                          ]
-                                                        }
-                                                      }
-                                                    }
-                                                  ]
-                                                }
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      }
-                                    }
-                                  ]
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      "ident": "right",
-                      "colon_token": true,
-                      "ty": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "Box",
-                              "arguments": {
-                                "angle_bracketed": {
-                                  "args": [
-                                    {
-                                      "type": {
-                                        "path": {
-                                          "segments": [
-                                            {
-                                              "ident": "Tree",
-                                              "arguments": {
-                                                "angle_bracketed": {
-                                                  "args": [
-                                                    {
-                                                      "lifetime": "a"
-                                                    },
-                                                    {
-                                                      "type": {
-                                                        "path": {
-                                                          "segments": [
-                                                            {
-                                                              "ident": "T"
-                                                            }
-                                                          ]
-                                                        }
-                                                      }
-                                                    }
-                                                  ]
-                                                }
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      }
-                                    }
-                                  ]
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "ident": "Empty",
-                "fields": "unit"
               }
             ]
           }
         }
-      ]
+      }
+    },
+    "22": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 29,
+          "column": 8
+        },
+        "end": {
+          "line": 29,
+          "column": 31
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "right",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Box",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
+                      {
+                        "type": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "Tree",
+                                "arguments": {
+                                  "angle_bracketed": {
+                                    "args": [
+                                      {
+                                        "lifetime": "a"
+                                      },
+                                      {
+                                        "type": {
+                                          "path": {
+                                            "segments": [
+                                              {
+                                                "ident": "T"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "23": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 31,
+          "column": 4
+        },
+        "end": {
+          "line": 31,
+          "column": 9
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "Empty",
+        "fields": "unit"
+      }
     }
-  ]
+  }
 }

@@ -1,523 +1,146 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "rust",
       "path": "fn_qualifiers.rs",
-      "records": [
-        {
-          "id": 0,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 3,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "vis": "pub",
-            "ident": "plain",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "value"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "u32"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "u32"
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
+      "children": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    "1": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 0
         },
-        {
-          "id": 1,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 5,
-              "column": 0
-            },
-            "end": {
-              "line": 7,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "vis": "pub",
-            "async": true,
-            "ident": "fetch",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "url"
-                    }
-                  },
-                  "ty": {
-                    "reference": {
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "str"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
+        "end": {
+          "line": 3,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "plain",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "value"
                 }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "Result",
-                    "arguments": {
-                      "angle_bracketed": {
-                        "args": [
-                          {
-                            "type": {
-                              "path": {
-                                "segments": [
-                                  {
-                                    "ident": "String"
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "type": {
-                              "path": {
-                                "segments": [
-                                  {
-                                    "ident": "std"
-                                  },
-                                  {
-                                    "ident": "io"
-                                  },
-                                  {
-                                    "ident": "Error"
-                                  }
-                                ]
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
-        },
-        {
-          "id": 2,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 9,
-              "column": 0
-            },
-            "end": {
-              "line": 11,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "vis": "pub",
-            "const": true,
-            "ident": "square",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "x"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "u32"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "u32"
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
-        },
-        {
-          "id": 3,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 13,
-              "column": 0
-            },
-            "end": {
-              "line": 15,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "vis": "pub",
-            "unsafe": true,
-            "ident": "read",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "ptr"
-                    }
-                  },
-                  "ty": {
-                    "ptr": {
-                      "const": true,
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "u8"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "u8"
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
-        },
-        {
-          "id": 4,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 17,
-              "column": 0
-            },
-            "end": {
-              "line": 20,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "attrs": [
-              {
-                "style": "outer",
-                "meta": {
-                  "list": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "unsafe"
-                        }
-                      ]
-                    },
-                    "delimiter": "paren",
-                    "tokens": [
-                      {
-                        "ident": "no_mangle"
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "vis": "pub",
-            "abi": {
-              "name": "\"C\""
-            },
-            "ident": "callback",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "code"
-                    }
-                  },
-                  "ty": {
-                    "path": {
-                      "segments": [
-                        {
-                          "ident": "i32"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "i32"
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
-        },
-        {
-          "id": 5,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 22,
-              "column": 0
-            },
-            "end": {
-              "line": 24,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "vis": {
-              "restricted": {
+              },
+              "ty": {
                 "path": {
                   "segments": [
                     {
-                      "ident": "crate"
+                      "ident": "u32"
                     }
                   ]
                 }
               }
-            },
-            "async": true,
-            "unsafe": true,
-            "ident": "both",
-            "inputs": [
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
               {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "ptr"
-                    }
-                  },
-                  "ty": {
-                    "ptr": {
-                      "const": true,
-                      "elem": {
-                        "path": {
-                          "segments": [
-                            {
-                              "ident": "u8"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
+                "ident": "u32"
               }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "u8"
-                  }
-                ]
-              }
-            },
-            "stmts": []
+            ]
           }
         },
-        {
-          "id": 6,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 26,
-              "column": 0
-            },
-            "end": {
-              "line": 28,
-              "column": 1
-            }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "const": true,
-            "unsafe": true,
-            "abi": {
-              "name": "\"C\""
-            },
-            "ident": "all",
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "x"
-                    }
-                  },
-                  "ty": {
+        "stmts": []
+      }
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 5,
+          "column": 0
+        },
+        "end": {
+          "line": 7,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "async": true,
+        "ident": "fetch",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "url"
+                }
+              },
+              "ty": {
+                "reference": {
+                  "elem": {
                     "path": {
                       "segments": [
                         {
-                          "ident": "i32"
+                          "ident": "str"
                         }
                       ]
                     }
                   }
                 }
               }
-            ],
-            "output": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "i32"
-                  }
-                ]
-              }
-            },
-            "stmts": []
-          }
-        },
-        {
-          "id": 7,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 30,
-              "column": 0
-            },
-            "end": {
-              "line": 35,
-              "column": 1
             }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "ident": "generic",
-            "generics": {
-              "params": [
-                {
-                  "lifetime": {
-                    "lifetime": "a",
-                    "bounds": []
-                  }
-                },
-                {
-                  "type": {
-                    "ident": "T"
-                  }
-                },
-                {
-                  "const": {
-                    "ident": "N",
-                    "ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "usize"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                }
-              ],
-              "where_clause": [
-                {
-                  "type": {
-                    "bounded_ty": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "T"
-                          }
-                        ]
-                      }
-                    },
-                    "bounds": [
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Result",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
                       {
-                        "trait": {
+                        "type": {
                           "path": {
                             "segments": [
                               {
-                                "ident": "Clone"
+                                "ident": "String"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "std"
+                              },
+                              {
+                                "ident": "io"
+                              },
+                              {
+                                "ident": "Error"
                               }
                             ]
                           }
@@ -526,119 +149,93 @@
                     ]
                   }
                 }
-              ]
-            },
-            "inputs": [
-              {
-                "typed": {
-                  "pat": {
-                    "ident": {
-                      "ident": "items"
-                    }
-                  },
-                  "ty": {
-                    "reference": {
-                      "lifetime": "a",
-                      "elem": {
-                        "array": {
-                          "elem": {
-                            "path": {
-                              "segments": [
-                                {
-                                  "ident": "T"
-                                }
-                              ]
-                            }
-                          },
-                          "len": {
-                            "path": {
-                              "segments": [
-                                {
-                                  "ident": "N"
-                                }
-                              ]
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
               }
-            ],
-            "output": {
-              "impl_trait": {
-                "bounds": [
-                  {
-                    "trait": {
-                      "path": {
-                        "segments": [
-                          {
-                            "ident": "Iterator",
-                            "arguments": {
-                              "angle_bracketed": {
-                                "args": [
-                                  {
-                                    "assoc_type": {
-                                      "ident": "Item",
-                                      "ty": {
-                                        "reference": {
-                                          "lifetime": "a",
-                                          "elem": {
-                                            "path": {
-                                              "segments": [
-                                                {
-                                                  "ident": "T"
-                                                }
-                                              ]
-                                            }
-                                          }
-                                        }
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "lifetime": "a"
-                  }
-                ]
-              }
-            },
-            "stmts": []
+            ]
           }
         },
-        {
-          "id": 8,
-          "parent": null,
-          "mod_path": [],
-          "kind": "fn",
-          "span": {
-            "start": {
-              "line": 37,
-              "column": 0
-            },
-            "end": {
-              "line": 39,
-              "column": 1
+        "stmts": []
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 9,
+          "column": 0
+        },
+        "end": {
+          "line": 11,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "const": true,
+        "ident": "square",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "u32"
+                    }
+                  ]
+                }
+              }
             }
-          },
-          "syn": "ItemFn",
-          "node": {
-            "ident": "diverges",
-            "inputs": [
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
               {
-                "typed": {
-                  "pat": {
-                    "_": {}
-                  },
-                  "ty": {
+                "ident": "u32"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 13,
+          "column": 0
+        },
+        "end": {
+          "line": 15,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "unsafe": true,
+        "ident": "read",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "ptr"
+                }
+              },
+              "ty": {
+                "ptr": {
+                  "const": true,
+                  "elem": {
                     "path": {
                       "segments": [
                         {
@@ -648,57 +245,455 @@
                     }
                   }
                 }
-              },
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
               {
-                "typed": {
-                  "pat": {
-                    "tuple": {
-                      "elems": [
-                        {
-                          "ident": {
-                            "ident": "left"
-                          }
-                        },
-                        {
-                          "ident": {
-                            "ident": "right"
-                          }
-                        }
-                      ]
+                "ident": "u8"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 0
+        },
+        "end": {
+          "line": 20,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "attrs": [
+          {
+            "style": "outer",
+            "meta": {
+              "list": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "unsafe"
                     }
-                  },
-                  "ty": {
-                    "tuple": {
-                      "elems": [
+                  ]
+                },
+                "delimiter": "paren",
+                "tokens": [
+                  {
+                    "ident": "no_mangle"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "vis": "pub",
+        "abi": {
+          "name": "\"C\""
+        },
+        "ident": "callback",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "code"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "i32"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "i32"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 22,
+          "column": 0
+        },
+        "end": {
+          "line": 24,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": {
+          "restricted": {
+            "path": {
+              "segments": [
+                {
+                  "ident": "crate"
+                }
+              ]
+            }
+          }
+        },
+        "async": true,
+        "unsafe": true,
+        "ident": "both",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "ptr"
+                }
+              },
+              "ty": {
+                "ptr": {
+                  "const": true,
+                  "elem": {
+                    "path": {
+                      "segments": [
                         {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "i32"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "i32"
-                              }
-                            ]
-                          }
+                          "ident": "u8"
                         }
                       ]
                     }
                   }
                 }
               }
-            ],
-            "output": "!",
-            "stmts": []
+            }
           }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "u8"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 26,
+          "column": 0
+        },
+        "end": {
+          "line": 28,
+          "column": 1
         }
-      ]
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "const": true,
+        "unsafe": true,
+        "abi": {
+          "name": "\"C\""
+        },
+        "ident": "all",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "i32"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "i32"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 30,
+          "column": 0
+        },
+        "end": {
+          "line": 35,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "ident": "generic",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            },
+            {
+              "type": {
+                "ident": "T"
+              }
+            },
+            {
+              "const": {
+                "ident": "N",
+                "ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "usize"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "where_clause": [
+            {
+              "type": {
+                "bounded_ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "T"
+                      }
+                    ]
+                  }
+                },
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Clone"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "items"
+                }
+              },
+              "ty": {
+                "reference": {
+                  "lifetime": "a",
+                  "elem": {
+                    "array": {
+                      "elem": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "T"
+                            }
+                          ]
+                        }
+                      },
+                      "len": {
+                        "path": {
+                          "segments": [
+                            {
+                              "ident": "N"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Iterator",
+                        "arguments": {
+                          "angle_bracketed": {
+                            "args": [
+                              {
+                                "assoc_type": {
+                                  "ident": "Item",
+                                  "ty": {
+                                    "reference": {
+                                      "lifetime": "a",
+                                      "elem": {
+                                        "path": {
+                                          "segments": [
+                                            {
+                                              "ident": "T"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "lifetime": "a"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 37,
+          "column": 0
+        },
+        "end": {
+          "line": 39,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "ident": "diverges",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "_": {}
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "u8"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "typed": {
+              "pat": {
+                "tuple": {
+                  "elems": [
+                    {
+                      "ident": {
+                        "ident": "left"
+                      }
+                    },
+                    {
+                      "ident": {
+                        "ident": "right"
+                      }
+                    }
+                  ]
+                }
+              },
+              "ty": {
+                "tuple": {
+                  "elems": [
+                    {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "i32"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "i32"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": "!",
+        "stmts": []
+      }
     }
-  ]
+  }
 }

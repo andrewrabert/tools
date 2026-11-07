@@ -11,15 +11,14 @@ use ruff_python_ast::{Stmt, StringFlags};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_python_parser::parse_module;
 use ruff_source_file::{LineColumn, LineIndex};
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 
-use super::{Part, Position, RecordId, Span};
+use super::{NodeId, Position, Span};
 
-#[derive(Serialize, Deserialize)]
 pub(super) struct FileSurface {
     path: PathBuf,
-    records: Vec<Record>,
+    nodes: Vec<Node>,
 }
 
 impl FileSurface {
@@ -41,7 +40,7 @@ impl FileSurface {
         };
         let mut collector = Collector {
             source,
-            records: Vec::new(),
+            nodes: Vec::new(),
             parents: Vec::new(),
             unmodeled: None,
         };
@@ -57,8 +56,17 @@ impl FileSurface {
         }
         Ok(Self {
             path,
-            records: collector.records,
+            nodes: collector.nodes,
         })
+    }
+
+    /// The surface of the file at `path` holding `nodes`, in id order, each after its parent.
+    pub(super) fn new(path: PathBuf, nodes: Vec<Node>) -> Self {
+        Self { path, nodes }
+    }
+
+    pub(super) fn nodes(&self) -> &[Node] {
+        &self.nodes
     }
 
     pub(super) fn path(&self) -> &Path {
@@ -66,75 +74,66 @@ impl FileSurface {
     }
 
     pub(super) fn is_empty(&self) -> bool {
-        self.records.is_empty()
+        self.nodes.is_empty()
     }
 
     /// The declarations a change adds or deletes as a whole: every def, every class attribute,
-    /// and every class with neither attributes nor records inside it. A class holding either is
-    /// no part of its own, since what it holds is.
-    pub(super) fn parts(&self) -> Vec<Part> {
-        let mut parts = Vec::new();
-        for record in &self.records {
-            match &record.node {
-                Node::Def(_) => parts.push(Part::Record(record.id)),
-                Node::Class(class) => {
-                    parts.extend(
-                        (0..class.attributes.len()).map(|index| Part::Attribute(record.id, index)),
-                    );
-                    if class.attributes.is_empty() && self.children(record.id).next().is_none() {
-                        parts.push(Part::Record(record.id));
-                    }
-                }
-            }
-        }
-        parts
+    /// and every class with no nodes inside it. A class holding nodes is no part of its own,
+    /// since what it holds is.
+    pub(super) fn parts(&self) -> Vec<NodeId> {
+        self.nodes
+            .iter()
+            .filter(|node| match &node.syntax {
+                Syntax::Def(_) | Syntax::Attribute(_) => true,
+                Syntax::Class(_) => self.children(node.id).next().is_none(),
+            })
+            .map(|node| node.id)
+            .collect()
     }
 
-    /// The declarations of `parts` as Python text in the spec's stub style, in record order,
+    /// The declarations of `parts` as Python text in the spec's stub style, in node order,
     /// laid out by the Ruff formatter.
-    pub(super) fn declarations(&self, parts: &BTreeSet<Part>) -> Result<String> {
+    pub(super) fn declarations(&self, parts: &BTreeSet<NodeId>) -> Result<String> {
         let formatted = format_module_source(&self.text(parts), PyFormatOptions::default())
             .with_context(|| format!("formatting the declarations of {}", self.path.display()))?;
         Ok(formatted.into_code().trim_end().to_owned())
     }
 
-    pub(super) fn text(&self, parts: &BTreeSet<Part>) -> String {
-        let selected = Selected {
-            parts,
-            records: self.enclosing(parts),
-        };
+    pub(super) fn text(&self, parts: &BTreeSet<NodeId>) -> String {
+        let selected = self.enclosing(parts);
         let mut printer = Printer::default();
         let top_level = self
-            .records
+            .nodes
             .iter()
-            .filter(|record| record.parent.is_none() && selected.records.contains(&record.id));
+            .filter(|node| node.parent.is_none() && selected.contains(&node.id));
         self.block(&mut printer, top_level, &selected);
         printer.text
     }
 
-    fn enclosing(&self, parts: &BTreeSet<Part>) -> BTreeSet<RecordId> {
-        let mut records = BTreeSet::new();
-        for part in parts {
-            let mut next = Some(part.record());
+    fn enclosing(&self, parts: &BTreeSet<NodeId>) -> BTreeSet<NodeId> {
+        let mut nodes = BTreeSet::new();
+        for &part in parts {
+            let mut next = Some(part);
             while let Some(id) = next
-                && records.insert(id)
+                && nodes.insert(id)
             {
-                next = self.records[id.0].parent;
+                next = self.node(id).parent;
             }
         }
-        records
+        nodes
     }
 
-    /// Prints `record` with the selected records it encloses inside it: a function's body
+    /// Prints `node` with the selected nodes it encloses inside it: a function's body
     /// holds them, or is `...` without them, and a class's body holds its selected attributes
-    /// and then them.
-    fn declaration(&self, printer: &mut Printer, record: &Record, selected: &Selected) {
-        let mut children = self
-            .children(record.id)
-            .filter(|child| selected.records.contains(&child.id))
-            .peekable();
-        match &record.node {
-            Node::Def(function) => {
+    /// and then the others.
+    fn declaration(&self, printer: &mut Printer, node: &Node, selected: &BTreeSet<NodeId>) {
+        let (attributes, children): (Vec<&Node>, Vec<&Node>) = self
+            .children(node.id)
+            .filter(|child| selected.contains(&child.id))
+            .partition(|child| matches!(child.syntax, Syntax::Attribute(_)));
+        let mut children = children.into_iter().peekable();
+        match &node.syntax {
+            Syntax::Def(function) => {
                 printer.function_header(function);
                 if children.peek().is_none() {
                     printer.push(" ...\n");
@@ -145,21 +144,12 @@ impl FileSurface {
                 self.block(printer, children, selected);
                 printer.indent -= 1;
             }
-            Node::Class(class) => {
-                let attributes: Vec<&Attribute> = class
-                    .attributes
-                    .iter()
-                    .enumerate()
-                    .filter(|(index, _)| {
-                        selected.parts.contains(&Part::Attribute(record.id, *index))
-                    })
-                    .map(|(_, attribute)| attribute)
-                    .collect();
+            Syntax::Class(class) => {
                 printer.class_header(class);
                 printer.push("\n");
                 printer.indent += 1;
                 for attribute in &attributes {
-                    printer.attribute(attribute);
+                    self.declaration(printer, attribute, selected);
                 }
                 if attributes.is_empty() && children.peek().is_none() {
                     printer.indentation();
@@ -170,52 +160,61 @@ impl FileSurface {
                 self.block(printer, children, selected);
                 printer.indent -= 1;
             }
+            Syntax::Attribute(attribute) => printer.attribute(attribute),
         }
     }
 
     fn block<'a>(
         &'a self,
         printer: &mut Printer,
-        records: impl Iterator<Item = &'a Record>,
-        selected: &Selected,
+        nodes: impl Iterator<Item = &'a Node>,
+        selected: &BTreeSet<NodeId>,
     ) {
-        for (index, record) in records.enumerate() {
+        for (index, node) in nodes.enumerate() {
             if index > 0 {
                 // The formatter keeps consecutive stubs together as overloads when the source has
                 // no blank line between them.
                 printer.push("\n");
             }
-            self.declaration(printer, record, selected);
+            self.declaration(printer, node, selected);
         }
     }
 
-    fn children(&self, id: RecordId) -> impl Iterator<Item = &Record> {
-        self.records
+    /// The node `id` names, which the file holds.
+    fn node(&self, id: NodeId) -> &Node {
+        let index = self
+            .nodes
+            .binary_search_by_key(&id, |node| node.id)
+            .expect("a file's nodes are in id order and hold their parents");
+        &self.nodes[index]
+    }
+
+    fn children(&self, id: NodeId) -> impl Iterator<Item = &Node> {
+        self.nodes
             .iter()
-            .filter(move |record| record.parent == Some(id))
+            .filter(move |node| node.parent == Some(id))
     }
 }
 
-struct Selected<'a> {
-    parts: &'a BTreeSet<Part>,
-    records: BTreeSet<RecordId>,
-}
-
+/// A captured part of the surface. The capture's JSON maps it by an id of the capture's own and
+/// lists it among its parent's children, so the JSON holds neither its id nor its parent.
 #[derive(Serialize, Deserialize)]
-struct Record {
-    id: RecordId,
-    parent: Option<RecordId>,
+pub(super) struct Node {
+    #[serde(skip)]
+    pub(super) id: NodeId,
+    #[serde(skip)]
+    pub(super) parent: Option<NodeId>,
     span: Span,
     #[serde(flatten)]
-    node: Node,
+    syntax: Syntax,
 }
 
-/// A captured statement beside its kind.
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "kind", content = "node", rename_all = "lowercase")]
-enum Node {
+#[serde(tag = "kind", content = "syntax", rename_all = "lowercase")]
+enum Syntax {
     Def(Box<Function>),
     Class(Class),
+    Attribute(Attribute),
 }
 
 /// A `def` without its body.
@@ -229,7 +228,7 @@ struct Function {
     returns: Option<Expr>,
 }
 
-/// A `class` with the attributes its body declares directly.
+/// A `class` without its body, whose attributes, defs, and classes are nodes of their own.
 #[derive(Serialize, Deserialize)]
 struct Class {
     name: String,
@@ -237,7 +236,6 @@ struct Class {
     type_params: Vec<TypeParam>,
     bases: Vec<Expr>,
     keywords: Vec<Keyword>,
-    attributes: Vec<Attribute>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -754,12 +752,11 @@ impl From<LineColumn> for Position {
     }
 }
 
-/// Walks every statement of a module, recording each def and class.
 struct Collector<'src> {
     source: Source<'src>,
-    records: Vec<Record>,
-    /// Captured records enclosing the current statement, innermost last.
-    parents: Vec<RecordId>,
+    nodes: Vec<Node>,
+    /// Captured nodes enclosing the current statement, innermost last.
+    parents: Vec<NodeId>,
     /// The first syntax the model has no form for.
     unmodeled: Option<Unmodeled>,
 }
@@ -772,22 +769,22 @@ impl Collector<'_> {
     fn capture(
         &mut self,
         range: TextRange,
-        node: Result<Node, Unmodeled>,
+        syntax: Result<Syntax, Unmodeled>,
         descend: impl FnOnce(&mut Self),
     ) {
-        let node = match node {
-            Ok(node) => node,
+        let syntax = match syntax {
+            Ok(syntax) => syntax,
             Err(unmodeled) => {
                 self.unmodeled(unmodeled);
                 return;
             }
         };
-        let id = RecordId(self.records.len());
-        self.records.push(Record {
+        let id = NodeId(self.nodes.len());
+        self.nodes.push(Node {
             id,
             parent: self.parents.last().copied(),
             span: self.source.span(range),
-            node,
+            syntax,
         });
         self.parents.push(id);
         descend(self);
@@ -804,12 +801,24 @@ impl<'a> StatementVisitor<'a> for Collector<'_> {
                 let function = self
                     .source
                     .function(node)
-                    .map(|function| Node::Def(Box::new(function)));
+                    .map(|function| Syntax::Def(Box::new(function)));
                 self.capture(node.range, function, |collector| walk_stmt(collector, stmt));
             }
             Stmt::ClassDef(node) => {
-                let class = self.source.class(node).map(Node::Class);
-                self.capture(node.range, class, |collector| walk_stmt(collector, stmt));
+                let class = self.source.class(node).map(Syntax::Class);
+                self.capture(node.range, class, |collector| {
+                    for stmt in &node.body {
+                        match collector.source.attribute(stmt) {
+                            Ok(Some(attribute)) => collector.capture(
+                                stmt.range(),
+                                Ok(Syntax::Attribute(attribute)),
+                                |_| {},
+                            ),
+                            Ok(None) => collector.visit_stmt(stmt),
+                            Err(unmodeled) => collector.unmodeled(unmodeled),
+                        }
+                    }
+                });
             }
             Stmt::IpyEscapeCommand(node) => self.unmodeled(Unmodeled(node.range)),
             Stmt::Return(_)
@@ -882,11 +891,6 @@ impl<'src> Source<'src> {
             type_params: self.type_params(node.type_params.as_deref())?,
             bases,
             keywords,
-            attributes: node
-                .body
-                .iter()
-                .filter_map(|stmt| self.attribute(stmt).transpose())
-                .collect::<Result<_, _>>()?,
         })
     }
 

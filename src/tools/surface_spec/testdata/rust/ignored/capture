@@ -1,9 +1,12 @@
 {
-  "files": [
-    {
+  "roots": [
+    0
+  ],
+  "nodes": {
+    "0": {
+      "kind": "file",
       "language": "rust",
-      "path": "ignored.rs",
-      "records": []
+      "path": "ignored.rs"
     }
-  ]
+  }
 }
