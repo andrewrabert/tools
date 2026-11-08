@@ -634,17 +634,29 @@ impl fmt::Display for CaptureId {
 }
 
 impl CaptureJson {
-    /// The surface of file node `id`, the file at `path`, beside the id within the file of each
-    /// node the file holds.
+    /// The surface of file node `id`, the file at `path`, each declaration holding its sentence
+    /// among `justifications`, beside the id within the file of each node the file holds.
     fn file(
         &self,
         id: CaptureId,
         path: PathBuf,
+        justifications: BTreeMap<CaptureId, Justification>,
     ) -> Result<(FileSurface, BTreeMap<CaptureId, NodeId>)> {
+        // Only the file's own nodes, since cloning every node per file costs the most.
+        let mut nodes = BTreeMap::new();
+        let mut pending = vec![id];
+        while let Some(id) = pending.pop() {
+            let node = self
+                .nodes
+                .get(&id)
+                .ok_or_else(|| anyhow!("node {id} is not among the nodes"))?;
+            pending.extend(Children::deserialize(node)?.children);
+            nodes.insert(id, node.clone());
+        }
         let mut unplaced = Unplaced {
-            nodes: self.nodes.clone(),
+            nodes,
             placed: BTreeSet::new(),
-            justifications: BTreeMap::new(),
+            justifications,
         };
         let (file, children) = match unplaced.place(id)? {
             (Placed::File(file), children) => (file, children),

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use anyhow::{Context, Result, anyhow, bail};
-use clap::Subcommand;
+use clap::{Args, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -52,6 +52,34 @@ pub(super) enum Command {
         #[arg(value_name = "CAPTURE")]
         capture: PathBuf,
     },
+    /// Print the justification or code of each node, after the ids of the nodes on the way to it
+    Tree(Box<TreeArgs>),
+}
+
+/// What `tree` prints after each node's ids.
+#[derive(Clone, Copy, ValueEnum)]
+pub(super) enum TreeFormat {
+    /// The node's justification
+    Justification,
+    /// Each line of the node's surface spec
+    Code,
+}
+
+/// Boxed, so that `tree`'s arguments don't grow every tool's.
+#[derive(Args)]
+pub(super) struct TreeArgs {
+    /// JSON capture
+    #[arg(value_name = "CAPTURE")]
+    capture: PathBuf,
+    /// Node id to start the tree at [default: the root]
+    #[arg(long, value_name = "ID")]
+    id: Option<CaptureId>,
+    /// Levels of parents above the start to print
+    #[arg(short, long, value_name = "N", default_value_t = 0)]
+    parent_depth: usize,
+    /// What to print after each node's ids
+    #[arg(short, long, value_enum, default_value_t = TreeFormat::Justification)]
+    format: TreeFormat,
 }
 
 impl Command {
@@ -76,6 +104,21 @@ impl Command {
                 capture.save(&path)
             }
             Self::Check { capture } => Capture::load(&capture)?.check(),
+            Self::Tree(args) => {
+                let TreeArgs {
+                    capture,
+                    id,
+                    parent_depth,
+                    format,
+                } = *args;
+                let capture = Capture::load(&capture)?;
+                capture.write_tree(
+                    id.unwrap_or(capture.json.root),
+                    parent_depth,
+                    format,
+                    &mut io::BufWriter::new(io::stdout().lock()),
+                )
+            }
         }
         .map_err(Errors::from)
     }
@@ -276,11 +319,11 @@ impl Capture {
         let (surface, language) = match &place.holder {
             Holder::Dir(names) => (names.join("\n"), None),
             Holder::File => {
-                let (file, _) = self.json.file(id, place.path.clone())?;
+                let (file, _) = self.json.file(id, place.path.clone(), BTreeMap::new())?;
                 (file.every_declaration()?, Some(file.language()))
             }
             Holder::Declaration(file) => {
-                let (file, ids) = self.json.file(*file, place.path.clone())?;
+                let (file, ids) = self.json.file(*file, place.path.clone(), BTreeMap::new())?;
                 (file.surface(ids[&id])?, Some(file.language()))
             }
         };
@@ -346,10 +389,177 @@ impl Capture {
         Ok(())
     }
 
+    /// Writes the nodes `tree_paths` shows, each line starting with the node's path. With
+    /// `Justification`, a line per node, in tree order, then its justification, if it has one.
+    /// With `Code`, a line per line of the surface spec of each file holding a node shown, then
+    /// that line, only for the lines of the nodes shown, all unindented by as much as the least
+    /// indented of a file's.
+    fn write_tree(
+        &self,
+        start: CaptureId,
+        parents: usize,
+        format: TreeFormat,
+        out: &mut impl Write,
+    ) -> Result<()> {
+        let shown = self.tree_paths(start, parents)?;
+        match format {
+            TreeFormat::Justification => {
+                for (id, path) in &shown {
+                    match self.json.justifications.get(id) {
+                        Some(justification) => writeln!(out, "{path} {}", justification.as_ref()),
+                        None => writeln!(out, "{path}"),
+                    }
+                    .context("writing to stdout")?;
+                }
+            }
+            TreeFormat::Code => {
+                let paths = BTreeMap::from_iter(shown.iter().map(|(id, path)| (*id, path)));
+                let mut files = Vec::new();
+                for (id, _) in &shown {
+                    let file = match self.places[id].holder {
+                        Holder::Dir(_) => continue,
+                        Holder::File => *id,
+                        Holder::Declaration(file) => file,
+                    };
+                    if !files.contains(&file) {
+                        files.push(file);
+                    }
+                }
+                for file in files {
+                    let lines = Vec::from_iter(
+                        self.code_lines(file)?
+                            .into_iter()
+                            .filter(|(id, _)| paths.contains_key(id)),
+                    );
+                    let indent = lines
+                        .iter()
+                        .map(|(_, line)| indentation(line))
+                        .min()
+                        .unwrap_or(0);
+                    for (id, line) in &lines {
+                        writeln!(out, "{} {}", paths[id], &line[indent..])
+                            .context("writing to stdout")?;
+                    }
+                }
+            }
+        }
+        out.flush().context("writing to stdout")
+    }
+
+    /// Each of the `parents` nearest ancestors of `start`, the highest first, then `start` and
+    /// each node below it, in tree order, beside its path: the ids of the nodes from the highest
+    /// of them down to it, joined by `:`.
+    fn tree_paths(&self, start: CaptureId, parents: usize) -> Result<Vec<(CaptureId, String)>> {
+        let begin = self
+            .order
+            .iter()
+            .position(|&id| id == start)
+            .ok_or_else(|| anyhow!("node {start} is not among the nodes"))?;
+        let mut ancestors = Vec::new();
+        let mut next = self.places[&start].parent;
+        while let Some(id) = next
+            && ancestors.len() < parents
+        {
+            ancestors.push(id);
+            next = self.places[&id].parent;
+        }
+        let mut shown = Vec::new();
+        let mut above = None;
+        for &id in ancestors.iter().rev() {
+            let path = tree_path(above.as_deref(), id);
+            above = Some(path.clone());
+            shown.push((id, path));
+        }
+        // The path of each node below `start` so far. Tree order puts each node after its
+        // parent, and the nodes below `start` right after it.
+        let mut paths = BTreeMap::<CaptureId, String>::new();
+        for &id in &self.order[begin..] {
+            let parent = if id == start {
+                above.as_deref()
+            } else {
+                match self.places[&id]
+                    .parent
+                    .and_then(|parent| paths.get(&parent))
+                {
+                    Some(parent) => Some(parent.as_str()),
+                    None => break,
+                }
+            };
+            let path = tree_path(parent, id);
+            paths.insert(id, path.clone());
+            shown.push((id, path));
+        }
+        Ok(shown)
+    }
+
+    /// Each non-blank line of the surface spec of file node `file`, beside the node it renders:
+    /// the nearest node before it, by its marker, not indented deeper than the line. A line with
+    /// no such node is left out. Rendering marks each declaration by holding its marker in place
+    /// of a justification.
+    fn code_lines(&self, file: CaptureId) -> Result<Vec<(CaptureId, String)>> {
+        let markers = BTreeMap::from_iter(
+            self.order
+                .iter()
+                .filter(|id| matches!(self.places[id].holder, Holder::Declaration(f) if f == file))
+                .map(|&id| Ok((id, Justification::from_str(&format!("{MARKER}{id}"))?)))
+                .collect::<Result<Vec<_>>>()?,
+        );
+        let (surface, _) =
+            self.json
+                .file(file, self.places[&file].path.clone(), markers.clone())?;
+        let comment = match surface.language() {
+            Language::Rust => "/// ",
+            Language::Python => "# ",
+        };
+        // The nodes enclosing the line, beside the indentation of their markers.
+        let mut enclosing: Vec<(CaptureId, usize)> = Vec::new();
+        let mut lines = Vec::new();
+        for line in surface.every_declaration()?.lines() {
+            let text = line.trim_start();
+            if text.is_empty() {
+                continue;
+            }
+            let indent = indentation(line);
+            let marked = text
+                .strip_prefix(comment)
+                .and_then(|text| text.strip_prefix(MARKER))
+                .and_then(|id| id.parse::<CaptureId>().ok())
+                .filter(|id| markers.contains_key(id));
+            while enclosing.last().is_some_and(|&(_, enclosing)| {
+                enclosing > indent || (marked.is_some() && enclosing == indent)
+            }) {
+                enclosing.pop();
+            }
+            match (marked, enclosing.last()) {
+                (Some(id), _) => enclosing.push((id, indent)),
+                (None, Some(&(id, _))) => lines.push((id, line.to_owned())),
+                // A wrapper no node is, like an `extern` block around its fns.
+                (None, None) => {}
+            }
+        }
+        Ok(lines)
+    }
+
     fn place(&self, id: CaptureId) -> Result<&Place> {
         self.places
             .get(&id)
             .ok_or_else(|| anyhow!("node {id} is not among the nodes"))
+    }
+}
+
+/// What `code_lines` gives each declaration in place of its justification, before its id.
+const MARKER: &str = "@node ";
+
+/// The number of spaces `line` starts with.
+fn indentation(line: &str) -> usize {
+    line.len() - line.trim_start_matches(' ').len()
+}
+
+/// The ids of `parent`'s path, then `id`, joined by `:`.
+fn tree_path(parent: Option<&str>, id: CaptureId) -> String {
+    match parent {
+        Some(parent) => format!("{parent}:{id}"),
+        None => id.to_string(),
     }
 }
 
@@ -371,4 +581,113 @@ fn names(json: &CaptureJson, children: &[CaptureId]) -> Result<Vec<String>> {
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tree_prefixes_each_justification_with_its_ids() {
+        let capture = Capture::parse(
+            &json!({
+                "root": 0,
+                "nodes": {
+                    "0": {"kind": "path", "path": "/src/p", "children": [1, 3]},
+                    "1": {"kind": "dir", "name": "a", "children": [2]},
+                    "2": {"kind": "file", "language": "rust", "name": "x.rs"},
+                    "3": {"kind": "file", "language": "python", "name": "b.py"},
+                },
+                "justifications": {"0": "Holds the sources.", "2": "Holds x."},
+            })
+            .to_string(),
+        )
+        .expect("capture");
+        let tree = |start, parents| {
+            let mut out = Vec::new();
+            capture
+                .write_tree(start, parents, TreeFormat::Justification, &mut out)
+                .map(|()| String::from_utf8(out).expect("UTF-8"))
+        };
+        assert_eq!(
+            tree(CaptureId(0), 0).expect("tree"),
+            "0 Holds the sources.\n0:1\n0:1:2 Holds x.\n0:3\n",
+        );
+        assert_eq!(tree(CaptureId(1), 0).expect("tree"), "1\n1:2 Holds x.\n");
+        assert_eq!(tree(CaptureId(2), 1).expect("tree"), "1\n1:2 Holds x.\n");
+        assert_eq!(
+            tree(CaptureId(1), 5).expect("tree"),
+            "0 Holds the sources.\n0:1\n0:1:2 Holds x.\n"
+        );
+        assert!(tree(CaptureId(4), 0).is_err());
+    }
+
+    /// `tree -f code` of `source`, captured as the file `path`, from node `start`.
+    fn code(path: &str, language: Language, source: &str, start: usize, parents: usize) -> String {
+        let surface = CapturedSurface {
+            files: vec![
+                super::super::FileSurface::parse(PathBuf::from(path), language, source)
+                    .expect("capturable source"),
+            ],
+        };
+        let capture =
+            Capture::parse(&serde_json::to_string(&surface).expect("JSON")).expect("capture");
+        let mut out = Vec::new();
+        capture
+            .write_tree(CaptureId(start), parents, TreeFormat::Code, &mut out)
+            .expect("tree");
+        String::from_utf8(out).expect("UTF-8")
+    }
+
+    #[test]
+    fn tree_code_prefixes_each_line_with_its_nodes_ids() {
+        let source = "
+class Farts:
+    def make_stinky(self) -> str:
+        return 'stinky'
+
+    def make_wet(self) -> str:
+        return 'wet'
+";
+        let code =
+            |start, parents| code("/src/p/farts.py", Language::Python, source, start, parents);
+        assert_eq!(
+            code(0, 0),
+            "0:1:2 class Farts:\n\
+             0:1:2:3     def make_stinky(self) -> str: ...\n\
+             0:1:2:4     def make_wet(self) -> str: ...\n",
+        );
+        assert_eq!(code(3, 0), "3 def make_stinky(self) -> str: ...\n");
+        assert_eq!(
+            code(3, 1),
+            "2 class Farts:\n2:3     def make_stinky(self) -> str: ...\n",
+        );
+    }
+
+    #[test]
+    fn tree_code_gives_closing_lines_to_their_node() {
+        let source = "
+#[derive(Debug)]
+pub struct Error {
+    pub encoding: &'static str,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.encoding)
+    }
+}
+";
+        let code = |start, parents| code("/src/p/x.rs", Language::Rust, source, start, parents);
+        assert_eq!(
+            code(1, 0),
+            "1:2 #[derive(Debug)]\n\
+             1:2 pub struct Error {\n\
+             1:2:3     pub encoding: &'static str,\n\
+             1:2 }\n\
+             1:4 impl std::fmt::Display for Error;\n",
+        );
+        assert_eq!(code(3, 0), "3 pub encoding: &'static str,\n");
+        assert_eq!(code(5, 0), "");
+    }
 }
