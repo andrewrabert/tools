@@ -14,7 +14,7 @@ use ruff_source_file::{LineColumn, LineIndex};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 
-use super::{Justification, NodeId, Position, Span};
+use super::{Justification, Language, NodeId, Position, Span};
 
 pub(super) struct FileSurface {
     path: PathBuf,
@@ -145,12 +145,10 @@ impl FileSurface {
             .filter(|child| selected.contains(&child.id))
             .partition(|child| matches!(child.syntax, Syntax::Attribute(_)));
         let mut children = children.into_iter().peekable();
-        if let Some(justification) = &node.justification {
-            printer.indentation();
-            printer.push("# ");
-            printer.push(justification.as_ref());
-            printer.push("\n");
-        }
+        printer.indentation();
+        printer.push(Language::Python.comment());
+        printer.push(&node.id.marker());
+        printer.push("\n");
         match &node.syntax {
             Syntax::Def(function) => {
                 printer.function_header(function);

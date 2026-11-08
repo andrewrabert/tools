@@ -319,11 +319,11 @@ impl Capture {
         let (surface, language) = match &place.holder {
             Holder::Dir(names) => (names.join("\n"), None),
             Holder::File => {
-                let (file, _) = self.json.file(id, place.path.clone(), BTreeMap::new())?;
-                (file.every_declaration()?, Some(file.language()))
+                let (file, _) = self.json.file(id, place.path.clone())?;
+                (file.every_declaration()?.text(&file), Some(file.language()))
             }
             Holder::Declaration(file) => {
-                let (file, ids) = self.json.file(*file, place.path.clone(), BTreeMap::new())?;
+                let (file, ids) = self.json.file(*file, place.path.clone())?;
                 (file.surface(ids[&id])?, Some(file.language()))
             }
         };
@@ -492,52 +492,17 @@ impl Capture {
         Ok(shown)
     }
 
-    /// Each non-blank line of the surface spec of file node `file`, beside the node it renders:
-    /// the nearest node before it, by its marker, not indented deeper than the line. A line with
-    /// no such node is left out. Rendering marks each declaration by holding its marker in place
-    /// of a justification.
+    /// Each non-blank line of the surface spec of file node `file`, beside the node it renders.
+    /// A line of no node, like an `extern` block around its fns, is left out.
     fn code_lines(&self, file: CaptureId) -> Result<Vec<(CaptureId, String)>> {
-        let markers = BTreeMap::from_iter(
-            self.order
-                .iter()
-                .filter(|id| matches!(self.places[id].holder, Holder::Declaration(f) if f == file))
-                .map(|&id| Ok((id, Justification::from_str(&format!("{MARKER}{id}"))?)))
-                .collect::<Result<Vec<_>>>()?,
-        );
-        let (surface, _) =
-            self.json
-                .file(file, self.places[&file].path.clone(), markers.clone())?;
-        let comment = match surface.language() {
-            Language::Rust => "/// ",
-            Language::Python => "# ",
-        };
-        // The nodes enclosing the line, beside the indentation of their markers.
-        let mut enclosing: Vec<(CaptureId, usize)> = Vec::new();
-        let mut lines = Vec::new();
-        for line in surface.every_declaration()?.lines() {
-            let text = line.trim_start();
-            if text.is_empty() {
-                continue;
-            }
-            let indent = indentation(line);
-            let marked = text
-                .strip_prefix(comment)
-                .and_then(|text| text.strip_prefix(MARKER))
-                .and_then(|id| id.parse::<CaptureId>().ok())
-                .filter(|id| markers.contains_key(id));
-            while enclosing.last().is_some_and(|&(_, enclosing)| {
-                enclosing > indent || (marked.is_some() && enclosing == indent)
-            }) {
-                enclosing.pop();
-            }
-            match (marked, enclosing.last()) {
-                (Some(id), _) => enclosing.push((id, indent)),
-                (None, Some(&(id, _))) => lines.push((id, line.to_owned())),
-                // A wrapper no node is, like an `extern` block around its fns.
-                (None, None) => {}
-            }
-        }
-        Ok(lines)
+        let (surface, ids) = self.json.file(file, self.places[&file].path.clone())?;
+        let capture_ids =
+            BTreeMap::from_iter(ids.into_iter().map(|(capture, node)| (node, capture)));
+        Ok(surface
+            .every_declaration()?
+            .node_lines()
+            .map(|(node, line)| (capture_ids[&node], line.to_owned()))
+            .collect())
     }
 
     fn place(&self, id: CaptureId) -> Result<&Place> {
@@ -546,9 +511,6 @@ impl Capture {
             .ok_or_else(|| anyhow!("node {id} is not among the nodes"))
     }
 }
-
-/// What `code_lines` gives each declaration in place of its justification, before its id.
-const MARKER: &str = "@node ";
 
 /// The number of spaces `line` starts with.
 fn indentation(line: &str) -> usize {

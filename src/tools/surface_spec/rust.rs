@@ -225,7 +225,7 @@ impl FileSurface {
         let item = match &node.syntax {
             Syntax::ItemFn { syntax } => {
                 let mut syntax = syn::ItemFn::from_adapter(syntax);
-                justify(&mut syntax.attrs, node);
+                mark(&mut syntax.attrs, node);
                 Item::Verbatim(stub(&syntax.attrs, &syntax.vis, &syntax.sig))
             }
             Syntax::ForeignItemFn { foreign_mod, .. } => {
@@ -237,20 +237,20 @@ impl FileSurface {
             | Syntax::Variant { .. } => return None,
             Syntax::ItemStruct { syntax } => {
                 let mut syntax = syn::ItemStruct::from_adapter(syntax);
-                justify(&mut syntax.attrs, node);
+                mark(&mut syntax.attrs, node);
                 self.fill_fields(&mut syntax.fields, node, holding);
                 Item::Struct(syntax)
             }
             Syntax::ItemEnum { syntax } => {
                 let mut syntax = syn::ItemEnum::from_adapter(syntax);
-                justify(&mut syntax.attrs, node);
+                mark(&mut syntax.attrs, node);
                 syntax
                     .variants
                     .extend(self.children(node.id).filter(held).filter_map(|child| {
                         match &child.syntax {
                             Syntax::Variant { syntax } => {
                                 let mut variant = syn::Variant::from_adapter(syntax);
-                                justify(&mut variant.attrs, child);
+                                mark(&mut variant.attrs, child);
                                 Some(variant)
                             }
                             // Children outside the enum's own variants render on their own.
@@ -270,14 +270,14 @@ impl FileSurface {
             }
             Syntax::ItemTrait { syntax } => {
                 let mut syntax = syn::ItemTrait::from_adapter(syntax);
-                justify(&mut syntax.attrs, node);
+                mark(&mut syntax.attrs, node);
                 syntax
                     .items
                     .extend(self.children(node.id).filter(held).filter_map(|child| {
                         match &child.syntax {
                             Syntax::TraitItemFn { syntax } => {
                                 let mut method = syn::TraitItemFn::from_adapter(syntax);
-                                justify(&mut method.attrs, child);
+                                mark(&mut method.attrs, child);
                                 method.default = None;
                                 method.semi_token = Some(Default::default());
                                 Some(TraitItem::Fn(method))
@@ -299,14 +299,14 @@ impl FileSurface {
             }
             Syntax::TraitImpl { syntax } | Syntax::InherentImpl { syntax } => {
                 let mut syntax = syn::ItemImpl::from_adapter(syntax);
-                justify(&mut syntax.attrs, node);
+                mark(&mut syntax.attrs, node);
                 syntax.items = self
                     .children(node.id)
                     .filter(held)
                     .filter_map(|child| match &child.syntax {
                         Syntax::ImplItemFn { syntax } => {
                             let mut method = syn::ImplItemFn::from_adapter(syntax);
-                            justify(&mut method.attrs, child);
+                            mark(&mut method.attrs, child);
                             let attrs = &method.attrs;
                             let defaultness = method.modifiers.defaultness;
                             let signature = stub(&[], &method.vis, &method.sig);
@@ -366,7 +366,7 @@ impl FileSurface {
             .filter_map(|child| match &child.syntax {
                 Syntax::Field { syntax } => {
                     let mut field = syn::Field::from_adapter(syntax);
-                    justify(&mut field.attrs, child);
+                    mark(&mut field.attrs, child);
                     Some(field)
                 }
                 // Children outside the fields render on their own.
@@ -464,13 +464,10 @@ fn renders(parent: &Node, child: &Node) -> bool {
     )
 }
 
-/// Puts `node`'s justification first among `attrs`, as a doc comment, which the spec otherwise
-/// leaves out.
-fn justify(attrs: &mut Vec<Attribute>, node: &Node) {
-    if let Some(justification) = &node.justification {
-        let text = format!(" {}", justification.as_ref());
-        attrs.insert(0, syn::parse_quote!(#[doc = #text]));
-    }
+/// Puts `node`'s marker first among `attrs`, as a doc comment, where its justification goes.
+fn mark(attrs: &mut Vec<Attribute>, node: &Node) {
+    let text = format!(" {}", node.id.marker());
+    attrs.insert(0, syn::parse_quote!(#[doc = #text]));
 }
 
 /// A captured part of the surface. The capture's JSON maps it by an id of the capture's own and
@@ -527,7 +524,7 @@ impl ForeignMod {
             .filter_map(|node| match &node.syntax {
                 Syntax::ForeignItemFn { syntax, .. } => {
                     let mut syntax = syn::ForeignItemFn::from_adapter(syntax);
-                    justify(&mut syntax.attrs, node);
+                    mark(&mut syntax.attrs, node);
                     Some(ForeignItem::Fn(syntax))
                 }
                 // A block holds only foreign fns.

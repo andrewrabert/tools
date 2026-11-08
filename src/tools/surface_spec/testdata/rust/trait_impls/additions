@@ -8,9 +8,13 @@ under `## Deletions`.
 
 ### trait_impls.rs
 ```rust
-pub struct Wrapper<T>(T);
+pub struct Wrapper<T>(
+    T,
+);
 
-pub struct Raw(*mut u8);
+pub struct Raw(
+    *mut u8,
+);
 
 impl<T: Display> Display for Wrapper<T>;
 

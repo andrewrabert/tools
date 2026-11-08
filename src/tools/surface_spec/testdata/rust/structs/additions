@@ -15,7 +15,10 @@ pub struct Point {
     label: String,
 }
 
-pub struct Pair(pub u8, u16);
+pub struct Pair(
+    pub u8,
+    u16,
+);
 
 pub struct Unit;
 

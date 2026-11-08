@@ -300,6 +300,14 @@ impl Language {
         }
     }
 
+    /// What starts a comment line holding a declaration's justification.
+    fn comment(self) -> &'static str {
+        match self {
+            Self::Rust => "/// ",
+            Self::Python => "# ",
+        }
+    }
+
     fn template(self) -> &'static str {
         match self {
             Self::Rust => include_str!("surface_spec/templates/rust.md.j2"),
@@ -634,13 +642,12 @@ impl fmt::Display for CaptureId {
 }
 
 impl CaptureJson {
-    /// The surface of file node `id`, the file at `path`, each declaration holding its sentence
-    /// among `justifications`, beside the id within the file of each node the file holds.
+    /// The surface of file node `id`, the file at `path`, beside the id within the file of each
+    /// node the file holds.
     fn file(
         &self,
         id: CaptureId,
         path: PathBuf,
-        justifications: BTreeMap<CaptureId, Justification>,
     ) -> Result<(FileSurface, BTreeMap<CaptureId, NodeId>)> {
         // Only the file's own nodes, since cloning every node per file costs the most.
         let mut nodes = BTreeMap::new();
@@ -656,7 +663,7 @@ impl CaptureJson {
         let mut unplaced = Unplaced {
             nodes,
             placed: BTreeSet::new(),
-            justifications,
+            justifications: BTreeMap::new(),
         };
         let (file, children) = match unplaced.place(id)? {
             (Placed::File(file), children) => (file, children),
@@ -1439,7 +1446,7 @@ impl FileSurface {
         .with_context(|| format!("rendering {}", self.path().display()))?;
         Ok(FileDeclarations {
             path: self.path().display().to_string(),
-            code,
+            code: self.code(&code).text(self),
         })
     }
 
@@ -1474,28 +1481,63 @@ impl FileSurface {
     /// The declaration of node `id` inside the declarations enclosing it, holding what it
     /// encloses.
     fn surface(&self, id: NodeId) -> Result<String> {
-        match self {
+        let code = match self {
             Self::Rust(file) => Ok(file.surface(id)),
             Self::Python(file) => file.surface(id),
-        }
+        }?;
+        Ok(self.code(&code).text(self))
     }
 
-    /// The declarations of every node in the file.
-    fn every_declaration(&self) -> Result<String> {
+    /// The declarations of every node in the file, each line beside the node it renders.
+    fn every_declaration(&self) -> Result<Code> {
         let nodes = match self {
             Self::Rust(file) => file.nodes().iter().map(|node| node.id).collect(),
             Self::Python(file) => file.nodes().iter().map(|node| node.id).collect(),
         };
-        Ok(self.declarations(&nodes)?.code)
+        let code = match self {
+            Self::Rust(file) => Ok(file.declarations(&nodes)),
+            Self::Python(file) => file.declarations(&nodes),
+        }
+        .with_context(|| format!("rendering {}", self.path().display()))?;
+        Ok(self.code(&code))
     }
 
     /// `part` as text, inside the nodes enclosing it, which equals the text of an equal part.
     fn text(&self, part: NodeId) -> Result<String> {
         let parts = BTreeSet::from([part]);
-        Ok(match self {
+        let code = match self {
             Self::Rust(file) => file.declarations(&parts),
             Self::Python(file) => file.text(&parts),
-        })
+        };
+        Ok(self.code(&code).text(self))
+    }
+
+    /// The lines of `marked`, declarations this file's renderer gave, each beside the node it
+    /// renders.
+    fn code(&self, marked: &str) -> Code {
+        Code::parse(self.language(), marked)
+    }
+
+    /// The justification of node `id`, which the file holds.
+    fn justification(&self, id: NodeId) -> Option<&Justification> {
+        fn of<N>(
+            nodes: &[N],
+            id: NodeId,
+            key: fn(&N) -> (NodeId, Option<&Justification>),
+        ) -> Option<&Justification> {
+            let index = nodes
+                .binary_search_by_key(&id, |node| key(node).0)
+                .expect("a file's nodes are in id order");
+            key(&nodes[index]).1
+        }
+        match self {
+            Self::Rust(file) => of(file.nodes(), id, |node| {
+                (node.id, node.justification.as_ref())
+            }),
+            Self::Python(file) => of(file.nodes(), id, |node| {
+                (node.id, node.justification.as_ref())
+            }),
+        }
     }
 }
 
@@ -1503,6 +1545,106 @@ impl FileSurface {
 /// parent.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 struct NodeId(usize);
+
+impl NodeId {
+    /// What a renderer puts where the node's justification goes, a comment line before the
+    /// node's declaration, so that each line rendered can be told apart by node.
+    fn marker(self) -> String {
+        format!("{MARKER}{}", self.0)
+    }
+}
+
+/// What starts a node's marker, before its id.
+const MARKER: &str = "@node ";
+
+/// Declarations as a renderer gives them, each line beside the node it renders.
+struct Code {
+    language: Language,
+    lines: Vec<Line>,
+}
+
+enum Line {
+    /// Where the justification of `node` goes, at `indent`, which its marker held.
+    Justification { node: NodeId, indent: String },
+    /// A line of the declaration of `node`, or of no node, like a blank line or an `extern`
+    /// block around its fns.
+    Code { node: Option<NodeId>, text: String },
+}
+
+impl Code {
+    /// The lines of `marked`, each line beside the nearest node before it, by its marker, not
+    /// indented deeper than the line.
+    fn parse(language: Language, marked: &str) -> Self {
+        let comment = language.comment();
+        // The nodes enclosing the line, beside the indentation of their markers.
+        let mut enclosing: Vec<(NodeId, usize)> = Vec::new();
+        let lines = marked
+            .lines()
+            .map(|line| {
+                let text = line.trim_start();
+                if text.is_empty() {
+                    return Line::Code {
+                        node: None,
+                        text: line.to_owned(),
+                    };
+                }
+                let indent = line.len() - text.len();
+                let marked = text
+                    .strip_prefix(comment)
+                    .and_then(|text| text.strip_prefix(MARKER))
+                    .and_then(|id| id.parse().ok())
+                    .map(NodeId);
+                while enclosing.last().is_some_and(|&(_, enclosing)| {
+                    enclosing > indent || (marked.is_some() && enclosing == indent)
+                }) {
+                    enclosing.pop();
+                }
+                match marked {
+                    Some(node) => {
+                        enclosing.push((node, indent));
+                        Line::Justification {
+                            node,
+                            indent: line[..indent].to_owned(),
+                        }
+                    }
+                    None => Line::Code {
+                        node: enclosing.last().map(|&(node, _)| node),
+                        text: line.to_owned(),
+                    },
+                }
+            })
+            .collect();
+        Self { language, lines }
+    }
+
+    /// The declarations as text, each node's justification among those `file` holds before it.
+    fn text(&self, file: &FileSurface) -> String {
+        let comment = self.language.comment();
+        let mut text = Vec::new();
+        for line in &self.lines {
+            match line {
+                Line::Justification { node, indent } => {
+                    if let Some(justification) = file.justification(*node) {
+                        text.push(format!("{indent}{comment}{}", justification.as_ref()));
+                    }
+                }
+                Line::Code { text: line, .. } => text.push(line.clone()),
+            }
+        }
+        text.join("\n")
+    }
+
+    /// Each non-blank line of a node's declaration, beside the node.
+    fn node_lines(&self) -> impl Iterator<Item = (NodeId, &str)> {
+        self.lines.iter().filter_map(|line| match line {
+            Line::Code {
+                node: Some(node),
+                text,
+            } if !text.trim().is_empty() => Some((*node, text.as_str())),
+            Line::Code { .. } | Line::Justification { .. } => None,
+        })
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 struct Span {
