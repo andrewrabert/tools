@@ -251,7 +251,6 @@ impl FileSurface {
                             Syntax::Variant { syntax } => {
                                 let mut variant = syn::Variant::from_adapter(syntax);
                                 justify(&mut variant.attrs, child);
-                                self.fill_fields(&mut variant.fields, child, holding);
                                 Some(variant)
                             }
                             // Children outside the enum's own variants render on their own.
@@ -455,10 +454,8 @@ impl Holding<'_> {
 fn renders(parent: &Node, child: &Node) -> bool {
     matches!(
         (&parent.syntax, &child.syntax),
-        (
-            Syntax::ItemStruct { .. } | Syntax::Variant { .. },
-            Syntax::Field { .. }
-        ) | (Syntax::ItemEnum { .. }, Syntax::Variant { .. })
+        (Syntax::ItemStruct { .. }, Syntax::Field { .. })
+            | (Syntax::ItemEnum { .. }, Syntax::Variant { .. })
             | (Syntax::ItemTrait { .. }, Syntax::TraitItemFn { .. })
             | (
                 Syntax::InherentImpl { .. } | Syntax::TraitImpl { .. },
@@ -594,7 +591,7 @@ enum Syntax {
     ItemStruct {
         syntax: <syn::ItemStruct as Syn>::Adapter,
     },
-    /// A field of a struct or of an enum's variant.
+    /// A field of a struct.
     Field {
         syntax: <syn::Field as Syn>::Adapter,
     },
@@ -602,7 +599,7 @@ enum Syntax {
     ItemEnum {
         syntax: <syn::ItemEnum as Syn>::Adapter,
     },
-    /// An enum's variant, without its fields, which are nodes of their own.
+    /// An enum's variant, with its fields, which are its inputs as params are a fn's.
     Variant {
         syntax: <syn::Variant as Syn>::Adapter,
     },
@@ -922,9 +919,18 @@ impl<'ast> Visit<'ast> for Collector {
         let pruned = Syntax::Variant {
             syntax: pruned(node, Prune::visit_variant_mut),
         };
+        // Its fields are no captured kind, since the variant holds them, though items inside
+        // them are.
         self.within(test_only(&node.attrs), |collector| {
             collector.capture(node.span(), pruned, |collector| {
-                visit::visit_variant(collector, node)
+                for field in &node.fields {
+                    collector.within(test_only(&field.attrs), |collector| {
+                        visit::visit_field(collector, field)
+                    });
+                }
+                if let Some((_, discriminant)) = &node.discriminant {
+                    collector.visit_expr(discriminant);
+                }
             })
         });
     }
@@ -1135,7 +1141,6 @@ impl VisitMut for Prune {
 
     fn visit_variant_mut(&mut self, node: &mut syn::Variant) {
         strip_attrs(&mut node.attrs);
-        clear_fields(&mut node.fields);
         visit_mut::visit_variant_mut(self, node);
     }
 

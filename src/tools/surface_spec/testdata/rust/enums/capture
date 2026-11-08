@@ -15,8 +15,8 @@
       "children": [
         2,
         7,
-        14,
-        18
+        11,
+        15
       ]
     },
     "2": {
@@ -182,8 +182,8 @@
       },
       "children": [
         8,
-        10,
-        13
+        9,
+        10
       ]
     },
     "8": {
@@ -203,40 +203,23 @@
       "syntax": {
         "ident": "Circle",
         "fields": {
-          "unnamed": []
-        }
-      },
-      "children": [
-        9
-      ]
-    },
-    "9": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 10,
-          "column": 11
-        },
-        "end": {
-          "line": 10,
-          "column": 14
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ty": {
-          "path": {
-            "segments": [
-              {
-                "ident": "f64"
+          "unnamed": [
+            {
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "f64"
+                    }
+                  ]
+                }
               }
-            ]
-          }
+            }
+          ]
         }
       }
     },
-    "10": {
+    "9": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -253,71 +236,38 @@
       "syntax": {
         "ident": "Rectangle",
         "fields": {
-          "named": []
-        }
-      },
-      "children": [
-        11,
-        12
-      ]
-    },
-    "11": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 11,
-          "column": 16
-        },
-        "end": {
-          "line": 11,
-          "column": 26
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ident": "width",
-        "colon_token": true,
-        "ty": {
-          "path": {
-            "segments": [
-              {
-                "ident": "f64"
+          "named": [
+            {
+              "ident": "width",
+              "colon_token": true,
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "f64"
+                    }
+                  ]
+                }
               }
-            ]
-          }
+            },
+            {
+              "ident": "height",
+              "colon_token": true,
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "f64"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       }
     },
-    "12": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 11,
-          "column": 28
-        },
-        "end": {
-          "line": 11,
-          "column": 39
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ident": "height",
-        "colon_token": true,
-        "ty": {
-          "path": {
-            "segments": [
-              {
-                "ident": "f64"
-              }
-            ]
-          }
-        }
-      }
-    },
-    "13": {
+    "10": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -336,7 +286,7 @@
         "fields": "unit"
       }
     },
-    "14": {
+    "11": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -377,12 +327,12 @@
         "variants": []
       },
       "children": [
-        15,
-        16,
-        17
+        12,
+        13,
+        14
       ]
     },
-    "15": {
+    "12": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -406,7 +356,7 @@
         }
       }
     },
-    "16": {
+    "13": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -430,7 +380,7 @@
         }
       }
     },
-    "17": {
+    "14": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -464,7 +414,7 @@
         }
       }
     },
-    "18": {
+    "15": {
       "mod_path": [],
       "kind": "enum",
       "span": {
@@ -527,12 +477,12 @@
         "variants": []
       },
       "children": [
-        19,
-        21,
-        24
+        16,
+        17,
+        18
       ]
     },
-    "19": {
+    "16": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -549,45 +499,28 @@
       "syntax": {
         "ident": "Leaf",
         "fields": {
-          "unnamed": []
-        }
-      },
-      "children": [
-        20
-      ]
-    },
-    "20": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 26,
-          "column": 9
-        },
-        "end": {
-          "line": 26,
-          "column": 14
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ty": {
-          "reference": {
-            "lifetime": "a",
-            "elem": {
-              "path": {
-                "segments": [
-                  {
-                    "ident": "T"
+          "unnamed": [
+            {
+              "ty": {
+                "reference": {
+                  "lifetime": "a",
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "T"
+                        }
+                      ]
+                    }
                   }
-                ]
+                }
               }
             }
-          }
+          ]
         }
       }
     },
-    "21": {
+    "17": {
       "mod_path": [],
       "kind": "variant",
       "span": {
@@ -604,145 +537,112 @@
       "syntax": {
         "ident": "Node",
         "fields": {
-          "named": []
-        }
-      },
-      "children": [
-        22,
-        23
-      ]
-    },
-    "22": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 28,
-          "column": 8
-        },
-        "end": {
-          "line": 28,
-          "column": 30
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ident": "left",
-        "colon_token": true,
-        "ty": {
-          "path": {
-            "segments": [
-              {
-                "ident": "Box",
-                "arguments": {
-                  "angle_bracketed": {
-                    "args": [
-                      {
-                        "type": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Tree",
-                                "arguments": {
-                                  "angle_bracketed": {
-                                    "args": [
-                                      {
-                                        "lifetime": "a"
-                                      },
-                                      {
-                                        "type": {
-                                          "path": {
-                                            "segments": [
-                                              {
-                                                "ident": "T"
+          "named": [
+            {
+              "ident": "left",
+              "colon_token": true,
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "Box",
+                      "arguments": {
+                        "angle_bracketed": {
+                          "args": [
+                            {
+                              "type": {
+                                "path": {
+                                  "segments": [
+                                    {
+                                      "ident": "Tree",
+                                      "arguments": {
+                                        "angle_bracketed": {
+                                          "args": [
+                                            {
+                                              "lifetime": "a"
+                                            },
+                                            {
+                                              "type": {
+                                                "path": {
+                                                  "segments": [
+                                                    {
+                                                      "ident": "T"
+                                                    }
+                                                  ]
+                                                }
                                               }
-                                            ]
-                                          }
+                                            }
+                                          ]
                                         }
                                       }
-                                    ]
-                                  }
+                                    }
+                                  ]
                                 }
                               }
-                            ]
-                          }
+                            }
+                          ]
                         }
                       }
-                    ]
-                  }
+                    }
+                  ]
                 }
               }
-            ]
-          }
+            },
+            {
+              "ident": "right",
+              "colon_token": true,
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "Box",
+                      "arguments": {
+                        "angle_bracketed": {
+                          "args": [
+                            {
+                              "type": {
+                                "path": {
+                                  "segments": [
+                                    {
+                                      "ident": "Tree",
+                                      "arguments": {
+                                        "angle_bracketed": {
+                                          "args": [
+                                            {
+                                              "lifetime": "a"
+                                            },
+                                            {
+                                              "type": {
+                                                "path": {
+                                                  "segments": [
+                                                    {
+                                                      "ident": "T"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       }
     },
-    "23": {
-      "mod_path": [],
-      "kind": "field",
-      "span": {
-        "start": {
-          "line": 29,
-          "column": 8
-        },
-        "end": {
-          "line": 29,
-          "column": 31
-        }
-      },
-      "syn": "Field",
-      "syntax": {
-        "ident": "right",
-        "colon_token": true,
-        "ty": {
-          "path": {
-            "segments": [
-              {
-                "ident": "Box",
-                "arguments": {
-                  "angle_bracketed": {
-                    "args": [
-                      {
-                        "type": {
-                          "path": {
-                            "segments": [
-                              {
-                                "ident": "Tree",
-                                "arguments": {
-                                  "angle_bracketed": {
-                                    "args": [
-                                      {
-                                        "lifetime": "a"
-                                      },
-                                      {
-                                        "type": {
-                                          "path": {
-                                            "segments": [
-                                              {
-                                                "ident": "T"
-                                              }
-                                            ]
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
-    },
-    "24": {
+    "18": {
       "mod_path": [],
       "kind": "variant",
       "span": {

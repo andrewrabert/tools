@@ -1848,8 +1848,7 @@ mod tests {
                 ("6", Some("attribute"), None),
                 ("7", Some("file"), children(&[8])),
                 ("8", Some("enum"), children(&[9])),
-                ("9", Some("variant"), children(&[10])),
-                ("10", Some("field"), None),
+                ("9", Some("variant"), None),
             ],
         );
         assert_eq!(
@@ -1872,7 +1871,7 @@ mod tests {
             [
                 vec![(0, None), (1, Some(0))],
                 vec![(0, None), (1, Some(0))],
-                vec![(0, None), (1, Some(0)), (2, Some(1))],
+                vec![(0, None), (1, Some(0))],
             ],
         );
         assert_eq!(serde_json::to_value(&parsed).expect("JSON surface"), json);
