@@ -167,6 +167,7 @@ tool_groups! {
         "img-metadata" => img::Metadata,
         "img-optim" => img::Optim,
         "img-size" => img_size::ImgSize,
+        "img-to-interpolated-video" => img_to_interpolated_video::ImgToInterpolatedVideo,
         "mkv-convert" => mkv_convert::MkvConvert,
         "mkv-extract-languages" => mkv_extract_languages::MkvExtractLanguages,
         "mkv-find-lang" => mkv_find_lang::MkvFindLang,
@@ -175,6 +176,7 @@ tool_groups! {
         "mkv-set-title-from-filename" => mkv_set_title_from_filename::MkvSetTitleFromFilename,
         "music-organizer" => music_organizer::MusicOrganizer,
         "reencode-lossless" => reencode_lossless::ReencodeLossless,
+        "rife" => rife::Rife,
     }
     "Network" {
         "dl" => dl::Dl,

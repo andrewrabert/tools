@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use serde::Deserialize;
+use tempfile::{Builder, TempPath};
 
 /// An ffmpeg command that never reads stdin and prints no banner.
 pub fn command() -> Command {
@@ -37,6 +38,24 @@ pub fn output(command: &mut Command) -> Result<Output> {
         );
     }
     Ok(output)
+}
+
+/// A new file beside `dest` with its extension, which ffmpeg picks the container from.
+pub fn temp_beside(dest: &Path) -> Result<TempPath> {
+    let dir = dest
+        .parent()
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let suffix = dest
+        .extension()
+        .map(|extension| format!(".{}", extension.to_string_lossy()))
+        .unwrap_or_default();
+    Ok(Builder::new()
+        .prefix(".bertbox-ffmpeg")
+        .suffix(&suffix)
+        .tempfile_in(dir)
+        .with_context(|| format!("creating a temporary file in {}", dir.display()))?
+        .into_temp_path())
 }
 
 /// A nonzero frames-per-second rational, as ffmpeg writes it (`24000/1001`).

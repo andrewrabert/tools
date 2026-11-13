@@ -1,16 +1,13 @@
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use anyhow::{Context, Error, Result, anyhow, bail};
 use clap::Args as ClapArgs;
-use tempfile::Builder;
 
 use crate::ffmpeg;
 use crate::tools::Tool;
-
-const TEMP_PREFIX: &str = ".ffmpeg_extract_slice";
 
 #[derive(ClapArgs)]
 #[command(about = "Extract a span of a video, without audio, as lossless FFV1")]
@@ -97,23 +94,7 @@ fn run(args: FfmpegExtractSlice) -> Result<()> {
         bail!("the end {} is not after the start {}", args.end, args.start);
     }
 
-    let dir = args
-        .output
-        .parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    // ffmpeg picks the container from the extension, so the temporary file keeps it.
-    let suffix = args
-        .output
-        .extension()
-        .map(|extension| format!(".{}", extension.to_string_lossy()))
-        .unwrap_or_default();
-    let temp = Builder::new()
-        .prefix(TEMP_PREFIX)
-        .suffix(&suffix)
-        .tempfile_in(dir)
-        .with_context(|| format!("creating a temporary file in {}", dir.display()))?
-        .into_temp_path();
+    let temp = ffmpeg::temp_beside(&args.output)?;
     ffmpeg::run(
         ffmpeg::command()
             .arg("-ss")

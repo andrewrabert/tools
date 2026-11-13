@@ -103,6 +103,7 @@ Create and unpack archives
 - `img-metadata`: Copy metadata between images
 - `img-optim`: Losslessly shrink images in place
 - `img-size`: Print the width and height of images
+- `img-to-interpolated-video`: Render a video or directory of frames as a looping, interpolated animation
 - `mkv-convert`: Merge videos and their sidecar subtitles into Matroska files
 - `mkv-extract-languages`: Extract the English and undetermined tracks of a Matroska file
 - `mkv-find-lang`: List Matroska files by the languages of their audio and subtitle tracks
@@ -111,6 +112,7 @@ Create and unpack archives
 - `mkv-set-title-from-filename`: Set the title of Matroska files to their file name
 - `music-organizer`: Organize a music library by its metadata
 - `reencode-lossless`: Reencode lossless audio files as FLAC or WAV
+- `rife`: Interpolate a directory of PNG frames with rife-ncnn-vulkan
 
 ### Network
 

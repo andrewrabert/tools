@@ -69,7 +69,7 @@ impl Crop {
 
 fn run(args: FfmpegCropdetect) -> Result<()> {
     let seconds = ffmpeg::duration(&args.path)?.as_secs();
-    let step = (seconds / args.steps.get()).max(1);
+    let step = (seconds / args.steps).max(1);
     let mut crop: Option<Crop> = None;
     for start in (0..seconds).step_by(usize::try_from(step).context("step too large")?) {
         let output = ffmpeg::output(

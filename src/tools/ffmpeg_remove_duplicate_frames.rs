@@ -4,13 +4,10 @@ use std::process::{ExitCode, Stdio};
 
 use anyhow::{Context, Result};
 use clap::Args as ClapArgs;
-use tempfile::{Builder, TempPath};
 
 use crate::ffmpeg::{self, FrameRate};
 use crate::pool;
 use crate::tools::Tool;
-
-const TEMP_PREFIX: &str = ".ffmpeg-remove-duplicate-frames_";
 
 #[derive(ClapArgs)]
 #[command(about = "Remove duplicate frames from videos in place")]
@@ -93,7 +90,7 @@ fn remove_duplicates(path: &Path, removal: Removal) -> Result<()> {
             select_filter(&ranges)
         }
     };
-    let temp = temp_beside(path)?;
+    let temp = ffmpeg::temp_beside(path)?;
     ffmpeg::output(
         ffmpeg::command()
             .arg("-i")
@@ -107,24 +104,6 @@ fn remove_duplicates(path: &Path, removal: Removal) -> Result<()> {
     temp.persist(path)
         .with_context(|| format!("replacing {}", path.display()))?;
     Ok(())
-}
-
-/// A new file beside `path` with its extension, which ffmpeg picks the container from.
-fn temp_beside(path: &Path) -> Result<TempPath> {
-    let dir = path
-        .parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let suffix = path
-        .extension()
-        .map(|extension| format!(".{}", extension.to_string_lossy()))
-        .unwrap_or_default();
-    Ok(Builder::new()
-        .prefix(TEMP_PREFIX)
-        .suffix(&suffix)
-        .tempfile_in(dir)
-        .with_context(|| format!("creating a temporary file in {}", dir.display()))?
-        .into_temp_path())
 }
 
 /// The MD5 of each frame of the first video stream in `path`, in order.
