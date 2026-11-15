@@ -44,12 +44,13 @@ macro_rules! tool_groups {
     (@description) => { None };
     (@description $description:literal) => { Some($description) };
     ($tools:ident, $aliases:path; $($group:literal $(: $description:literal)? {
-        $($name:literal => $module:ident :: $tool:ident),* $(,)?
+        $($(#[$attr:meta])* $name:literal => $module:ident :: $tool:ident),* $(,)?
     })*) => {
         #[derive(Subcommand)]
         #[command(display_name = APP_NAME)]
         enum $tools {
             $($(
+                $(#[$attr])*
                 #[command(name = $name, aliases = $aliases($name))]
                 $tool(tools::$module::$tool),
             )*)*
@@ -60,13 +61,13 @@ macro_rules! tool_groups {
                 $(Group {
                     heading: $group,
                     description: tool_groups!(@description $($description)?),
-                    names: &[$($name),*],
+                    names: &[$($(#[$attr])* $name),*],
                 }),*
             ];
 
             fn run(self) -> ExitCode {
                 match self {
-                    $($($tools::$tool(tool) => tool.run(),)*)*
+                    $($($(#[$attr])* $tools::$tool(tool) => tool.run(),)*)*
                 }
             }
         }
@@ -192,6 +193,7 @@ tool_groups! {
     "System" {
         "bwrapped" => bwrapped::Bwrapped,
         "cdemu-tool" => cdemu_tool::CdemuTool,
+        #[cfg(target_os = "linux")]
         "evhz" => evhz::Evhz,
         "exit-code" => exit_code::ExitCodeTool,
         "fanpipe" => fanpipe::Fanpipe,

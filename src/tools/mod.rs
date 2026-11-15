@@ -14,6 +14,7 @@ pub mod dl;
 pub mod empty_tree;
 pub mod encode_utf8;
 pub mod escape_files_windows;
+#[cfg(target_os = "linux")]
 pub mod evhz;
 pub mod exit_code;
 pub mod external;

@@ -28,16 +28,6 @@ const EV_ABS: u16 = 0x03;
 // EVIOCGNAME(len) from <linux/input.h>.
 nix::ioctl_read_buf!(eviocgname, b'E', 0x06, u8);
 
-/// `struct input_event` from <linux/input.h>, declared here so the tool builds on every platform.
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct InputEvent {
-    time: libc::timeval,
-    type_: u16,
-    code: u16,
-    value: i32,
-}
-
 #[derive(ClapArgs)]
 #[command(about = "Measure the polling rate of mice and other evdev devices")]
 pub struct Evhz {
@@ -148,11 +138,14 @@ impl Device {
     }
 
     /// Read one event; `None` when the device went away or has nothing to read.
-    fn read_event(&mut self) -> Result<Option<InputEvent>> {
-        let mut event = unsafe { std::mem::zeroed::<InputEvent>() };
-        // SAFETY: InputEvent is plain old data, so any bytes are a valid value.
+    fn read_event(&mut self) -> Result<Option<libc::input_event>> {
+        let mut event = unsafe { std::mem::zeroed::<libc::input_event>() };
+        // SAFETY: input_event is plain old data, so any bytes are a valid value.
         let buffer = unsafe {
-            std::slice::from_raw_parts_mut((&raw mut event).cast::<u8>(), size_of::<InputEvent>())
+            std::slice::from_raw_parts_mut(
+                (&raw mut event).cast::<u8>(),
+                size_of::<libc::input_event>(),
+            )
         };
         match self.file.read(buffer) {
             Ok(bytes) if bytes == buffer.len() => Ok(Some(event)),
