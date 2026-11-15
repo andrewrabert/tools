@@ -192,6 +192,7 @@ tool_groups! {
     "System" {
         "bwrapped" => bwrapped::Bwrapped,
         "cdemu-tool" => cdemu_tool::CdemuTool,
+        "evhz" => evhz::Evhz,
         "exit-code" => exit_code::ExitCodeTool,
         "fanpipe" => fanpipe::Fanpipe,
         "fat32-bootsector" => fat32_bootsector::Fat32Bootsector,

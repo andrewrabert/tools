@@ -130,6 +130,7 @@ Create and unpack archives
 
 - `bwrapped`: Run a program inside a sandbox with filesystem isolation
 - `cdemu-tool`: Load disc images into CDEmu daemons run as systemd user units
+- `evhz`: Measure the polling rate of mice and other evdev devices
 - `exit-code`: Run a command, then print its exit status and the time
 - `fanpipe`: Fan messages out to subscribers over named pipes
 - `fat32-bootsector`: Print the fields of a FAT32 boot sector as JSON

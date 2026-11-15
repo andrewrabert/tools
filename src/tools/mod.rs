@@ -14,6 +14,7 @@ pub mod dl;
 pub mod empty_tree;
 pub mod encode_utf8;
 pub mod escape_files_windows;
+pub mod evhz;
 pub mod exit_code;
 pub mod external;
 pub mod fanpipe;
