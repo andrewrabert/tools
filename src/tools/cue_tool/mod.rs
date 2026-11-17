@@ -1,4 +1,5 @@
 //! CLI dispatch and what the subcommands share.
+mod bin_files;
 mod check;
 mod cli;
 mod files;
@@ -13,6 +14,7 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 
+use crate::cue::bin::Operation;
 use crate::cue::{self, CueSheet};
 use crate::source::Source;
 use crate::tools::Tool;
@@ -27,6 +29,8 @@ impl Tool for CueTool {
             Command::Fmt(args) => fmt::run(&args),
             Command::Json(args) => json::run(&args),
             Command::Files(args) => files::run(&args),
+            Command::FileMerge(args) => bin_files::run(&args, Operation::Merge),
+            Command::FileSplit(args) => bin_files::run(&args, Operation::Split),
         }
     }
 }

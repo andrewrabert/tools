@@ -1,3 +1,5 @@
+pub mod bin;
+
 use std::ffi::OsStr;
 use std::fmt;
 use std::path::Path;

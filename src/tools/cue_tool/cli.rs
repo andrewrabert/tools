@@ -1,10 +1,10 @@
 //! clap argument definitions.
 use std::path::PathBuf;
 
-use clap::{Args as ClapArgs, Subcommand};
+use clap::{ArgGroup, Args as ClapArgs, Subcommand};
 
 #[derive(ClapArgs)]
-#[command(about = "Check, format, print, and list cue sheets")]
+#[command(about = "Check, format, print, and list cue sheets, and merge or split their files")]
 pub struct CueTool {
     #[command(subcommand)]
     pub command: Command,
@@ -20,6 +20,22 @@ pub enum Command {
     Json(Json),
     #[command(about = "print the absolute path of each file cue sheets list")]
     Files(Files),
+    #[command(
+        about = "merge the files of each cue sheet into one",
+        long_about = "Merge the bin files of each cue sheet into one bin file with a cue sheet \
+                      of corrected offsets, as Redump discs with a file per track need for \
+                      software that reads a single bin file. Without --in-place, the input \
+                      files are left untouched and nothing is overwritten."
+    )]
+    FileMerge(BinFiles),
+    #[command(
+        about = "split the single file of each cue sheet into one per track",
+        long_about = "Split the single bin file of each cue sheet into one bin file per track, \
+                      named by the Redump convention, with a cue sheet of corrected offsets. \
+                      Without --in-place, the input files are left untouched and nothing is \
+                      overwritten."
+    )]
+    FileSplit(BinFiles),
 }
 
 #[derive(ClapArgs)]
@@ -84,4 +100,43 @@ pub struct Files {
     pub input: Input,
     #[arg(short = '0', help = "separate paths with NUL instead of newline")]
     pub null: bool,
+}
+
+#[derive(ClapArgs)]
+#[command(group(
+    ArgGroup::new("destination")
+        .required(true)
+        .multiple(true)
+        .args(["in_place", "outdir", "name"])
+))]
+pub struct BinFiles {
+    #[arg(
+        value_name = "CUEFILE",
+        required = true,
+        help = "a cue sheet; its files are expected in its directory"
+    )]
+    pub cuefiles: Vec<PathBuf>,
+    #[arg(
+        short,
+        long,
+        conflicts_with_all = ["outdir", "name"],
+        help = "replace each cue sheet and its files with the result, skipping a cue sheet that \
+                needs no change"
+    )]
+    pub in_place: bool,
+    #[arg(
+        short,
+        long,
+        value_name = "DIR",
+        help = "write to DIR, created if missing, instead of the directory of CUEFILE"
+    )]
+    pub outdir: Option<PathBuf>,
+    #[arg(
+        short,
+        long,
+        value_name = "NAME",
+        help = "name the new files NAME, without extension, instead of as CUEFILE is named; for \
+                a single CUEFILE"
+    )]
+    pub name: Option<String>,
 }

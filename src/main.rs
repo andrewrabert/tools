@@ -160,7 +160,6 @@ tool_groups! {
     }
     "Media" {
         "audio-tag" => audio_tag::AudioTag,
-        "binmerge" => binmerge::Binmerge,
         "cue-tool" => cue_tool::CueTool,
         "ffmpeg-concat" => ffmpeg_concat::FfmpegConcat,
         "ffmpeg-cropdetect" => ffmpeg_cropdetect::FfmpegCropdetect,

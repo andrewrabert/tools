@@ -1,87 +1,78 @@
 //! A port of binmerge by Chris Putnam (<https://github.com/putnam/binmerge>).
+use std::collections::BTreeSet;
+use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{self, Path, PathBuf};
-use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail, ensure};
-use clap::Args as ClapArgs;
 
 use crate::cue::{self, Command, CueSheet, Filetype, Time};
-use crate::tools::Tool;
 
 const BIN_EXTENSION: &str = "bin";
+const SCRATCH_PREFIX: &str = ".cue-tool-";
 
-#[derive(ClapArgs)]
-#[command(
-    about = "Merge the bin files of a cue sheet into one, or split one back into tracks",
-    long_about = "Merge the bin files of a cue sheet into one bin file with a cue sheet of \
-                  corrected offsets, as Redump discs with a file per track need for software \
-                  that reads a single bin file. With --split, the reverse: one bin file per \
-                  track, named by the Redump convention. The input files are left untouched."
-)]
-pub struct Binmerge {
-    /// Split the single bin file of the cue sheet into one bin file per track
-    #[arg(short, long)]
-    split: bool,
-
-    /// Directory to write to, created if missing [default: the directory of CUEFILE]
-    #[arg(short, long, value_name = "DIR")]
-    outdir: Option<PathBuf>,
-
-    /// The cue sheet; its bin files are expected in the same directory
-    #[arg(value_name = "CUEFILE")]
-    cuefile: PathBuf,
-
-    /// Name of the new bin and cue files, without extension
-    #[arg(value_name = "BASENAME")]
-    basename: String,
+#[derive(Clone, Copy)]
+pub enum Operation {
+    Merge,
+    Split,
 }
 
-impl Tool for Binmerge {
-    fn run(self) -> ExitCode {
-        match run(self) {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(error) => {
-                eprintln!("Error: {error:#}");
-                ExitCode::FAILURE
-            }
+impl Operation {
+    fn write(self, source: &Source, outdir: &Path, basename: &str) -> Result<Written> {
+        match self {
+            Operation::Merge => merge_into(source, outdir, basename),
+            Operation::Split => split_into(source, outdir, basename),
         }
     }
 }
 
-fn run(args: Binmerge) -> Result<()> {
-    let outdir = match args.outdir {
-        Some(outdir) => {
-            fs::create_dir_all(&outdir)
-                .with_context(|| format!("creating {}", outdir.display()))?;
-            Some(outdir)
-        }
-        None => None,
-    };
-    let written = if args.split {
-        split(&args.cuefile, outdir.as_deref(), &args.basename)?
-    } else {
-        merge(&args.cuefile, outdir.as_deref(), &args.basename)?
-    };
-    for path in written {
-        println!("Wrote {}", path.display());
-    }
-    Ok(())
-}
-
-struct Job {
+/// A cue sheet and the bin files it lists, which are in its directory.
+struct Source {
     cuefile: PathBuf,
-    outdir: PathBuf,
+    dir: PathBuf,
     sheet: CueSheet,
     bins: Vec<BinFile>,
     sector_size: u64,
-    new_cue: PathBuf,
 }
 
-/// Reads `cuefile` and its bin files, and checks `basename` is free in `outdir`, which defaults
-/// to the sheet's directory and must exist.
-fn job(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<Job> {
+impl Source {
+    fn read(cuefile: &Path) -> Result<Self> {
+        let cuefile =
+            path::absolute(cuefile).with_context(|| format!("resolving {}", cuefile.display()))?;
+        let dir = cuefile
+            .parent()
+            .with_context(|| format!("{} has no parent", cuefile.display()))?
+            .to_owned();
+        let data = fs::read(&cuefile).with_context(|| format!("reading {}", cuefile.display()))?;
+        let sheet = CueSheet::new(&data).with_context(|| cuefile.display().to_string())?;
+        let bins = bin_files(&dir, &sheet)?;
+        let sector_size = sector_size(&sheet).with_context(|| cuefile.display().to_string())?;
+        Ok(Self {
+            cuefile,
+            dir,
+            sheet,
+            bins,
+            sector_size,
+        })
+    }
+
+    /// The file name of the sheet without its extension.
+    fn name(&self) -> Result<&str> {
+        self.cuefile
+            .file_stem()
+            .and_then(OsStr::to_str)
+            .with_context(|| format!("the name of {} is not UTF-8", self.cuefile.display()))
+    }
+}
+
+pub struct Written {
+    pub bins: Vec<PathBuf>,
+    pub cue: PathBuf,
+}
+
+/// Where `<basename>.cue` goes in `outdir`, which must exist. Nothing may be there yet.
+fn new_cue(outdir: &Path, basename: &str) -> Result<PathBuf> {
     ensure!(
         !basename.is_empty()
             && Path::new(basename)
@@ -89,69 +80,144 @@ fn job(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<Job> {
                 .is_some_and(|name| name == basename),
         "{basename:?} is not a file name"
     );
-    let cuefile =
-        path::absolute(cuefile).with_context(|| format!("resolving {}", cuefile.display()))?;
-    let cue_dir = cuefile
-        .parent()
-        .with_context(|| format!("{} has no parent", cuefile.display()))?;
-    let outdir = outdir.unwrap_or(cue_dir).to_owned();
-    let data = fs::read(&cuefile).with_context(|| format!("reading {}", cuefile.display()))?;
-    let sheet = CueSheet::new(&data).with_context(|| cuefile.display().to_string())?;
-    let bins = bin_files(cue_dir, &sheet)?;
-    let sector_size = sector_size(&sheet)?;
     let new_cue = outdir.join(format!("{basename}.{}", cue::EXTENSION));
     ensure!(!new_cue.exists(), "{} already exists", new_cue.display());
-    Ok(Job {
-        cuefile,
-        outdir,
-        sheet,
-        bins,
-        sector_size,
-        new_cue,
-    })
+    Ok(new_cue)
 }
 
 /// Merges the bin files of `cuefile` into `<basename>.bin` with a `<basename>.cue` of corrected
-/// offsets, in `outdir` or else the sheet's directory. Returns the paths written. Nothing is
-/// overwritten.
-pub fn merge(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<Vec<PathBuf>> {
-    let job = job(cuefile, outdir, basename)?;
-    let new_bin = job.outdir.join(format!("{basename}.{BIN_EXTENSION}"));
+/// offsets, in `outdir` or else the sheet's directory. Nothing is overwritten.
+pub fn merge(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<()> {
+    let source = Source::read(cuefile)?;
+    merge_into(&source, outdir.unwrap_or(&source.dir), basename)?;
+    Ok(())
+}
+
+/// Writes what `operation` makes of `cuefile` to `outdir` or else the sheet's directory, named
+/// `name` or else as the sheet is. Nothing is overwritten.
+pub fn add(
+    cuefile: &Path,
+    outdir: Option<&Path>,
+    name: Option<&str>,
+    operation: Operation,
+) -> Result<Written> {
+    let source = Source::read(cuefile)?;
+    let name = match name {
+        Some(name) => name,
+        None => source.name()?,
+    };
+    operation.write(&source, outdir.unwrap_or(&source.dir), name)
+}
+
+pub enum Replacement {
+    /// The numbers of bin files before and after.
+    Replaced { old: usize, new: usize },
+    /// The sheet's bin files were already as `operation` leaves them.
+    Unneeded,
+}
+
+/// Replaces `cuefile` and its bin files with what `operation` makes of them, under the sheet's
+/// name. The old files are removed only once the new ones hold as many bytes and are in place.
+pub fn replace(cuefile: &Path, operation: Operation) -> Result<Replacement> {
+    let source = Source::read(cuefile)?;
+    let unneeded = match operation {
+        Operation::Merge => source.bins.len() == 1,
+        Operation::Split => source.bins.len() == source.sheet.tracks().len(),
+    };
+    if unneeded {
+        return Ok(Replacement::Unneeded);
+    }
+    let scratch = tempfile::Builder::new()
+        .prefix(SCRATCH_PREFIX)
+        .tempdir_in(&source.dir)
+        .with_context(|| format!("creating a directory in {}", source.dir.display()))?;
+    let written = operation.write(&source, scratch.path(), source.name()?)?;
+
+    let old: BTreeSet<&Path> = source.bins.iter().map(|bin| bin.path.as_path()).collect();
+    let old_bytes: u64 = source.bins.iter().map(|bin| bin.size).sum();
+    let mut new_bytes = 0;
+    let mut new = Vec::with_capacity(written.bins.len());
+    for bin in &written.bins {
+        new_bytes += fs::metadata(bin)
+            .with_context(|| format!("reading {}", bin.display()))?
+            .len();
+        let target = source
+            .dir
+            .join(bin.file_name().expect("a written file has a name"));
+        ensure!(
+            old.contains(target.as_path()) || !target.exists(),
+            "{} already exists and is not a file of {}",
+            target.display(),
+            source.cuefile.display()
+        );
+        new.push(target);
+    }
+    ensure!(
+        new_bytes == old_bytes,
+        "the new bin files of {} hold {new_bytes} bytes, not the {old_bytes} of the old",
+        source.cuefile.display()
+    );
+
+    let rename = |from: &Path, to: &Path| {
+        fs::rename(from, to)
+            .with_context(|| format!("moving {} to {}", from.display(), to.display()))
+    };
+    for (bin, target) in written.bins.iter().zip(&new) {
+        rename(bin, target)?;
+    }
+    rename(&written.cue, &source.cuefile)?;
+    for path in &old {
+        if !new.iter().any(|target| target == path) {
+            fs::remove_file(path).with_context(|| format!("removing {}", path.display()))?;
+        }
+    }
+    Ok(Replacement::Replaced {
+        old: old.len(),
+        new: new.len(),
+    })
+}
+
+fn merge_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written> {
+    let new_cue = new_cue(outdir, basename)?;
+    let new_bin = outdir.join(format!("{basename}.{BIN_EXTENSION}"));
     ensure!(!new_bin.exists(), "{} already exists", new_bin.display());
-    let new_sheet = merged_sheet(&job.sheet, &job.bins, job.sector_size, basename)?;
+    let new_sheet = merged_sheet(&source.sheet, &source.bins, source.sector_size, basename)
+        .with_context(|| source.cuefile.display().to_string())?;
     let mut writer = BufWriter::new(create(&new_bin)?);
-    for bin in &job.bins {
+    for bin in &source.bins {
         io::copy(&mut open(&bin.path)?, &mut writer)
             .with_context(|| format!("writing {}", new_bin.display()))?;
     }
     writer
         .flush()
         .with_context(|| format!("writing {}", new_bin.display()))?;
-    write_sheet(&job.new_cue, &new_sheet)?;
-    Ok(vec![new_bin, job.new_cue])
+    write_sheet(&new_cue, &new_sheet)?;
+    Ok(Written {
+        bins: vec![new_bin],
+        cue: new_cue,
+    })
 }
 
-/// Splits the single bin file of `cuefile` into one per track, named by the Redump convention
-/// from `basename`, with a `<basename>.cue`, in `outdir` or else the sheet's directory. Returns
-/// the paths written. Nothing is overwritten.
-pub fn split(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<Vec<PathBuf>> {
-    let job = job(cuefile, outdir, basename)?;
-    let [bin] = job.bins.as_slice() else {
+/// One bin file per track, named by the Redump convention from `basename`.
+fn split_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written> {
+    let new_cue = new_cue(outdir, basename)?;
+    let [bin] = source.bins.as_slice() else {
         bail!(
             "{} lists {} files; splitting needs exactly one",
-            job.cuefile.display(),
-            job.bins.len()
+            source.cuefile.display(),
+            source.bins.len()
         );
     };
-    let tracks = split_tracks(&job.sheet, bin, job.sector_size, basename)?;
+    let tracks = split_tracks(&source.sheet, bin, source.sector_size, basename)?;
     let outputs: Vec<PathBuf> = tracks
         .iter()
-        .map(|track| job.outdir.join(&track.filename))
+        .map(|track| outdir.join(&track.filename))
         .collect();
     for output in &outputs {
         ensure!(!output.exists(), "{} already exists", output.display());
     }
-    let new_sheet = split_sheet(&job.sheet, &tracks)?;
+    let new_sheet = split_sheet(&source.sheet, &tracks)
+        .with_context(|| source.cuefile.display().to_string())?;
     let mut input = BufReader::new(open(&bin.path)?);
     for (track, output) in tracks.iter().zip(&outputs) {
         let mut writer = BufWriter::new(create(output)?);
@@ -167,10 +233,11 @@ pub fn split(cuefile: &Path, outdir: Option<&Path>, basename: &str) -> Result<Ve
             .flush()
             .with_context(|| format!("writing {}", output.display()))?;
     }
-    write_sheet(&job.new_cue, &new_sheet)?;
-    let mut written = outputs;
-    written.push(job.new_cue);
-    Ok(written)
+    write_sheet(&new_cue, &new_sheet)?;
+    Ok(Written {
+        bins: outputs,
+        cue: new_cue,
+    })
 }
 
 fn open(path: &Path) -> Result<File> {
@@ -462,5 +529,97 @@ FILE \"Merged.bin\" BINARY
         assert_eq!(track_filename("G", 1, 1), "G.bin");
         assert_eq!(track_filename("G", 2, 9), "G (Track 2).bin");
         assert_eq!(track_filename("G", 2, 10), "G (Track 02).bin");
+    }
+
+    /// A directory holding `G.cue`, a copy of `sheet`, and a bin file of each given name and
+    /// sector count, every sector filled with its number in the disc, modulo 256.
+    fn disc(sheet: &str, files: &[(&str, u8)]) -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("G.cue"), sheet).unwrap();
+        let mut sector = 0_u8;
+        for (name, sectors) in files {
+            let mut data = Vec::new();
+            for _ in 0..*sectors {
+                data.extend([sector; 2352]);
+                sector = sector.wrapping_add(1);
+            }
+            fs::write(dir.path().join(name), data).unwrap();
+        }
+        dir
+    }
+
+    fn names(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect();
+        names.sort();
+        names
+    }
+
+    const TRACK_FILES: [(&str, u8); 3] = [
+        ("G (Track 1).bin", 100),
+        ("G (Track 2).bin", 200),
+        ("G (Track 3).bin", 50),
+    ];
+
+    #[test]
+    fn replace_merge_then_split() {
+        let dir = disc(SPLIT, &TRACK_FILES);
+        let cuefile = dir.path().join("G.cue");
+        let tracks: Vec<Vec<u8>> = TRACK_FILES
+            .iter()
+            .map(|(name, _)| fs::read(dir.path().join(name)).unwrap())
+            .collect();
+
+        let merged = replace(&cuefile, Operation::Merge).unwrap();
+        assert!(matches!(merged, Replacement::Replaced { old: 3, new: 1 }));
+        assert_eq!(names(dir.path()), ["G.bin", "G.cue"]);
+        assert_eq!(fs::read(dir.path().join("G.bin")).unwrap(), tracks.concat());
+        assert!(matches!(
+            replace(&cuefile, Operation::Merge).unwrap(),
+            Replacement::Unneeded
+        ));
+
+        let split = replace(&cuefile, Operation::Split).unwrap();
+        assert!(matches!(split, Replacement::Replaced { old: 1, new: 3 }));
+        assert_eq!(
+            names(dir.path()),
+            [
+                "G (Track 1).bin",
+                "G (Track 2).bin",
+                "G (Track 3).bin",
+                "G.cue"
+            ]
+        );
+        for ((name, _), track) in TRACK_FILES.iter().zip(&tracks) {
+            assert_eq!(&fs::read(dir.path().join(name)).unwrap(), track);
+        }
+        assert_eq!(fs::read_to_string(&cuefile).unwrap(), SPLIT);
+        assert!(matches!(
+            replace(&cuefile, Operation::Split).unwrap(),
+            Replacement::Unneeded
+        ));
+    }
+
+    // The merged bin file takes the name of a file the sheet does not list.
+    #[test]
+    fn replace_keeps_unlisted_file() {
+        let dir = disc(SPLIT, &TRACK_FILES);
+        fs::write(dir.path().join("G.bin"), "unlisted").unwrap();
+        let before = names(dir.path());
+        assert!(replace(&dir.path().join("G.cue"), Operation::Merge).is_err());
+        assert_eq!(names(dir.path()), before);
+        assert_eq!(fs::read_to_string(dir.path().join("G.cue")).unwrap(), SPLIT);
+    }
+
+    // The first track starts past the start of the bin file, so splitting would drop sectors.
+    #[test]
+    fn replace_split_keeps_every_byte() {
+        let sheet = MERGED.replace("INDEX 01 00:00:00", "INDEX 01 00:00:10");
+        let dir = disc(&sheet, &[("Merged.bin", 250)]);
+        let before = names(dir.path());
+        assert!(replace(&dir.path().join("G.cue"), Operation::Split).is_err());
+        assert_eq!(names(dir.path()), before);
     }
 }

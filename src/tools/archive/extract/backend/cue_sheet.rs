@@ -11,7 +11,6 @@ use crate::tools::archive::extract::backend::{Request, TEMP_PREFIX, file_name};
 use crate::tools::archive::extract::listing::Contents;
 use crate::tools::archive::process;
 use crate::tools::archive::temp;
-use crate::tools::binmerge;
 
 const CHUNK_PREFIX: &str = "chunk";
 const MERGED_NAME: &str = "merged";
@@ -98,7 +97,7 @@ pub fn extract(request: &Request) -> Result<()> {
     let (source_bin, source_cue) = match (data_files.first(), data_files.len()) {
         (Some(data_file), 1) => (data_file.clone(), cue.to_owned()),
         _ => {
-            binmerge::merge(cue, Some(scratch.path()), MERGED_NAME)?;
+            cue::bin::merge(cue, Some(scratch.path()), MERGED_NAME)?;
             (
                 PathBuf::from(format!("{MERGED_NAME}.bin")),
                 PathBuf::from(format!("{MERGED_NAME}.{}", cue::EXTENSION)),
