@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use clap::{ArgGroup, Args as ClapArgs, Subcommand};
 
 #[derive(ClapArgs)]
-#[command(about = "Check, format, print, and list cue sheets, and merge or split their files")]
+#[command(
+    about = "Check, format, print, and list cue sheets, merge or split their files, and extract their tracks"
+)]
 pub struct CueTool {
     #[command(subcommand)]
     pub command: Command,
@@ -36,6 +38,17 @@ pub enum Command {
                       overwritten."
     )]
     FileSplit(BinFiles),
+    #[command(
+        about = "extract each track of a cue sheet's single file as an ISO or audio file",
+        long_about = "Extract each track of the single bin file of a cue sheet: data tracks as \
+                      ISO files of the data in each sector, audio tracks as headerless CDR or \
+                      WAV files, and tracks of any other mode whole as ugh files. The files are \
+                      named by track number, as in NAME01.iso. A track runs from its last INDEX \
+                      to before the first INDEX of the next track, which leaves pregaps out. \
+                      The FILE lines of the cue sheet are not read. Without --force, nothing \
+                      is overwritten."
+    )]
+    TrackExtract(TrackExtract),
 }
 
 #[derive(ClapArgs)]
@@ -139,4 +152,50 @@ pub struct BinFiles {
                 a single CUEFILE"
     )]
     pub name: Option<String>,
+}
+
+#[derive(ClapArgs)]
+pub struct TrackExtract {
+    #[arg(value_name = "CUEFILE", help = "a cue sheet")]
+    pub cuefile: PathBuf,
+    #[arg(
+        short,
+        long,
+        value_name = "BIN",
+        help = "the bin file CUEFILE describes, instead of CUEFILE with the extension bin"
+    )]
+    pub bin: Option<PathBuf>,
+    #[arg(
+        short,
+        long,
+        value_name = "DIR",
+        help = "write to DIR, created if missing, instead of the directory of CUEFILE"
+    )]
+    pub outdir: Option<PathBuf>,
+    #[arg(
+        short,
+        long,
+        value_name = "NAME",
+        help = "start the name of each track file with NAME, instead of as CUEFILE is named"
+    )]
+    pub name: Option<String>,
+    #[arg(
+        long,
+        conflicts_with = "psx",
+        help = "write all 2352 bytes of each MODE2/2352 sector (VCD/MPEG), instead of the 2048 \
+                bytes at offset 24"
+    )]
+    pub raw: bool,
+    #[arg(
+        long,
+        help = "write the first 2336 bytes of each MODE2/2352 sector (PSX), instead of the 2048 \
+                bytes at offset 24"
+    )]
+    pub psx: bool,
+    #[arg(long, help = "write audio tracks as WAV instead of headerless CDR")]
+    pub wav: bool,
+    #[arg(long, help = "swap the byte order of audio samples")]
+    pub swap_audio: bool,
+    #[arg(short, long, help = "overwrite track files that exist")]
+    pub force: bool,
 }

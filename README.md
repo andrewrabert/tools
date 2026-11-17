@@ -94,7 +94,7 @@ Create and unpack archives
 ### Media
 
 - `audio-tag`: Dump and restore music tags to/from JSON
-- `cue-tool`: Check, format, print, and list cue sheets, and merge or split their files
+- `cue-tool`: Check, format, print, and list cue sheets, merge or split their files, and extract their tracks
 - `ffmpeg-concat`: Join the videos under a directory, in path order, into one Matroska file
 - `ffmpeg-cropdetect`: Detect the crop that removes a video's black borders, as JSON
 - `ffmpeg-extract-slice`: Extract a span of a video, without audio, as lossless FFV1

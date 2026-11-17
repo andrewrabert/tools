@@ -1,4 +1,5 @@
 pub mod bin;
+pub mod extract;
 
 use std::ffi::OsStr;
 use std::fmt;

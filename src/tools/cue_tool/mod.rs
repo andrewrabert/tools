@@ -5,6 +5,7 @@ mod cli;
 mod files;
 mod fmt;
 mod json;
+mod track_extract;
 
 use std::collections::BTreeSet;
 use std::env;
@@ -31,6 +32,7 @@ impl Tool for CueTool {
             Command::Files(args) => files::run(&args),
             Command::FileMerge(args) => bin_files::run(&args, Operation::Merge),
             Command::FileSplit(args) => bin_files::run(&args, Operation::Split),
+            Command::TrackExtract(args) => track_extract::run(&args),
         }
     }
 }

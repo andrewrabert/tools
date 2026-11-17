@@ -121,12 +121,11 @@ impl Backend {
         let programs: &[&str] = match self {
             Backend::SevenZip => return seven_zip::program().map(drop),
             Backend::GnuTar => return gnu_tar::check(),
-            Backend::GogLinux => &[],
+            Backend::CueSheet | Backend::GogLinux => &[],
             Backend::Brotli => &["brotli"],
             Backend::Bzip2 => &["bzip2"],
             Backend::Cabextract => &["cabextract"],
             Backend::Cpio => &["cpio"],
-            Backend::CueSheet => &["bchunk"],
             Backend::DolphinGcm | Backend::DolphinRvz => &["dolphin-tool"],
             Backend::Gzip => &["gzip"],
             // unrar unpacks the .bin volumes of GOG installers

@@ -2,20 +2,19 @@ use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
 
+use crate::cue::extract::Options;
 use crate::cue::{self, CueSheet, Datatype};
 use crate::tools::archive::extract::backend::{Request, TEMP_PREFIX, file_name};
 use crate::tools::archive::extract::listing::Contents;
-use crate::tools::archive::process;
 use crate::tools::archive::temp;
 
 const CHUNK_PREFIX: &str = "chunk";
 const MERGED_NAME: &str = "merged";
 
-/// The suffix bchunk gives a track of `datatype`.
+/// The suffix [`cue::extract::tracks`] gives a track of `datatype`, with audio as WAV.
 fn suffix(datatype: &Datatype) -> Result<&'static str> {
     match datatype {
         Datatype::Audio => Ok(".wav"),
@@ -99,19 +98,21 @@ pub fn extract(request: &Request) -> Result<()> {
         _ => {
             cue::bin::merge(cue, Some(scratch.path()), MERGED_NAME)?;
             (
-                PathBuf::from(format!("{MERGED_NAME}.bin")),
-                PathBuf::from(format!("{MERGED_NAME}.{}", cue::EXTENSION)),
+                scratch.path().join(format!("{MERGED_NAME}.bin")),
+                scratch
+                    .path()
+                    .join(format!("{MERGED_NAME}.{}", cue::EXTENSION)),
             )
         }
     };
-    process::run(
-        Command::new("bchunk")
-            .arg("-w")
-            .arg(source_bin)
-            .arg(source_cue)
-            .arg(CHUNK_PREFIX)
-            .current_dir(scratch.path())
-            .stdout(Stdio::null()),
+    cue::extract::tracks(
+        &source_bin,
+        &source_cue,
+        scratch.path().join(CHUNK_PREFIX).as_os_str(),
+        &Options {
+            wav: true,
+            ..Options::default()
+        },
     )?;
 
     let mut produced = Vec::new();
