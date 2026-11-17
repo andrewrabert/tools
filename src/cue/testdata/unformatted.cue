@@ -1,4 +1,4 @@
-   REM   GENRE   Electronic
+   REM   GENRE   "Electronic"
 PERFORMER "Some Artist"
   TITLE "Some Album"
 

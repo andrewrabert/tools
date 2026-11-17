@@ -408,7 +408,7 @@ FILE \"G (Track 3).bin\" BINARY
 
     const MERGED: &str = "\
 REM COMMENT hi
-FILE Merged.bin BINARY
+FILE \"Merged.bin\" BINARY
   TRACK 01 MODE2/2352
     INDEX 01 00:00:00
   TRACK 02 AUDIO

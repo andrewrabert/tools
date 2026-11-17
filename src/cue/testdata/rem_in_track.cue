@@ -1,9 +1,9 @@
 REM GENRE Ambient
 REM DATE 2012
-FILE album.wav WAVE
+FILE "album.wav" WAVE
   REM COMMENT "before the first track"
   TRACK 01 AUDIO
-    TITLE First
+    TITLE "First"
     REM COMPOSER ""
     INDEX 01 00:00:00
   TRACK 02 AUDIO

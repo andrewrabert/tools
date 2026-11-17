@@ -219,6 +219,8 @@ impl CueSheet {
 /// The sheet's lines, indented, one space between tokens, each line ending in `\n`. `FILE` is
 /// indented 0 and `TRACK` 2. Any other command is 0 before the first `TRACK` and 4 after it.
 /// `REM` takes the indent of the next line that is not `REM`, or 0 at the end of the sheet.
+/// The file name of `FILE` and `CDTEXTFILE` and the text of `PERFORMER`, `SONGWRITER` and `TITLE`
+/// are always quoted, as many cue sheet readers expect.
 impl fmt::Display for CueSheet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut in_track = false;
@@ -252,6 +254,26 @@ impl fmt::Display for CueSheet {
             self.commands.iter().zip(indents.into_iter().flatten())
         {
             write!(f, "{:indent$}{}", "", command.as_str())?;
+            let mut parameters = parameters.iter();
+            match command {
+                Command::Cdtextfile
+                | Command::File
+                | Command::Performer
+                | Command::Songwriter
+                | Command::Title => {
+                    if let Some(text) = parameters.next() {
+                        write!(f, " \"{}\"", text.as_str())?;
+                    }
+                }
+                Command::Catalog
+                | Command::Flags
+                | Command::Index
+                | Command::Isrc
+                | Command::Postgap
+                | Command::Pregap
+                | Command::Rem
+                | Command::Track => {}
+            }
             for parameter in parameters {
                 write!(f, " {parameter}")?;
             }
@@ -761,8 +783,8 @@ mod tests {
         );
     }
 
-    // canonical with bad indentation, extra spaces, a blank line, unpadded track numbers, and
-    // needlessly quoted tokens.
+    // canonical with bad indentation, extra spaces, a blank line, unpadded track numbers, a
+    // needlessly quoted token, and an unquoted title.
     #[test]
     fn unformatted() {
         assert_eq!(formatted(fixture!("unformatted")), canonical_text());
