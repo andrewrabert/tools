@@ -126,7 +126,7 @@ impl Backend {
             Backend::Bzip2 => &["bzip2"],
             Backend::Cabextract => &["cabextract"],
             Backend::Cpio => &["cpio"],
-            Backend::CueSheet => &["bchunk", "binmerge"],
+            Backend::CueSheet => &["bchunk"],
             Backend::DolphinGcm | Backend::DolphinRvz => &["dolphin-tool"],
             Backend::Gzip => &["gzip"],
             // unrar unpacks the .bin volumes of GOG installers
