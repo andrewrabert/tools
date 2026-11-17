@@ -132,6 +132,7 @@ tool_groups! {
         "syncthing-stversions" => syncthing_stversions::SyncthingStversions,
     }
     "Games" {
+        "lnkedit" => lnkedit::Lnkedit,
         "proton" => proton::Proton,
     }
     "Git" {

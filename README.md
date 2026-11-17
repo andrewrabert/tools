@@ -63,6 +63,7 @@ Create and unpack archives
 
 ### Games
 
+- `lnkedit`: Show or retarget a Windows shortcut (.lnk)
 - `proton`: Run programs through Proton or Wine in a managed prefix
 
 ### Git

@@ -40,6 +40,7 @@ pub mod immich_remote;
 pub mod jdownloader_remote;
 pub mod json;
 pub mod lmk;
+pub mod lnkedit;
 pub mod lust;
 pub mod mac_address;
 pub mod mime;
