@@ -103,9 +103,7 @@ impl CueSheet {
         if text.as_bytes() != data {
             return Err(CueSheetError::CharacterEncoding(text.into_owned()));
         }
-        let mut commands = Vec::new();
-        let mut files = Vec::new();
-        let mut tracks = Vec::new();
+        let mut lines = Vec::new();
         for raw in text.lines() {
             let line = raw.trim();
             if line.is_empty() {
@@ -115,7 +113,40 @@ impl CueSheet {
                 (word, repeat(0.., preceded(whitespace, argument)))
                     .parse(line)
                     .map_err(|_: ParseError<&str, EmptyError>| CueSheetError::UnmatchedQuote)?;
-            let command = Command::try_from(name)?;
+            lines.push((Command::try_from(name)?, parameters, raw));
+        }
+        Self::build(lines)
+    }
+
+    /// A sheet of `commands` and their parameters, validated like the lines of a sheet.
+    pub fn from_commands(commands: &[(Command, Vec<String>)]) -> Result<Self, CueSheetError> {
+        let raws: Vec<String> = commands
+            .iter()
+            .map(|(command, parameters)| {
+                let mut raw = command.as_str().to_owned();
+                for parameter in parameters {
+                    raw.push(' ');
+                    raw.push_str(&Parameter(parameter.clone()).to_string());
+                }
+                raw
+            })
+            .collect();
+        let lines = commands
+            .iter()
+            .zip(&raws)
+            .map(|((command, parameters), raw)| {
+                let parameters: Vec<&str> = parameters.iter().map(String::as_str).collect();
+                (*command, parameters, raw.as_str())
+            })
+            .collect();
+        Self::build(lines)
+    }
+
+    fn build(lines: Vec<(Command, Vec<&str>, &str)>) -> Result<Self, CueSheetError> {
+        let mut commands = Vec::new();
+        let mut files: Vec<File> = Vec::new();
+        let mut tracks: Vec<Track> = Vec::new();
+        for (command, parameters, raw) in lines {
             let parameters: Vec<Parameter> = match command {
                 Command::File => {
                     let file: File = parse(&parameters, raw)?;
@@ -124,7 +155,11 @@ impl CueSheet {
                     parameters
                 }
                 Command::Track => {
-                    let track: Track = parse(&parameters, raw)?;
+                    if files.is_empty() {
+                        return Err(CueSheetError::TrackOutsideFile(raw.to_owned()));
+                    }
+                    let mut track: Track = parse(&parameters, raw)?;
+                    track.file = files.len() - 1;
                     let parameters = track.tokens().map(Parameter).into();
                     tracks.push(track);
                     parameters
@@ -271,6 +306,10 @@ impl File {
     pub fn filename(&self) -> &str {
         &self.filename
     }
+
+    pub fn filetype(&self) -> &Filetype {
+        &self.filetype
+    }
 }
 
 impl Tokens<2> for File {
@@ -328,6 +367,8 @@ pub struct Track {
     number: TrackNumber,
     datatype: Datatype,
     indexes: Vec<Index>,
+    /// The position in the sheet's files of the file the track is in.
+    file: usize,
 }
 
 struct TrackNumber(u8);
@@ -385,8 +426,21 @@ impl Tokens<2> for Session {
 }
 
 impl Track {
+    pub fn number(&self) -> u8 {
+        self.number.0
+    }
+
     pub fn datatype(&self) -> &Datatype {
         &self.datatype
+    }
+
+    pub fn indexes(&self) -> &[Index] {
+        &self.indexes
+    }
+
+    /// The position in the sheet's files of the file the track is in.
+    pub fn file(&self) -> usize {
+        self.file
     }
 }
 
@@ -396,6 +450,7 @@ impl Tokens<2> for Track {
             number: TrackNumber::try_from(number)?,
             datatype: Datatype::try_from(datatype)?,
             indexes: Vec::new(),
+            file: 0,
         })
     }
 
@@ -407,6 +462,12 @@ impl Tokens<2> for Track {
 pub struct Index {
     number: IndexNumber,
     time: Time,
+}
+
+impl Index {
+    pub fn time(&self) -> Time {
+        self.time
+    }
 }
 
 impl Tokens<2> for Index {
@@ -441,10 +502,38 @@ impl fmt::Display for IndexNumber {
     }
 }
 
-struct Time {
+/// A position on the disc in minutes, seconds, and frames, at 75 frames a second.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Time {
     minutes: u8,
     seconds: u8,
     frames: u8,
+}
+
+impl Time {
+    pub const FRAMES_PER_SECOND: u64 = 75;
+    const FRAMES_PER_MINUTE: u64 = 60 * Self::FRAMES_PER_SECOND;
+
+    /// The time `frames` frames into the disc, or `None` past 99:59:74.
+    pub fn from_frames(frames: u64) -> Option<Self> {
+        let minutes = u8::try_from(frames / Self::FRAMES_PER_MINUTE).ok()?;
+        if minutes > 99 {
+            return None;
+        }
+        let rest = frames % Self::FRAMES_PER_MINUTE;
+        Some(Time {
+            minutes,
+            seconds: (rest / Self::FRAMES_PER_SECOND) as u8,
+            frames: (rest % Self::FRAMES_PER_SECOND) as u8,
+        })
+    }
+
+    /// The frames from the start of the disc.
+    pub fn frames(self) -> u64 {
+        u64::from(self.minutes) * Self::FRAMES_PER_MINUTE
+            + u64::from(self.seconds) * Self::FRAMES_PER_SECOND
+            + u64::from(self.frames)
+    }
 }
 
 impl TryFrom<&str> for Time {
@@ -491,6 +580,20 @@ pub enum Datatype {
     Mode2_2352,
     Cdi2336,
     Cdi2352,
+}
+
+impl Datatype {
+    /// The bytes of a sector in a file of this datatype.
+    pub fn sector_size(&self) -> u64 {
+        match self {
+            Datatype::Audio | Datatype::Mode1_2352 | Datatype::Mode2_2352 | Datatype::Cdi2352 => {
+                2352
+            }
+            Datatype::Cdg => 2448,
+            Datatype::Mode1_2048 => 2048,
+            Datatype::Mode2_2336 | Datatype::Cdi2336 => 2336,
+        }
+    }
 }
 
 impl TryFrom<&str> for Datatype {
@@ -540,6 +643,7 @@ pub enum CueSheetError {
     IndexNumber(String),
     Time(String),
     IndexOutsideTrack(String),
+    TrackOutsideFile(String),
     Filename(String),
 }
 
@@ -574,6 +678,9 @@ impl fmt::Display for CueSheetError {
             ),
             CueSheetError::IndexOutsideTrack(line) => {
                 write!(f, "{line:?} comes before any TRACK")
+            }
+            CueSheetError::TrackOutsideFile(line) => {
+                write!(f, "{line:?} comes before any FILE")
             }
             CueSheetError::Filename(filename) => {
                 write!(

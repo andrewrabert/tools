@@ -2,6 +2,7 @@ pub mod archive;
 pub mod audio_tag;
 pub mod b64;
 pub mod bertbox;
+pub mod binmerge;
 pub mod broken_links;
 pub mod bwrapped;
 pub mod case_collisions;
