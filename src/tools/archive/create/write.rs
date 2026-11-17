@@ -5,6 +5,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
 
+use crate::pool;
 use crate::tools::archive::create::config::Speed;
 use crate::tools::archive::create::format::Format;
 use crate::tools::archive::create::members::Members;
@@ -12,6 +13,7 @@ use crate::tools::archive::extract::seven_zip_program;
 use crate::tools::archive::password::Password;
 use crate::tools::archive::process;
 use crate::tools::archive::temp;
+use crate::zip_recompress;
 
 const TEMP_PREFIX: &str = ".archive_";
 const ISO_VOLUME_ID_LENGTH: usize = 32;
@@ -88,11 +90,7 @@ fn zip(members: &Members, dest: &Path, speed: Speed) -> Result<()> {
         &members.joined(b'\n'),
     )?;
     if let Speed::Best = speed {
-        process::run(
-            Command::new("advzip")
-                .args(["--recompress", "--shrink-insane", "--quiet"])
-                .arg(dest),
-        )?;
+        zip_recompress::recompress(dest, pool::jobs(0)?)?;
     }
     Ok(())
 }

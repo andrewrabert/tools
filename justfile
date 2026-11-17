@@ -93,3 +93,26 @@ run *args:
 
 build-release:
     cargo build --release
+
+# Check zip-recompress against advzip: each archive is recompressed by both and compared byte for byte
+[positional-arguments]
+zip-recompress-compare *archives: build-release
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bertbox="{{justfile_directory()}}/target/release/bertbox"
+    scratch=$(mktemp -d)
+    trap 'rm -rf "$scratch"' EXIT
+    status=0
+    for archive in "$@"; do
+        cp -- "$archive" "$scratch/advzip.zip"
+        cp -- "$archive" "$scratch/bertbox.zip"
+        advzip --recompress --shrink-insane --quiet "$scratch/advzip.zip"
+        BERTBOX_AS_BERTBOX=1 "$bertbox" zip-recompress "$scratch/bertbox.zip" > /dev/null
+        if cmp -s "$scratch/advzip.zip" "$scratch/bertbox.zip"; then
+            echo "identical  $archive"
+        else
+            echo "DIFFERENT  $archive"
+            status=1
+        fi
+    done
+    exit $status

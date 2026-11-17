@@ -79,6 +79,8 @@ walkdir = "2"
 winnow = "1"
 zbus = "6"
 zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+zopfli = { version = "0.8", default-features = false, features = ["std"] }
+libdeflater = "1"
 
 [dev-dependencies]
 snapbox = "1"
@@ -93,3 +95,6 @@ strip = true
 
 [build-dependencies]
 vergen-gix = { version = "10", features = ["emit_and_set"] }
+
+[profile.dev.package.zopfli]
+opt-level = 3

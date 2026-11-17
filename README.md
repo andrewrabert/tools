@@ -14,6 +14,7 @@ Create and unpack archives
 
 - `archive`: Create archives in a variety of formats
 - `extract`: Extract archives in a variety of formats
+- `zip-recompress`: Recompress zip archives in place with zopfli (advzip --shrink-insane)
 
 ### Claude
 

@@ -80,6 +80,7 @@ pub mod txt;
 pub mod ud;
 pub mod url;
 pub mod urlextract;
+pub mod zip_recompress;
 pub mod zlib;
 
 use std::process::ExitCode;

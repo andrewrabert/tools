@@ -21,6 +21,7 @@ mod urls;
 mod walk;
 mod wayland;
 mod which;
+mod zip_recompress;
 
 use std::env;
 use std::process::ExitCode;
@@ -88,6 +89,7 @@ tool_groups! {
     "Archive": "Create and unpack archives" {
         "archive" => archive::Archive,
         "extract" => archive::Extract,
+        "zip-recompress" => zip_recompress::ZipRecompress,
     }
     "Claude" {
         "claude-statusline" => claude_statusline::ClaudeStatusline,
