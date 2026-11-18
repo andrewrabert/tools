@@ -230,7 +230,6 @@ tool_groups! {
     "External": "Commands from upstream crates" {
         "dotenvy" => external::Dotenvy,
         "qrencode" => external::Qrencode,
-        "uncomment" => external::Uncomment,
     }
 }
 

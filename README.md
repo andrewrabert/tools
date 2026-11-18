@@ -170,7 +170,6 @@ Commands from upstream crates
 
 - `dotenvy`: Run a command using the environment in a .env file (upstream dotenvy)
 - `qrencode`: Print text as a QR code to the terminal (upstream qrcode)
-- `uncomment`: Remove comments from source files (upstream uncomment)
 
 ### Bertbox
 

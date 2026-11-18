@@ -63,7 +63,7 @@ pub struct Passthrough {
         value_name = "ARG",
         trailing_var_arg = true,
         allow_hyphen_values = true,
-        help = "further arguments passed through to the underlying tool"
+        help = "further arguments passed through to the uncomment program"
     )]
     pub rest: Vec<OsString>,
 }
