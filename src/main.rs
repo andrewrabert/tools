@@ -203,6 +203,8 @@ tool_groups! {
         "fat32-bootsector" => fat32_bootsector::Fat32Bootsector,
         "fat32-format-for-windows98" => fat32_format_for_windows98::Fat32FormatForWindows98,
         "lmk" => lmk::Lmk,
+        #[cfg(any(target_os = "linux", target_os = "android"))]
+        "ms-sys" => ms_sys::MsSys,
         "ntfs-fix-boot-sector" => ntfs_fix_boot_sector::NtfsFixBootSector,
         "open" => open::Open,
         "pending-sync" => pending_sync::PendingSync,

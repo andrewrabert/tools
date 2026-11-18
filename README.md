@@ -138,6 +138,7 @@ Create and unpack archives
 - `fat32-bootsector`: Print the fields of a FAT32 boot sector as JSON
 - `fat32-format-for-windows98`: Format a partition as FAT32 that Windows 98 can boot from
 - `lmk`: Rerun a command whenever lmk is run without one
+- `ms-sys`: Write a Microsoft-compatible boot record to a device, or identify the one it has
 - `ntfs-fix-boot-sector`: Set an NTFS boot sector's partition start, so Windows can boot from it
 - `open`: Open files or URLs with the desktop opener, detached from the terminal
 - `pending-sync`: Print how much data is waiting to be written to disk

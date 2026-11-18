@@ -52,6 +52,8 @@ pub mod mkv_info_recorder;
 pub mod mkv_language_strip;
 pub mod mkv_preview;
 pub mod mkv_set_title_from_filename;
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub mod ms_sys;
 pub mod multihash;
 pub mod music_organizer;
 pub mod network_scan;

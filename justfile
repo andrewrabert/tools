@@ -82,6 +82,10 @@ surface-spec-fixtures: build
         done
     done
 
+# Regenerate the ms-sys file system fixtures; needs dosfstools, exfatprogs and ntfs-3g
+ms-sys-fixtures:
+    {{justfile_directory()}}/src/tools/ms_sys/testdata/generate.sh
+
 # List outdated dependencies
 outdated:
     @cargo outdated --manifest-path {{justfile_directory()}}/Cargo.toml --workspace --root-deps-only
