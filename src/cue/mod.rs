@@ -1,5 +1,6 @@
 pub mod bin;
 pub mod extract;
+pub mod split;
 
 use std::ffi::OsStr;
 use std::fmt;
@@ -490,6 +491,10 @@ pub struct Index {
 }
 
 impl Index {
+    pub fn number(&self) -> u8 {
+        self.number.0
+    }
+
     pub fn time(&self) -> Time {
         self.time
     }

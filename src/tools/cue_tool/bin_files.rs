@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, ensure};
 
-use crate::cue::bin::{self, Operation, Replacement};
+use crate::cue::bin::{self, LeadIn, Operation, Replacement};
 use crate::tools::cue_tool::cli::BinFiles;
 
 pub fn run(args: &BinFiles, operation: Operation) -> ExitCode {
@@ -24,6 +24,10 @@ fn each(args: &BinFiles, operation: Operation) -> Result<ExitCode> {
         "--name names the files of one CUEFILE, but {} were given",
         args.cuefiles.len()
     );
+    ensure!(
+        !(args.in_place && matches!(operation, Operation::Split(LeadIn::Discard))),
+        "--lead-in discard leaves sectors out, so it cannot be used with --in-place"
+    );
     if let Some(outdir) = &args.outdir {
         fs::create_dir_all(outdir).with_context(|| format!("creating {}", outdir.display()))?;
     }
@@ -36,13 +40,13 @@ fn each(args: &BinFiles, operation: Operation) -> Result<ExitCode> {
                     (Operation::Merge, Replacement::Replaced { old, .. }) => {
                         println!("Merged {cuefile}: {old} files into 1");
                     }
-                    (Operation::Split, Replacement::Replaced { new, .. }) => {
+                    (Operation::Split(_), Replacement::Replaced { new, .. }) => {
                         println!("Split {cuefile}: 1 file into {new}");
                     }
                     (Operation::Merge, Replacement::Unneeded) => {
                         println!("Skipped {cuefile}: already one file");
                     }
-                    (Operation::Split, Replacement::Unneeded) => {
+                    (Operation::Split(_), Replacement::Unneeded) => {
                         println!("Skipped {cuefile}: already one file per track");
                     }
                 }

@@ -3,6 +3,9 @@ use std::path::PathBuf;
 
 use clap::{ArgGroup, Args as ClapArgs, Subcommand};
 
+use crate::cue::bin::LeadIn;
+use crate::cue::split::{Gaps, LeadIn as AudioLeadIn};
+
 #[derive(ClapArgs)]
 #[command(
     about = "Check, format, print, and list cue sheets, merge or split their files, and extract their tracks"
@@ -33,11 +36,11 @@ pub enum Command {
     #[command(
         about = "split the single file of each cue sheet into one per track",
         long_about = "Split the single bin file of each cue sheet into one bin file per track, \
-                      named by the Redump convention, with a cue sheet of corrected offsets. \
-                      Without --in-place, the input files are left untouched and nothing is \
-                      overwritten."
+                      named by the Redump convention, with a cue sheet of corrected offsets. A \
+                      track runs from its first INDEX to the next track's. Without --in-place, \
+                      the input files are left untouched and nothing is overwritten."
     )]
-    FileSplit(BinFiles),
+    FileSplit(FileSplit),
     #[command(
         about = "extract each track of a cue sheet's single file as an ISO or audio file",
         long_about = "Extract each track of the single bin file of a cue sheet: data tracks as \
@@ -49,6 +52,15 @@ pub enum Command {
                       is overwritten."
     )]
     TrackExtract(TrackExtract),
+    #[command(
+        about = "split a FLAC file into one per track of its cue sheet",
+        long_about = "Split a FLAC file into one FLAC file per track of its cue sheet, written \
+                      beside the cue sheet as split01.flac, split02.flac, and so on. A track \
+                      starts at its INDEX 01, and the new files carry no tags. The FLAC file is \
+                      removed once every track is written, and the cue sheet is left as it is. \
+                      Nothing is overwritten."
+    )]
+    FlacSplit(FlacSplit),
 }
 
 #[derive(ClapArgs)]
@@ -155,6 +167,20 @@ pub struct BinFiles {
 }
 
 #[derive(ClapArgs)]
+pub struct FileSplit {
+    #[command(flatten)]
+    pub files: BinFiles,
+    #[arg(
+        long,
+        value_enum,
+        value_name = "CHOICE",
+        default_value_t = LeadIn::Error,
+        help = "what becomes of sectors before the first INDEX of the first track"
+    )]
+    pub lead_in: LeadIn,
+}
+
+#[derive(ClapArgs)]
 pub struct TrackExtract {
     #[arg(value_name = "CUEFILE", help = "a cue sheet")]
     pub cuefile: PathBuf,
@@ -198,4 +224,28 @@ pub struct TrackExtract {
     pub swap_audio: bool,
     #[arg(short, long, help = "overwrite track files that exist")]
     pub force: bool,
+}
+
+#[derive(ClapArgs)]
+pub struct FlacSplit {
+    #[arg(value_name = "FLAC", help = "the FLAC file to split")]
+    pub flac: PathBuf,
+    #[arg(value_name = "CUEFILE", help = "the cue sheet of FLAC")]
+    pub cuefile: PathBuf,
+    #[arg(
+        long,
+        value_enum,
+        value_name = "CHOICE",
+        default_value_t = AudioLeadIn::Error,
+        help = "what becomes of audio before the first track"
+    )]
+    pub lead_in: AudioLeadIn,
+    #[arg(
+        long,
+        value_enum,
+        value_name = "CHOICE",
+        default_value_t = Gaps::Append,
+        help = "what becomes of the gap from the INDEX 00 of a track to its INDEX 01"
+    )]
+    pub gaps: Gaps,
 }

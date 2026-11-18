@@ -3,6 +3,7 @@ mod bin_files;
 mod check;
 mod cli;
 mod files;
+mod flac_split;
 mod fmt;
 mod json;
 mod track_extract;
@@ -31,8 +32,9 @@ impl Tool for CueTool {
             Command::Json(args) => json::run(&args),
             Command::Files(args) => files::run(&args),
             Command::FileMerge(args) => bin_files::run(&args, Operation::Merge),
-            Command::FileSplit(args) => bin_files::run(&args, Operation::Split),
+            Command::FileSplit(args) => bin_files::run(&args.files, Operation::Split(args.lead_in)),
             Command::TrackExtract(args) => track_extract::run(&args),
+            Command::FlacSplit(args) => flac_split::run(&args),
         }
     }
 }

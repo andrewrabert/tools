@@ -3,18 +3,16 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use anyhow::{Context, Result, bail};
-use nix::unistd::{Gid, Uid, chown};
-use tempfile::Builder;
-
+use crate::cue::split::{self, Gaps, LeadIn, LeadInError, Options};
 use crate::cue::{self, CueSheet, CueSheetError};
 use crate::tools::music_organizer::log::Log;
 use crate::tools::music_organizer::name::safe_rename;
 use crate::tools::music_organizer::tags::{AUDIO_EXTS, FLAC_EXT};
+use anyhow::{Context, Result, bail};
+use nix::unistd::{Gid, Uid, chown};
 
 const IMAGE_EXTS: [&str; 2] = ["jpg", "png"];
 const IMAGE_STEM: &str = "cover";
-const SPLIT_DIR_PREFIX: &str = ".shntool_split";
 const DIR_MODE: u32 = 0o755;
 const FILE_MODE: u32 = 0o644;
 
@@ -198,7 +196,7 @@ pub fn check_cue_files(log: &mut Log, dir: &Path, dry_run: bool) -> Result<()> {
             }
             Ok(sheet) => {
                 if sheet.tracks().len() > 1 {
-                    split_flac(log, flac, cue, dry_run)?;
+                    split_flac(log, flac, cue, &sheet, dry_run)?;
                 }
             }
         }
@@ -206,7 +204,13 @@ pub fn check_cue_files(log: &mut Log, dir: &Path, dry_run: bool) -> Result<()> {
     Ok(())
 }
 
-fn split_flac(log: &mut Log, flac: &Path, cue: &Path, dry_run: bool) -> Result<()> {
+fn split_flac(
+    log: &mut Log,
+    flac: &Path,
+    cue: &Path,
+    sheet: &CueSheet,
+    dry_run: bool,
+) -> Result<()> {
     if dry_run {
         log.info(format!("Would split {}", flac.display()));
         return Ok(());
@@ -215,40 +219,16 @@ fn split_flac(log: &mut Log, flac: &Path, cue: &Path, dry_run: bool) -> Result<(
     let parent = cue
         .parent()
         .with_context(|| format!("{} has no parent", cue.display()))?;
-    let split_dir = Builder::new()
-        .prefix(SPLIT_DIR_PREFIX)
-        .tempdir_in(parent)
-        .with_context(|| format!("creating a temporary directory in {}", parent.display()))?;
-    let cue_name = cue
-        .file_name()
-        .with_context(|| format!("{} has no name", cue.display()))?;
-    let flac_name = flac
-        .file_name()
-        .with_context(|| format!("{} has no name", flac.display()))?;
-    let status = Command::new("shntool")
-        .args(["split", "-q", "-d"])
-        .arg(split_dir.path())
-        .arg("-f")
-        .arg(cue_name)
-        .args([
-            "-o",
-            "flac flac --best --verify --output-name split%f -",
-            "-t",
-            "%n",
-        ])
-        .arg(flac_name)
-        .current_dir(parent)
-        .status()
-        .context("running shntool")?;
-    if !status.success() {
-        bail!("shntool failed: {status}");
-    }
-    for track in files_in(split_dir.path())? {
-        let name = track
-            .file_name()
-            .with_context(|| format!("{} has no name", track.display()))?;
-        fs::rename(&track, parent.join(name))
-            .with_context(|| format!("moving {}", track.display()))?;
-    }
+    let options = Options {
+        lead_in: LeadIn::Error,
+        gaps: Gaps::Append,
+    };
+    match split::tracks(flac, sheet, parent, options) {
+        Err(error) if error.downcast_ref::<LeadInError>().is_some() => {
+            log.error(format!("Audio before the first track: {}", flac.display()));
+            return Ok(());
+        }
+        result => result?,
+    };
     fs::remove_file(flac).with_context(|| format!("removing {}", flac.display()))
 }

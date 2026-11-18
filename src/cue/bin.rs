@@ -2,27 +2,39 @@
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs::{self, File};
-use std::io::{self, BufReader, BufWriter, Read, Write};
+use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{self, Path, PathBuf};
 
 use anyhow::{Context, Result, bail, ensure};
+use clap::ValueEnum;
 
 use crate::cue::{self, Command, CueSheet, Filetype, Time};
 
 const BIN_EXTENSION: &str = "bin";
 const SCRATCH_PREFIX: &str = ".cue-tool-";
 
+/// What becomes of the sectors before the first INDEX of the first track when splitting.
+#[derive(Clone, Copy, ValueEnum)]
+pub enum LeadIn {
+    /// Refuse to split
+    Error,
+    /// Keep them at the start of the first track's file
+    FirstTrack,
+    /// Leave them out
+    Discard,
+}
+
 #[derive(Clone, Copy)]
 pub enum Operation {
     Merge,
-    Split,
+    Split(LeadIn),
 }
 
 impl Operation {
     fn write(self, source: &Source, outdir: &Path, basename: &str) -> Result<Written> {
         match self {
             Operation::Merge => merge_into(source, outdir, basename),
-            Operation::Split => split_into(source, outdir, basename),
+            Operation::Split(lead_in) => split_into(source, outdir, basename, lead_in),
         }
     }
 }
@@ -122,7 +134,7 @@ pub fn replace(cuefile: &Path, operation: Operation) -> Result<Replacement> {
     let source = Source::read(cuefile)?;
     let unneeded = match operation {
         Operation::Merge => source.bins.len() == 1,
-        Operation::Split => source.bins.len() == source.sheet.tracks().len(),
+        Operation::Split(_) => source.bins.len() == source.sheet.tracks().len(),
     };
     if unneeded {
         return Ok(Replacement::Unneeded);
@@ -199,7 +211,7 @@ fn merge_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written>
 }
 
 /// One bin file per track, named by the Redump convention from `basename`.
-fn split_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written> {
+fn split_into(source: &Source, outdir: &Path, basename: &str, lead_in: LeadIn) -> Result<Written> {
     let new_cue = new_cue(outdir, basename)?;
     let [bin] = source.bins.as_slice() else {
         bail!(
@@ -208,7 +220,7 @@ fn split_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written>
             source.bins.len()
         );
     };
-    let tracks = split_tracks(&source.sheet, bin, source.sector_size, basename)?;
+    let tracks = split_tracks(&source.sheet, bin, source.sector_size, basename, lead_in)?;
     let outputs: Vec<PathBuf> = tracks
         .iter()
         .map(|track| outdir.join(&track.filename))
@@ -219,6 +231,10 @@ fn split_into(source: &Source, outdir: &Path, basename: &str) -> Result<Written>
     let new_sheet = split_sheet(&source.sheet, &tracks)
         .with_context(|| source.cuefile.display().to_string())?;
     let mut input = BufReader::new(open(&bin.path)?);
+    let first = tracks.first().expect("a sheet has a track");
+    input
+        .seek(SeekFrom::Start(first.start * source.sector_size))
+        .with_context(|| format!("reading {}", bin.path.display()))?;
     for (track, output) in tracks.iter().zip(&outputs) {
         let mut writer = BufWriter::new(create(output)?);
         let copied = io::copy(&mut (&mut input).take(track.bytes), &mut writer)
@@ -367,15 +383,17 @@ struct SplitTrack {
 }
 
 /// Each track's file name and extent in `bin`. A track runs from its first INDEX to the next
-/// track's, or to the end of the file.
+/// track's, or to the end of the file. `lead_in` decides what becomes of sectors before the
+/// first INDEX of the first track.
 fn split_tracks(
     sheet: &CueSheet,
     bin: &BinFile,
     sector_size: u64,
     basename: &str,
+    lead_in: LeadIn,
 ) -> Result<Vec<SplitTrack>> {
     let total = sectors(bin, sector_size)?;
-    let starts = sheet
+    let mut starts = sheet
         .tracks()
         .iter()
         .map(|track| {
@@ -386,6 +404,19 @@ fn split_tracks(
                 .with_context(|| format!("track {} has no INDEX", track.number()))
         })
         .collect::<Result<Vec<_>>>()?;
+    if let Some(first) = starts.first_mut()
+        && *first > 0
+    {
+        match lead_in {
+            LeadIn::Error => bail!(
+                "the first track starts at sector {first}, not at the start of {}; --lead-in \
+                 chooses what becomes of the sectors before it",
+                bin.path.display()
+            ),
+            LeadIn::FirstTrack => *first = 0,
+            LeadIn::Discard => {}
+        }
+    }
     let count = sheet.tracks().len();
     sheet
         .tracks()
@@ -507,13 +538,45 @@ FILE \"Merged.bin\" BINARY
     #[test]
     fn split() {
         let sheet = CueSheet::new(MERGED.as_bytes()).unwrap();
-        let tracks = split_tracks(&sheet, &bins(&[600])[0], 2352, "G").unwrap();
+        let tracks = split_tracks(&sheet, &bins(&[600])[0], 2352, "G", LeadIn::Error).unwrap();
         let extents: Vec<(u64, u64)> = tracks.iter().map(|t| (t.start, t.bytes)).collect();
         assert_eq!(
             extents,
             [(0, 100 * 2352), (100, 200 * 2352), (300, 300 * 2352)]
         );
         assert_eq!(split_sheet(&sheet, &tracks).unwrap().to_string(), SPLIT);
+    }
+
+    const LEAD_IN: &str = "FILE \"G.bin\" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:00:02\n  TRACK 02 AUDIO\n    INDEX 01 00:00:05\n";
+
+    #[test]
+    fn split_refuses_sectors_before_the_first_track() {
+        let sheet = CueSheet::new(LEAD_IN.as_bytes()).unwrap();
+        assert!(split_tracks(&sheet, &bins(&[10])[0], 2352, "G", LeadIn::Error).is_err());
+    }
+
+    #[test]
+    fn split_leaves_out_sectors_before_the_first_track() {
+        let sheet = CueSheet::new(LEAD_IN.as_bytes()).unwrap();
+        let tracks = split_tracks(&sheet, &bins(&[10])[0], 2352, "G", LeadIn::Discard).unwrap();
+        let extents: Vec<(u64, u64)> = tracks.iter().map(|t| (t.start, t.bytes)).collect();
+        assert_eq!(extents, [(2, 3 * 2352), (5, 5 * 2352)]);
+        assert_eq!(
+            split_sheet(&sheet, &tracks).unwrap().to_string(),
+            "FILE \"G (Track 1).bin\" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\nFILE \"G (Track 2).bin\" BINARY\n  TRACK 02 AUDIO\n    INDEX 01 00:00:00\n"
+        );
+    }
+
+    #[test]
+    fn split_keeps_sectors_before_the_first_track() {
+        let sheet = CueSheet::new(LEAD_IN.as_bytes()).unwrap();
+        let tracks = split_tracks(&sheet, &bins(&[10])[0], 2352, "G", LeadIn::FirstTrack).unwrap();
+        let extents: Vec<(u64, u64)> = tracks.iter().map(|t| (t.start, t.bytes)).collect();
+        assert_eq!(extents, [(0, 5 * 2352), (5, 5 * 2352)]);
+        assert_eq!(
+            split_sheet(&sheet, &tracks).unwrap().to_string(),
+            "FILE \"G (Track 1).bin\" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:00:02\nFILE \"G (Track 2).bin\" BINARY\n  TRACK 02 AUDIO\n    INDEX 01 00:00:00\n"
+        );
     }
 
     #[test]
@@ -581,7 +644,7 @@ FILE \"Merged.bin\" BINARY
             Replacement::Unneeded
         ));
 
-        let split = replace(&cuefile, Operation::Split).unwrap();
+        let split = replace(&cuefile, Operation::Split(LeadIn::Error)).unwrap();
         assert!(matches!(split, Replacement::Replaced { old: 1, new: 3 }));
         assert_eq!(
             names(dir.path()),
@@ -597,7 +660,7 @@ FILE \"Merged.bin\" BINARY
         }
         assert_eq!(fs::read_to_string(&cuefile).unwrap(), SPLIT);
         assert!(matches!(
-            replace(&cuefile, Operation::Split).unwrap(),
+            replace(&cuefile, Operation::Split(LeadIn::Error)).unwrap(),
             Replacement::Unneeded
         ));
     }
@@ -613,13 +676,20 @@ FILE \"Merged.bin\" BINARY
         assert_eq!(fs::read_to_string(dir.path().join("G.cue")).unwrap(), SPLIT);
     }
 
-    // The first track starts past the start of the bin file, so splitting would drop sectors.
+    // The first track starts past the start of the bin file, so leaving the sectors before it
+    // out would drop them.
     #[test]
     fn replace_split_keeps_every_byte() {
-        let sheet = MERGED.replace("INDEX 01 00:00:00", "INDEX 01 00:00:10");
-        let dir = disc(&sheet, &[("Merged.bin", 250)]);
+        let dir = disc(LEAD_IN, &[("G.bin", 10)]);
+        let cuefile = dir.path().join("G.cue");
         let before = names(dir.path());
-        assert!(replace(&dir.path().join("G.cue"), Operation::Split).is_err());
+        assert!(replace(&cuefile, Operation::Split(LeadIn::Discard)).is_err());
+        assert!(replace(&cuefile, Operation::Split(LeadIn::Error)).is_err());
         assert_eq!(names(dir.path()), before);
+
+        replace(&cuefile, Operation::Split(LeadIn::FirstTrack)).unwrap();
+        let track = fs::read(dir.path().join("G (Track 1).bin")).unwrap();
+        assert_eq!(track.len(), 5 * 2352);
+        assert_eq!((track[0], track[5 * 2352 - 1]), (0, 4));
     }
 }
