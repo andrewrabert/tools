@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 use clap::Args as ClapArgs;
 use jiff::fmt::temporal::Pieces;
 use jiff::tz::TimeZone;
-use jiff::{SignedDuration, Zoned};
+use jiff::{SignedDuration, ZonedDateTime};
 
 use crate::git::{self, Git};
 use crate::tools::Tool;
@@ -97,13 +97,13 @@ impl DateOption {
             return Ok(Some(date.clone()));
         }
         if self.now {
-            return Ok(Some(Zoned::now().strftime(ISO_FORMAT).to_string()));
+            return Ok(Some(ZonedDateTime::now().strftime(ISO_FORMAT).to_string()));
         }
         Ok(None)
     }
 }
 
-fn parse_iso(date: &str) -> Result<Zoned> {
+fn parse_iso(date: &str) -> Result<ZonedDateTime> {
     let pieces = Pieces::parse(date).with_context(|| format!("parsing date {date:?}"))?;
     let (Some(time), Some(offset)) = (pieces.time(), pieces.to_numeric_offset()) else {
         bail!("date {date:?} has no time or offset");
@@ -111,7 +111,7 @@ fn parse_iso(date: &str) -> Result<Zoned> {
     pieces
         .date()
         .to_datetime(time)
-        .to_zoned(TimeZone::fixed(offset))
+        .to_zoned_datetime(TimeZone::fixed(offset))
         .with_context(|| format!("parsing date {date:?}"))
 }
 

@@ -30,7 +30,7 @@ imagesize = "0.15"
 indicatif = "0.18"
 infer = "0.22"
 ipnet = "2"
-jiff = { version = "0.2", features = ["serde"] }
+jiff = { version = "1.0", features = ["serde"] }
 libc = "0.2"
 linkify = "0.11"
 lofty = "0.25"
@@ -58,7 +58,7 @@ ruff_python_formatter = "=0.0.22"
 ruff_python_parser = "=0.0.22"
 ruff_source_file = "=0.0.22"
 ruff_text_size = "=0.0.22"
-rusqlite = { version = "0.42", features = ["bundled", "fallible_uint"] }
+rusqlite = { version = "0.43", features = ["bundled", "fallible_uint"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha1 = "0.11"
@@ -72,7 +72,7 @@ tempfile = "3"
 toml = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
-uncomment = "=3.10.4"
+uncomment = "=3.12.1"
 unicode-normalization = "0.1"
 url = "2"
 walkdir = "2"

@@ -190,7 +190,7 @@ fn field<'i>(input: &mut &'i [u8]) -> winnow::Result<Field<'i>, EmptyError> {
 fn mtime(modified: &str) -> Result<f64> {
     let (seconds, fraction) = modified.split_once('.').unwrap_or((modified, "0"));
     let seconds = DateTime::strptime(MODIFIED_FORMAT, seconds)
-        .and_then(|local| local.to_zoned(TimeZone::system()))
+        .and_then(|local| local.to_zoned_datetime(TimeZone::system()))
         .with_context(|| format!("unexpected 7z modification time: {modified}"))?
         .timestamp()
         .as_second();

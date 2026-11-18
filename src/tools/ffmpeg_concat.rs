@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 use clap::Args as ClapArgs;
-use jiff::Zoned;
+use jiff::ZonedDateTime;
 use tempfile::NamedTempFile;
 
 use crate::tools::Tool;
@@ -93,7 +93,7 @@ fn destination(output: Option<&Path>) -> Result<PathBuf> {
             return Ok(output.to_path_buf());
         }
     };
-    let timestamp = Zoned::now().strftime("%Y%m%dT%H%M%S");
+    let timestamp = ZonedDateTime::now().strftime("%Y%m%dT%H%M%S");
     Ok(dir.join(format!("ffmpeg_concat_{timestamp}.{EXTENSION}")))
 }
 

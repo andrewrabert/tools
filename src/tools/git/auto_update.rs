@@ -60,7 +60,7 @@ fn update(dir: &Path, staged: bool, no_push: bool) -> Result<()> {
             if !staged {
                 git::run(&mut git.command(["add", "-A"]))?;
             }
-            let now = Timestamp::now().to_zoned(TimeZone::UTC);
+            let now = Timestamp::now().to_zoned_datetime(TimeZone::UTC);
             let message = format!("git-auto-update {}", now.strftime("%Y-%m-%dT%H:%M:%S%:z"));
             git::run(git.command(["commit", "-m"]).arg(message))?;
         }

@@ -266,7 +266,9 @@ fn run(args: ImgToInterpolatedVideo) -> Result<()> {
 
 /// A name in the working directory from the current local time.
 fn default_output(format: Format) -> PathBuf {
-    let mut name = jiff::Zoned::now().strftime("%Y%m%d_%H%M%S").to_string();
+    let mut name = jiff::ZonedDateTime::now()
+        .strftime("%Y%m%d_%H%M%S")
+        .to_string();
     if let Some(extension) = format.extension() {
         name.push('.');
         name.push_str(extension);

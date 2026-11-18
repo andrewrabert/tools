@@ -181,7 +181,7 @@ fn format_human(record: &Record) -> Result<String> {
     let amps = milli("IBUS")?.abs();
     let time = record
         .timestamp
-        .to_zoned(TimeZone::system())
+        .to_zoned_datetime(TimeZone::system())
         .strftime("%Y-%m-%d %H:%M:%S");
     let field = |color: AnsiColor, key: &str, value: f64| {
         let style = Style::new().bold().fg_color(Some(color.into()));
