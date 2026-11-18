@@ -19,7 +19,7 @@ use crate::tools::claude_config::spec::{
     SPEC_FILENAME, Spec, load_mcp_specs,
 };
 use crate::tools::claude_config::state::{ClaudeDir, UNMANAGED_SETTINGS};
-use crate::tools::claude_config::yaml;
+use crate::yaml;
 
 struct Current {
     spec: Spec,

@@ -38,7 +38,7 @@ md-5 = "0.11"
 minijinja = { version = "3", features = ["json", "loop_controls", "preserve_order", "serde", "unicode", "urlencode"] }
 minijinja-contrib = { version = "3", features = ["datetime", "html_entities", "pycompat", "rand", "timezone", "unicode_wordwrap", "wordcount"] }
 mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
-nix = { version = "0.32", features = ["fs", "ioctl", "poll", "signal", "user"] }
+nix = { version = "0.32", features = ["fs", "hostname", "ioctl", "poll", "signal", "user"] }
 nucleo-matcher = "0.3"
 percent-encoding = "2"
 prettyplease = { version = "0.3", features = ["verbatim"] }
@@ -58,7 +58,7 @@ ruff_text_size = "=0.0.22"
 rusqlite = { version = "0.43", features = ["bundled", "fallible_uint"] }
 serde = { version = "1", features = ["derive"] }
 serde-saphyr = "2"
-serde_json = { version = "1", features = ["float_roundtrip"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 sha1 = "0.11"
 sha2 = "0.11"
 signal-hook = "0.4"

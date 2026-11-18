@@ -129,6 +129,10 @@ Create and unpack archives
 - `publicipv4`: Print the public IPv4 address
 - `publicipv6`: Print the public IPv6 address
 
+### Pi
+
+- `pi-config`: Manage Pi settings, models and packages from a spec directory
+
 ### System
 
 - `bwrapped`: Run a program inside a sandbox with filesystem isolation

@@ -13,7 +13,7 @@ use crate::dirs;
 use crate::tools::claude_config::files::{Log, read_optional, write_if_different};
 use crate::tools::claude_config::paths::{expand_user, normalize_source, resolve};
 use crate::tools::claude_config::spec::{ConfigSpec, HIDDEN_MARKETPLACE_NAME, PluginRef};
-use crate::tools::claude_config::yaml::sorted;
+use crate::yaml::sorted;
 
 const CONFIG_DIR_ENV: &str = "CLAUDE_CONFIG_DIR";
 const CONFIG_FILENAME: &str = ".claude.json";

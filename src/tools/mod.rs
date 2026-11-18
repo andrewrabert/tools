@@ -64,6 +64,7 @@ pub mod path_renamer;
 pub mod pathbin;
 pub mod pathcacher;
 pub mod pending_sync;
+pub mod pi_config;
 pub mod powerz_logger;
 pub mod preview;
 pub mod proton;

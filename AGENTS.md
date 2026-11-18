@@ -33,6 +33,7 @@ Helpers that many tools share.
 - `src/source.rs` stdin or file input
 - `src/urls.rs` URL parsing & extraction
 - `src/walk.rs` directory walking
+- `src/yaml.rs` YAML read into JSON values & written in block style
 
 Wrappers for external programs and services.
 - `src/clipboard.rs` clipboard copy & paste

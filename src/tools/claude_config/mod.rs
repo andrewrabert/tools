@@ -7,7 +7,6 @@ mod plugins;
 mod spec;
 mod state;
 mod update;
-mod yaml;
 
 use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;

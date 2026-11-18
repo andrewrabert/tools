@@ -21,6 +21,7 @@ mod urls;
 mod walk;
 mod wayland;
 mod which;
+mod yaml;
 mod zip_recompress;
 
 use std::env;
@@ -193,6 +194,9 @@ tool_groups! {
         "network-scan" => network_scan::NetworkScan,
         "publicipv4" => publicip::PublicIpv4,
         "publicipv6" => publicip::PublicIpv6,
+    }
+    "Pi" {
+        "pi-config" => pi_config::PiConfig,
     }
     "System" {
         "bwrapped" => bwrapped::Bwrapped,

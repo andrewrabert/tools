@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 
 use crate::tools::claude_config::files::{read_text, yaml_files};
-use crate::tools::claude_config::yaml;
+use crate::yaml;
 
 pub const SPEC_FILENAME: &str = "claude-config.yaml";
 pub const CLAUDE_MD_FILENAME: &str = "CLAUDE.md";
