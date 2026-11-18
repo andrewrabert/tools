@@ -7,6 +7,7 @@ pub mod bwrapped;
 pub mod case_collisions;
 pub mod cb;
 pub mod cdemu_tool;
+pub mod claude_config;
 pub mod claude_statusline;
 pub mod code_nuke;
 pub mod cue_tool;

@@ -92,6 +92,7 @@ tool_groups! {
         "zip-recompress" => zip_recompress::ZipRecompress,
     }
     "Claude" {
+        "claude-config" => claude_config::ClaudeConfig,
         "claude-statusline" => claude_statusline::ClaudeStatusline,
     }
     "Clipboard" {

@@ -369,6 +369,7 @@ dependencies = [
  "ruff_text_size",
  "rusqlite",
  "serde",
+ "serde-saphyr",
  "serde_json",
  "sha1 0.11.0",
  "sha2",

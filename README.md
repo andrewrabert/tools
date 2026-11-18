@@ -18,6 +18,7 @@ Create and unpack archives
 
 ### Claude
 
+- `claude-config`: Manage Claude Code settings, MCP servers, marketplaces and plugins from a spec directory
 - `claude-statusline`: Render the Claude Code status line from the hook json on stdin
 
 ### Clipboard
