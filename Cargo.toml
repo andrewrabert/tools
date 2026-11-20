@@ -43,18 +43,18 @@ nucleo-matcher = "0.3"
 percent-encoding = "2"
 prettyplease = { version = "0.3", features = ["verbatim"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
-qrcode = { version = "0.14", default-features = false }
+qrcode = { version = "0.15", default-features = false, features = ["std"] }
 quote = "1"
 rand = "0.10"
 ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
 regex = "1"
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
 rpassword = "7"
-ruff_python_ast = "=0.0.22"
-ruff_python_formatter = "=0.0.22"
-ruff_python_parser = "=0.0.22"
-ruff_source_file = "=0.0.22"
-ruff_text_size = "=0.0.22"
+ruff_python_ast = "=0.0.23"
+ruff_python_formatter = "=0.0.23"
+ruff_python_parser = "=0.0.23"
+ruff_source_file = "=0.0.23"
+ruff_text_size = "=0.0.23"
 rusqlite = { version = "0.43", features = ["bundled", "fallible_uint"] }
 serde = { version = "1", features = ["derive"] }
 serde-saphyr = "2"
