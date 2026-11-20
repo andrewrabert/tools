@@ -6,6 +6,8 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
+use super::syn_serde::Syn;
+use super::{Justification, NodeId, Position, Span};
 use anyhow::{Context, Result, bail};
 use clap::{Args, ValueEnum};
 use proc_macro2::{LineColumn, TokenStream};
@@ -20,9 +22,6 @@ use syn::{
     AttrStyle, Attribute, ForeignItem, ImplItem, Item, Meta, Signature, Stmt, Token, TraitItem,
     Visibility,
 };
-use syn_serde3::Syn;
-
-use super::{Justification, NodeId, Position, Span};
 
 /// The Rust items a spec includes, by their visibility and by whether they exist only in test
 /// builds.
@@ -997,7 +996,7 @@ fn silence_syn_serde_panics() {
         panic::set_hook(Box::new(move |info| {
             let in_syn_serde = info
                 .location()
-                .is_some_and(|location| location.file().contains("syn-serde3"));
+                .is_some_and(|location| location.file().contains("surface_spec/syn_serde/"));
             if !in_syn_serde {
                 previous(info);
             }

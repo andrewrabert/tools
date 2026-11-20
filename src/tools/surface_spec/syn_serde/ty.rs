@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use std::boxed::Box;
+
+use super::*;
+pub use crate::tools::surface_spec::syn_serde::{
+    ast_enum::Type,
+    ast_struct::{
+        Abi, FnPtrVariadic, NamedArg, TypeArray, TypeFnPtr, TypeGroup, TypeImplTrait, TypeMacro,
+        TypeParen, TypePath, TypePtr, TypeReference, TypeSlice, TypeTraitObject, TypeTuple,
+    },
+};
+
+ast_struct! {
+    /// An adapter for [`enum@syn::ReturnType`].
+    #[derive(Default)]
+    #[serde(transparent)]
+    pub struct ReturnType {
+        ty: Option<Box<Type>>,
+    }
+}
+
+mod convert {
+    use super::*;
+
+    // ReturnType
+    syn_trait_impl!(syn::ReturnType);
+    impl From<&syn::ReturnType> for ReturnType {
+        fn from(other: &syn::ReturnType) -> Self {
+            use syn::ReturnType;
+            match other {
+                ReturnType::Default => Self { ty: None },
+                ReturnType::Type(_, x) => Self {
+                    ty: Some(x.map_into()),
+                },
+            }
+        }
+    }
+    impl From<&ReturnType> for syn::ReturnType {
+        fn from(other: &ReturnType) -> Self {
+            use syn::ReturnType;
+            match &other.ty {
+                None => ReturnType::Default,
+                Some(x) => ReturnType::Type(default(), x.map_into()),
+            }
+        }
+    }
+}

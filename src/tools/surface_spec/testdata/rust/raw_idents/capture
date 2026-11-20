@@ -1,0 +1,479 @@
+{
+  "root": 0,
+  "nodes": {
+    "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
+      "kind": "file",
+      "language": "rust",
+      "name": "raw_idents.rs",
+      "children": [
+        2,
+        5,
+        7,
+        10,
+        12,
+        14
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 4,
+          "column": 1
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Answer",
+        "fields": {
+          "named": []
+        }
+      },
+      "children": [
+        3,
+        4
+      ]
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 2,
+          "column": 4
+        },
+        "end": {
+          "line": 2,
+          "column": 22
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ident": "r#type",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "String"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 3,
+          "column": 4
+        },
+        "end": {
+          "line": 3,
+          "column": 22
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ident": "r#ref",
+        "colon_token": true,
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Option",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
+                      {
+                        "type": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "u32"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 6,
+          "column": 0
+        },
+        "end": {
+          "line": 6,
+          "column": 25
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "r#Box",
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        6
+      ]
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 6,
+          "column": 17
+        },
+        "end": {
+          "line": 6,
+          "column": 23
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "vis": "pub",
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "u8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "enum",
+      "span": {
+        "start": {
+          "line": 8,
+          "column": 0
+        },
+        "end": {
+          "line": 11,
+          "column": 1
+        }
+      },
+      "syn": "ItemEnum",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Token",
+        "variants": []
+      },
+      "children": [
+        8,
+        9
+      ]
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 9,
+          "column": 4
+        },
+        "end": {
+          "line": 9,
+          "column": 11
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "r#async",
+        "fields": "unit"
+      }
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "variant",
+      "span": {
+        "start": {
+          "line": 10,
+          "column": 4
+        },
+        "end": {
+          "line": 10,
+          "column": 24
+        }
+      },
+      "syn": "Variant",
+      "syntax": {
+        "ident": "r#Match",
+        "fields": {
+          "named": [
+            {
+              "ident": "r#in",
+              "colon_token": true,
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "u8"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "10": {
+      "mod_path": [],
+      "kind": "trait",
+      "span": {
+        "start": {
+          "line": 13,
+          "column": 0
+        },
+        "end": {
+          "line": 15,
+          "column": 1
+        }
+      },
+      "syn": "ItemTrait",
+      "syntax": {
+        "vis": "pub",
+        "ident": "r#Trait",
+        "items": []
+      },
+      "children": [
+        11
+      ]
+    },
+    "11": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 14,
+          "column": 4
+        },
+        "end": {
+          "line": 14,
+          "column": 42
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "r#yield",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "r#loop"
+                }
+              },
+              "ty": {
+                "path": {
+                  "segments": [
+                    {
+                      "ident": "bool"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "u8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "12": {
+      "mod_path": [],
+      "kind": "impl",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 0
+        },
+        "end": {
+          "line": 21,
+          "column": 1
+        }
+      },
+      "syn": "InherentImpl",
+      "syntax": {
+        "self_ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Answer"
+              }
+            ]
+          }
+        },
+        "items": []
+      },
+      "children": [
+        13
+      ]
+    },
+    "13": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "end": {
+          "line": 20,
+          "column": 5
+        }
+      },
+      "syn": "ImplItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "r#type",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "reference": {
+            "elem": {
+              "path": {
+                "segments": [
+                  {
+                    "ident": "str"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "stmts": []
+      }
+    },
+    "14": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 23,
+          "column": 0
+        },
+        "end": {
+          "line": 25,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "r#match",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "r#struct"
+                }
+              },
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Answer"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "path": {
+            "segments": [
+              {
+                "ident": "bool"
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+pub struct Answer {
+    pub r#type: String,
+    r#ref: Option<u32>,
+}
+
+pub struct r#Box(pub u8);
+
+pub enum Token {
+    r#async,
+    r#Match { r#in: u8 },
+}
+
+pub trait r#Trait {
+    fn r#yield(&self, r#loop: bool) -> u8;
+}
+
+impl Answer {
+    pub fn r#type(&self) -> &str {
+        &self.r#type
+    }
+}
+
+pub fn r#match(r#struct: &Answer) -> bool {
+    r#struct.r#type.is_empty()
+}

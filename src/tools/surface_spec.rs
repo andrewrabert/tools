@@ -1,6 +1,7 @@
 mod justification;
 mod python;
 mod rust;
+mod syn_serde;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
@@ -1880,6 +1881,11 @@ mod tests {
     #[test]
     fn empty() {
         rust_fixture!("empty").check();
+    }
+
+    #[test]
+    fn raw_idents() {
+        rust_fixture!("raw_idents").check();
     }
 
     #[test]
