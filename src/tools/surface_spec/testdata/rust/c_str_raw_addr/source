@@ -1,0 +1,7 @@
+pub static mut BUF: [u8; 4] = [0; 4];
+
+pub fn c_str(x: [u8; { let _ = c"a\n\xFF"; 1 }]) {}
+
+pub fn raw_c_str(x: [u8; { let _ = cr#"b"#; 2 }]) {}
+
+pub fn raw_addr(x: [u8; { let _ = unsafe { (&raw const BUF, &raw mut BUF) }; 3 }]) {}

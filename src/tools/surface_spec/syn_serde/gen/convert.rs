@@ -244,6 +244,24 @@ impl From<&Constraint> for syn::Constraint {
         }
     }
 }
+syn_trait_impl!(syn::CapturedParam);
+impl From<&syn::CapturedParam> for CapturedParam {
+    fn from(node: &syn::CapturedParam) -> Self {
+        match node {
+            syn::CapturedParam::Lifetime(_0) => CapturedParam::Lifetime((*_0).ref_into()),
+            syn::CapturedParam::Ident(_0) => CapturedParam::Ident((*_0).ref_into()),
+            _ => unreachable!(),
+        }
+    }
+}
+impl From<&CapturedParam> for syn::CapturedParam {
+    fn from(node: &CapturedParam) -> Self {
+        match node {
+            CapturedParam::Lifetime(_0) => syn::CapturedParam::Lifetime((*_0).ref_into()),
+            CapturedParam::Ident(_0) => syn::CapturedParam::Ident((*_0).ref_into()),
+        }
+    }
+}
 syn_trait_impl!(syn::Expr);
 impl From<&syn::Expr> for Expr {
     fn from(node: &syn::Expr) -> Self {
@@ -275,6 +293,7 @@ impl From<&syn::Expr> for Expr {
             syn::Expr::Paren(_0) => Expr::Paren((*_0).ref_into()),
             syn::Expr::Path(_0) => Expr::Path((*_0).ref_into()),
             syn::Expr::Range(_0) => Expr::Range((*_0).ref_into()),
+            syn::Expr::RawAddr(_0) => Expr::RawAddr((*_0).ref_into()),
             syn::Expr::Reference(_0) => Expr::Reference((*_0).ref_into()),
             syn::Expr::Repeat(_0) => Expr::Repeat((*_0).ref_into()),
             syn::Expr::Return(_0) => Expr::Return((*_0).ref_into()),
@@ -321,6 +340,7 @@ impl From<&Expr> for syn::Expr {
             Expr::Paren(_0) => syn::Expr::Paren((*_0).ref_into()),
             Expr::Path(_0) => syn::Expr::Path((*_0).ref_into()),
             Expr::Range(_0) => syn::Expr::Range((*_0).ref_into()),
+            Expr::RawAddr(_0) => syn::Expr::RawAddr((*_0).ref_into()),
             Expr::Reference(_0) => syn::Expr::Reference((*_0).ref_into()),
             Expr::Repeat(_0) => syn::Expr::Repeat((*_0).ref_into()),
             Expr::Return(_0) => syn::Expr::Return((*_0).ref_into()),
@@ -1582,6 +1602,7 @@ impl From<&syn::Lit> for Lit {
         match node {
             syn::Lit::Str(_0) => Lit::Str((*_0).ref_into()),
             syn::Lit::ByteStr(_0) => Lit::ByteStr((*_0).ref_into()),
+            syn::Lit::CStr(_0) => Lit::CStr((*_0).ref_into()),
             syn::Lit::Byte(_0) => Lit::Byte((*_0).ref_into()),
             syn::Lit::Char(_0) => Lit::Char((*_0).ref_into()),
             syn::Lit::Int(_0) => Lit::Int((*_0).ref_into()),
@@ -1597,6 +1618,7 @@ impl From<&Lit> for syn::Lit {
         match node {
             Lit::Str(_0) => syn::Lit::Str((*_0).ref_into()),
             Lit::ByteStr(_0) => syn::Lit::ByteStr((*_0).ref_into()),
+            Lit::CStr(_0) => syn::Lit::CStr((*_0).ref_into()),
             Lit::Byte(_0) => syn::Lit::Byte((*_0).ref_into()),
             Lit::Char(_0) => syn::Lit::Char((*_0).ref_into()),
             Lit::Int(_0) => syn::Lit::Int((*_0).ref_into()),
@@ -2111,6 +2133,22 @@ impl From<&PredicateLifetime> for syn::PredicateLifetime {
         }
     }
 }
+syn_trait_impl!(syn::PreciseCapture);
+impl From<&syn::PreciseCapture> for PreciseCapture {
+    fn from(node: &syn::PreciseCapture) -> Self {
+        Self { params: node.params.map_into() }
+    }
+}
+impl From<&PreciseCapture> for syn::PreciseCapture {
+    fn from(node: &PreciseCapture) -> Self {
+        Self {
+            use_token: default(),
+            lt_token: default(),
+            params: node.params.map_into(),
+            gt_token: default(),
+        }
+    }
+}
 syn_trait_impl!(syn::PredicateType);
 impl From<&syn::PredicateType> for PredicateType {
     fn from(node: &syn::PredicateType) -> Self {
@@ -2410,6 +2448,9 @@ impl From<&syn::TypeParamBound> for TypeParamBound {
             syn::TypeParamBound::Lifetime(_0) => {
                 TypeParamBound::Lifetime((*_0).ref_into())
             }
+            syn::TypeParamBound::PreciseCapture(_0) => {
+                TypeParamBound::PreciseCapture((*_0).ref_into())
+            }
             syn::TypeParamBound::Verbatim(_0) => {
                 TypeParamBound::Verbatim((*_0).ref_into())
             }
@@ -2423,6 +2464,9 @@ impl From<&TypeParamBound> for syn::TypeParamBound {
             TypeParamBound::Trait(_0) => syn::TypeParamBound::Trait((*_0).ref_into()),
             TypeParamBound::Lifetime(_0) => {
                 syn::TypeParamBound::Lifetime((*_0).ref_into())
+            }
+            TypeParamBound::PreciseCapture(_0) => {
+                syn::TypeParamBound::PreciseCapture((*_0).ref_into())
             }
             TypeParamBound::Verbatim(_0) => {
                 syn::TypeParamBound::Verbatim((*_0).ref_into())

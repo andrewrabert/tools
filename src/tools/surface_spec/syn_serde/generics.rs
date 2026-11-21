@@ -2,10 +2,10 @@
 
 use super::*;
 pub use crate::tools::surface_spec::syn_serde::{
-    ast_enum::{GenericParam, TraitBoundModifier, TypeParamBound, WherePredicate},
+    ast_enum::{CapturedParam, GenericParam, TraitBoundModifier, TypeParamBound, WherePredicate},
     ast_struct::{
-        BoundLifetimes, ConstParam, LifetimeParam, PredicateLifetime, TraitBound, TypeParam,
-        WhereClause,
+        BoundLifetimes, ConstParam, LifetimeParam, PreciseCapture, PredicateLifetime, TraitBound,
+        TypeParam, WhereClause,
     },
 };
 

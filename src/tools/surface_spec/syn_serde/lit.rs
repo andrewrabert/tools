@@ -28,6 +28,14 @@ ast_struct! {
 }
 
 ast_struct! {
+    /// An adapter for [`struct@syn::LitCStr`].
+    #[serde(transparent)]
+    pub struct LitCStr {
+        token: Literal,
+    }
+}
+
+ast_struct! {
     /// An adapter for [`struct@syn::LitByte`].
     #[serde(transparent)]
     pub struct LitByte {
@@ -415,6 +423,23 @@ mod convert {
         fn from(other: &LitByteStr) -> Self {
             let value = value::parse_lit_byte_str(&other.token.text);
             Self::new(&value, Span::call_site())
+        }
+    }
+
+    // LitCStr
+    impl From<&syn::LitCStr> for LitCStr {
+        fn from(other: &syn::LitCStr) -> Self {
+            Self {
+                token: (&proc_macro2::Literal::c_string(&other.value())).into(),
+            }
+        }
+    }
+    impl From<&LitCStr> for syn::LitCStr {
+        fn from(other: &LitCStr) -> Self {
+            match syn::Lit::new((&other.token).into()) {
+                syn::Lit::CStr(lit) => lit,
+                _ => panic!("expected a C string literal, found {}", other.token.text),
+            }
         }
     }
 

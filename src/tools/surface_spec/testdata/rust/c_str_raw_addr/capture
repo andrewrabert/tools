@@ -1,0 +1,286 @@
+{
+  "root": 0,
+  "nodes": {
+    "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
+      "kind": "file",
+      "language": "rust",
+      "name": "c_str_raw_addr.rs",
+      "children": [
+        2,
+        3,
+        4
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 3,
+          "column": 51
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "c_str",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "array": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u8"
+                        }
+                      ]
+                    }
+                  },
+                  "len": {
+                    "block": {
+                      "stmts": [
+                        {
+                          "let": {
+                            "pat": {
+                              "_": {}
+                            },
+                            "init": {
+                              "expr": {
+                                "lit": {
+                                  "c_str": "c\"a\\n\\xFF\""
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "expr": [
+                            {
+                              "lit": {
+                                "int": "1"
+                              }
+                            },
+                            false
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": null,
+        "stmts": []
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 5,
+          "column": 0
+        },
+        "end": {
+          "line": 5,
+          "column": 52
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "raw_c_str",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "array": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u8"
+                        }
+                      ]
+                    }
+                  },
+                  "len": {
+                    "block": {
+                      "stmts": [
+                        {
+                          "let": {
+                            "pat": {
+                              "_": {}
+                            },
+                            "init": {
+                              "expr": {
+                                "lit": {
+                                  "c_str": "c\"b\""
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "expr": [
+                            {
+                              "lit": {
+                                "int": "2"
+                              }
+                            },
+                            false
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": null,
+        "stmts": []
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 0
+        },
+        "end": {
+          "line": 7,
+          "column": 85
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "raw_addr",
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "array": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "u8"
+                        }
+                      ]
+                    }
+                  },
+                  "len": {
+                    "block": {
+                      "stmts": [
+                        {
+                          "let": {
+                            "pat": {
+                              "_": {}
+                            },
+                            "init": {
+                              "expr": {
+                                "unsafe": {
+                                  "stmts": [
+                                    {
+                                      "expr": [
+                                        {
+                                          "tuple": {
+                                            "elems": [
+                                              {
+                                                "raw_addr": {
+                                                  "expr": {
+                                                    "path": {
+                                                      "segments": [
+                                                        {
+                                                          "ident": "BUF"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "raw_addr": {
+                                                  "mut": true,
+                                                  "expr": {
+                                                    "path": {
+                                                      "segments": [
+                                                        {
+                                                          "ident": "BUF"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        false
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "expr": [
+                            {
+                              "lit": {
+                                "int": "3"
+                              }
+                            },
+                            false
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": null,
+        "stmts": []
+      }
+    }
+  }
+}

@@ -322,6 +322,16 @@ pub struct ExprRange {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) end: Option<Box<Expr>>,
 }
+/// An adapter for [`struct@syn::ExprRawAddr`].
+#[derive(Serialize, Deserialize)]
+pub struct ExprRawAddr {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) attrs: Vec<Attribute>,
+    #[serde(rename = "mut")]
+    #[serde(default, skip_serializing_if = "not")]
+    pub(crate) mutability: bool,
+    pub(crate) expr: Box<Expr>,
+}
 /// An adapter for [`struct@syn::ExprReference`].
 #[derive(Serialize, Deserialize)]
 pub struct ExprReference {
@@ -934,6 +944,12 @@ pub struct PathSegment {
     pub(crate) ident: Ident,
     #[serde(default, skip_serializing_if = "PathArguments::is_none")]
     pub(crate) arguments: PathArguments,
+}
+/// An adapter for [`struct@syn::PreciseCapture`].
+#[derive(Serialize, Deserialize)]
+pub struct PreciseCapture {
+    #[serde(default, skip_serializing_if = "Punctuated::is_empty")]
+    pub(crate) params: Punctuated<CapturedParam>,
 }
 /// An adapter for [`struct@syn::PredicateLifetime`].
 #[derive(Serialize, Deserialize)]

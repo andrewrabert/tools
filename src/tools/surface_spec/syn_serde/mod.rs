@@ -2,7 +2,9 @@
 
 //! syn-serde3 0.0.1 (https://github.com/taiki-e/syn-serde), copied in so surface-spec can fix
 //! it: the `Ident` adapter converts raw identifiers such as `r#type` back with
-//! `proc_macro2::Ident::new_raw`, where upstream panics in `proc_macro2::Ident::new`. Licensed
+//! `proc_macro2::Ident::new_raw`, where upstream panics in `proc_macro2::Ident::new`; and the
+//! precise-capturing bound `use<..>`, C string literals, and `&raw` address expressions have
+//! adapters, where upstream hits `unreachable!()`. Licensed
 //! Apache-2.0 OR MIT; see `LICENSE-APACHE` and `LICENSE-MIT` beside this file.
 
 #![allow(
@@ -44,9 +46,9 @@ pub use self::expr::{
     Arm, Expr, ExprArray, ExprAssign, ExprAsync, ExprAwait, ExprBinary, ExprBlock, ExprBreak,
     ExprCall, ExprCast, ExprClosure, ExprConst, ExprContinue, ExprField, ExprForLoop, ExprGroup,
     ExprIf, ExprIndex, ExprInfer, ExprLet, ExprLit, ExprLoop, ExprMacro, ExprMatch, ExprMethodCall,
-    ExprParen, ExprPath, ExprRange, ExprReference, ExprRepeat, ExprReturn, ExprStruct, ExprTry,
-    ExprTryBlock, ExprTuple, ExprUnary, ExprUnsafe, ExprWhile, ExprYield, FieldValue, Index, Label,
-    Member, RangeLimits,
+    ExprParen, ExprPath, ExprRange, ExprRawAddr, ExprReference, ExprRepeat, ExprReturn, ExprStruct,
+    ExprTry, ExprTryBlock, ExprTuple, ExprUnary, ExprUnsafe, ExprWhile, ExprYield, FieldValue,
+    Index, Label, Member, RangeLimits,
 };
 
 mod file {
@@ -59,8 +61,9 @@ mod generics;
 pub use self::ast_struct::PredicateType;
 #[doc(hidden)]
 pub use self::generics::{
-    BoundLifetimes, ConstParam, GenericParam, Generics, LifetimeParam, PredicateLifetime,
-    TraitBound, TraitBoundModifier, TypeParam, TypeParamBound, WhereClause, WherePredicate,
+    BoundLifetimes, CapturedParam, ConstParam, GenericParam, Generics, LifetimeParam,
+    PreciseCapture, PredicateLifetime, TraitBound, TraitBoundModifier, TypeParam, TypeParamBound,
+    WhereClause, WherePredicate,
 };
 
 mod item;
@@ -82,7 +85,9 @@ pub use self::lifetime::Lifetime;
 
 mod lit;
 #[doc(hidden)]
-pub use self::lit::{Lit, LitBool, LitByte, LitByteStr, LitChar, LitFloat, LitInt, LitStr};
+pub use self::lit::{
+    Lit, LitBool, LitByte, LitByteStr, LitCStr, LitChar, LitFloat, LitInt, LitStr,
+};
 
 mod mac {
     pub use crate::tools::surface_spec::syn_serde::{ast_enum::MacroDelimiter, ast_struct::Macro};

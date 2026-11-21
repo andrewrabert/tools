@@ -796,3 +796,30 @@ impl From<&TraitItemType> for syn::TraitItemType {
         }
     }
 }
+
+// ExprRawAddr: syn 3 marks `&raw const` and `&raw mut` with PointerMutability
+syn_trait_impl!(syn::ExprRawAddr);
+impl From<&syn::ExprRawAddr> for ExprRawAddr {
+    fn from(node: &syn::ExprRawAddr) -> Self {
+        Self {
+            attrs: node.attrs.map_into(),
+            mutability: matches!(node.mutability, syn::PointerMutability::Mut(..)),
+            expr: node.expr.map_into(),
+        }
+    }
+}
+impl From<&ExprRawAddr> for syn::ExprRawAddr {
+    fn from(node: &ExprRawAddr) -> Self {
+        Self {
+            attrs: node.attrs.map_into(),
+            and_token: default(),
+            raw: default(),
+            mutability: if node.mutability {
+                syn::PointerMutability::Mut(default())
+            } else {
+                syn::PointerMutability::Const(default())
+            },
+            expr: node.expr.map_into(),
+        }
+    }
+}

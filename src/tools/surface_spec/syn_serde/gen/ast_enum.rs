@@ -74,6 +74,14 @@ pub enum BinOp {
     #[serde(rename = ">>=")]
     ShrAssign,
 }
+/// An adapter for [`enum@syn::CapturedParam`].
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum CapturedParam {
+    Lifetime(Lifetime),
+    Ident(Ident),
+}
 /// An adapter for [`enum@syn::Expr`].
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -106,6 +114,7 @@ pub enum Expr {
     Paren(ExprParen),
     Path(ExprPath),
     Range(ExprRange),
+    RawAddr(ExprRawAddr),
     Reference(ExprReference),
     Repeat(ExprRepeat),
     Return(ExprReturn),
@@ -217,6 +226,7 @@ pub enum Item {
 pub enum Lit {
     Str(LitStr),
     ByteStr(LitByteStr),
+    CStr(LitCStr),
     Byte(LitByte),
     Char(LitChar),
     Int(LitInt),
@@ -347,6 +357,7 @@ pub enum Type {
 pub enum TypeParamBound {
     Trait(TraitBound),
     Lifetime(Lifetime),
+    PreciseCapture(PreciseCapture),
     Verbatim(TokenStream),
 }
 /// An adapter for [`enum@syn::UnOp`].

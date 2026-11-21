@@ -1,7 +1,23 @@
-pub fn f() -> u8 {
-    0
+pub fn none() -> impl Fn() + use<> {
+    || {}
 }
 
-pub fn g() -> impl Fn() + use<> {
-    || {}
+pub fn lifetime<'a>(s: &'a str) -> impl Iterator<Item = char> + use<'a> {
+    s.chars()
+}
+
+pub fn params<'a, T: Clone, const N: usize>(x: &'a T) -> impl Sized + use<'a, T, N> {
+    [x.clone(); N]
+}
+
+pub trait Source {
+    fn items(&self) -> impl Iterator<Item = u8> + use<Self>;
+}
+
+pub struct Bytes(Vec<u8>);
+
+impl Source for Bytes {
+    fn items(&self) -> impl Iterator<Item = u8> + use<> {
+        self.0.clone().into_iter()
+    }
 }

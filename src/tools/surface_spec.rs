@@ -1905,7 +1905,12 @@ mod tests {
 
     #[test]
     fn precise_capture() {
-        rust_error_fixture!("precise_capture").check();
+        rust_fixture!("precise_capture").check();
+    }
+
+    #[test]
+    fn c_str_raw_addr() {
+        rust_fixture!("c_str_raw_addr").check();
     }
 
     #[test]

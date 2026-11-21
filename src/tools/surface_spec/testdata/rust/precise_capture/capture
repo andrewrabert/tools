@@ -1,0 +1,587 @@
+{
+  "root": 0,
+  "nodes": {
+    "0": {
+      "kind": "path",
+      "path": "",
+      "children": [
+        1
+      ]
+    },
+    "1": {
+      "kind": "file",
+      "language": "rust",
+      "name": "precise_capture.rs",
+      "children": [
+        2,
+        3,
+        4,
+        5,
+        7,
+        9
+      ]
+    },
+    "2": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 3,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "none",
+        "inputs": [],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Fn",
+                        "arguments": {
+                          "parenthesized": {
+                            "inputs": [],
+                            "output": null
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "precise_capture": {}
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "3": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 5,
+          "column": 0
+        },
+        "end": {
+          "line": 7,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "lifetime",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "s"
+                }
+              },
+              "ty": {
+                "reference": {
+                  "lifetime": "a",
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "str"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Iterator",
+                        "arguments": {
+                          "angle_bracketed": {
+                            "args": [
+                              {
+                                "assoc_type": {
+                                  "ident": "Item",
+                                  "ty": {
+                                    "path": {
+                                      "segments": [
+                                        {
+                                          "ident": "char"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "precise_capture": {
+                  "params": [
+                    {
+                      "lifetime": "a"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "4": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 9,
+          "column": 0
+        },
+        "end": {
+          "line": 11,
+          "column": 1
+        }
+      },
+      "syn": "ItemFn",
+      "syntax": {
+        "vis": "pub",
+        "ident": "params",
+        "generics": {
+          "params": [
+            {
+              "lifetime": {
+                "lifetime": "a",
+                "bounds": []
+              }
+            },
+            {
+              "type": {
+                "ident": "T",
+                "colon_token": true,
+                "bounds": [
+                  {
+                    "trait": {
+                      "path": {
+                        "segments": [
+                          {
+                            "ident": "Clone"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "const": {
+                "ident": "N",
+                "ty": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "usize"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "typed": {
+              "pat": {
+                "ident": {
+                  "ident": "x"
+                }
+              },
+              "ty": {
+                "reference": {
+                  "lifetime": "a",
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "T"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Sized"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "precise_capture": {
+                  "params": [
+                    {
+                      "lifetime": "a"
+                    },
+                    {
+                      "ident": "T"
+                    },
+                    {
+                      "ident": "N"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    },
+    "5": {
+      "mod_path": [],
+      "kind": "trait",
+      "span": {
+        "start": {
+          "line": 13,
+          "column": 0
+        },
+        "end": {
+          "line": 15,
+          "column": 1
+        }
+      },
+      "syn": "ItemTrait",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Source",
+        "items": []
+      },
+      "children": [
+        6
+      ]
+    },
+    "6": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 14,
+          "column": 4
+        },
+        "end": {
+          "line": 14,
+          "column": 60
+        }
+      },
+      "syn": "TraitItemFn",
+      "syntax": {
+        "ident": "items",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Iterator",
+                        "arguments": {
+                          "angle_bracketed": {
+                            "args": [
+                              {
+                                "assoc_type": {
+                                  "ident": "Item",
+                                  "ty": {
+                                    "path": {
+                                      "segments": [
+                                        {
+                                          "ident": "u8"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "precise_capture": {
+                  "params": [
+                    {
+                      "ident": "Self"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "mod_path": [],
+      "kind": "struct",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 0
+        },
+        "end": {
+          "line": 17,
+          "column": 26
+        }
+      },
+      "syn": "ItemStruct",
+      "syntax": {
+        "vis": "pub",
+        "ident": "Bytes",
+        "fields": {
+          "unnamed": []
+        }
+      },
+      "children": [
+        8
+      ]
+    },
+    "8": {
+      "mod_path": [],
+      "kind": "field",
+      "span": {
+        "start": {
+          "line": 17,
+          "column": 17
+        },
+        "end": {
+          "line": 17,
+          "column": 24
+        }
+      },
+      "syn": "Field",
+      "syntax": {
+        "ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Vec",
+                "arguments": {
+                  "angle_bracketed": {
+                    "args": [
+                      {
+                        "type": {
+                          "path": {
+                            "segments": [
+                              {
+                                "ident": "u8"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "9": {
+      "mod_path": [],
+      "kind": "impl",
+      "span": {
+        "start": {
+          "line": 19,
+          "column": 0
+        },
+        "end": {
+          "line": 23,
+          "column": 1
+        }
+      },
+      "syn": "TraitImpl",
+      "syntax": {
+        "trait": [
+          false,
+          {
+            "segments": [
+              {
+                "ident": "Source"
+              }
+            ]
+          }
+        ],
+        "self_ty": {
+          "path": {
+            "segments": [
+              {
+                "ident": "Bytes"
+              }
+            ]
+          }
+        },
+        "items": []
+      },
+      "children": [
+        10
+      ]
+    },
+    "10": {
+      "mod_path": [],
+      "kind": "fn",
+      "span": {
+        "start": {
+          "line": 20,
+          "column": 4
+        },
+        "end": {
+          "line": 22,
+          "column": 5
+        }
+      },
+      "syn": "ImplItemFn",
+      "syntax": {
+        "ident": "items",
+        "inputs": [
+          {
+            "receiver": {
+              "ref": true,
+              "ty": {
+                "reference": {
+                  "elem": {
+                    "path": {
+                      "segments": [
+                        {
+                          "ident": "Self"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "output": {
+          "impl_trait": {
+            "bounds": [
+              {
+                "trait": {
+                  "path": {
+                    "segments": [
+                      {
+                        "ident": "Iterator",
+                        "arguments": {
+                          "angle_bracketed": {
+                            "args": [
+                              {
+                                "assoc_type": {
+                                  "ident": "Item",
+                                  "ty": {
+                                    "path": {
+                                      "segments": [
+                                        {
+                                          "ident": "u8"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "precise_capture": {}
+              }
+            ]
+          }
+        },
+        "stmts": []
+      }
+    }
+  }
+}
