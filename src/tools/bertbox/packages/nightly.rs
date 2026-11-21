@@ -3,38 +3,46 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::install_target::InstallTarget;
-use crate::tools::bertbox::packages::{download, files, paths, record};
+use crate::tools::bertbox::packages::{
+    GitHubRepository, Installation, PackageName, Version, download, files, paths,
+};
 
-#[derive(Serialize, Deserialize)]
-struct Record {
-    target: InstallTarget,
-    etag: String,
-    sha256: String,
+#[derive(Clone, Copy)]
+pub struct NightlyArtifact {
+    pub repository: GitHubRepository,
+    pub workflow: &'static str,
+    pub artifact: &'static str,
 }
 
-pub fn install(
-    name: &str,
+impl NightlyArtifact {
+    pub fn url(&self) -> String {
+        format!(
+            "https://nightly.link/{}/workflows/{}/main/{}",
+            self.repository, self.workflow, self.artifact
+        )
+    }
+}
+
+pub fn deploy(
+    name: PackageName,
     target: InstallTarget,
-    repository: &str,
-    artifact: &str,
+    artifact: &NightlyArtifact,
     force: bool,
 ) -> Result<PathBuf> {
     let dest = paths::binary(name)?;
     let known = if force {
         None
     } else {
-        valid_record(name, target, &dest)?
+        valid_installation(name, target, &dest)?
     };
-    let url = format!("https://nightly.link/{repository}/workflows/ci/main/{artifact}");
 
     let client = download::client()?;
-    let response = download::get(&client, &url)?;
-    let etag = download::etag(&response)?;
-    if known.is_some_and(|known| known.etag == etag) {
+    let response = download::get(&client, &artifact.url())?;
+    let etag = Version::Etag(download::etag(&response)?);
+    if known.is_some_and(|known| known.version == etag) {
         println!("Already up to date");
         files::link_package(name)?;
         return Ok(dest);
@@ -44,19 +52,26 @@ pub fn install(
     println!("Extracting...");
     let binary = download::sole_member(archive)?.data;
     files::write_binary(name, &binary)?;
-    let installed = Record {
+    let sha256 = hex::encode(Sha256::digest(&binary));
+    let installation = Installation {
         target,
-        etag,
-        sha256: hex::encode(Sha256::digest(&binary)),
+        version: etag,
+        sha256: Some(sha256.clone()),
     };
-    record::write(name, &installed)?;
-    println!("Stored {} for sha256 {}", installed.etag, installed.sha256);
+    installation.store(name)?;
+    if let Version::Etag(etag) = &installation.version {
+        println!("Stored {etag} for sha256 {sha256}");
+    }
     files::link_package(name)?;
     Ok(dest)
 }
 
-fn valid_record(name: &str, target: InstallTarget, binary: &Path) -> Result<Option<Record>> {
-    let Some(known) = record::read::<Record>(name)? else {
+fn valid_installation(
+    name: PackageName,
+    target: InstallTarget,
+    binary: &Path,
+) -> Result<Option<Installation>> {
+    let Some(known) = Installation::load(name)? else {
         return Ok(None);
     };
     if known.target != target {
@@ -65,7 +80,7 @@ fn valid_record(name: &str, target: InstallTarget, binary: &Path) -> Result<Opti
     let Some(digest) = sha256(binary)? else {
         return Ok(None);
     };
-    if known.sha256 != digest {
+    if known.sha256.as_deref() != Some(digest.as_str()) {
         println!("Installed binary does not match recorded hash");
         return Ok(None);
     }

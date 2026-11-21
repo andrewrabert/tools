@@ -36,10 +36,12 @@ impl List {
         if self.json {
             let mut records = Map::new();
             for package in installed {
-                records.insert(
-                    package.name.to_owned(),
-                    package.record()?.unwrap_or(Value::Null),
-                );
+                let installation = match package.installation()? {
+                    Some(installation) => serde_json::to_value(installation)
+                        .context("rendering the package installation")?,
+                    None => Value::Null,
+                };
+                records.insert(package.name.to_string(), installation);
             }
             let rendered =
                 serde_json::to_string_pretty(&records).context("rendering the package records")?;

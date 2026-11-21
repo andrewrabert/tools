@@ -3,24 +3,49 @@ mod catalog;
 mod download;
 mod files;
 mod flatpak;
+mod github;
+mod installation;
 mod mac_app;
 mod nightly;
 mod paths;
-mod record;
 mod release;
 mod termux;
 
+use std::fmt;
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
 
-use anyhow::{Result, anyhow, bail};
-use serde_json::Value;
+use anyhow::{Result, bail};
+use clap::builder::{PossibleValuesParser, TypedValueParser};
 
 use crate::install_target::{InstallTarget, System};
 use crate::which;
 
+pub use crate::tools::bertbox::packages::app::AppBundle;
 pub use crate::tools::bertbox::packages::files::write as write_file;
+pub use crate::tools::bertbox::packages::github::GitHubRepository;
+pub use crate::tools::bertbox::packages::installation::{Installation, Version};
+pub use crate::tools::bertbox::packages::nightly::NightlyArtifact;
 pub use crate::tools::bertbox::packages::paths::{bin_dir, zsh_dir};
+pub use crate::tools::bertbox::packages::release::{ChecksumAsset, Release};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PackageName(&'static str);
+
+impl PackageName {
+    pub const fn new(name: &'static str) -> PackageName {
+        PackageName(name)
+    }
+
+    pub fn as_str(self) -> &'static str {
+        self.0
+    }
+}
+
+impl fmt::Display for PackageName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.0)
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum Archive {
@@ -34,107 +59,54 @@ pub enum Executables {
     All,
 }
 
-pub enum Install {
-    NightlyBinary {
-        repository: &'static str,
-        artifact: &'static str,
-    },
-    ReleaseBinary {
-        owner: &'static str,
-        repository: &'static str,
-        asset: &'static str,
-        archive: Archive,
-        checksums: Option<fn(tag: &str) -> String>,
-        executables: Executables,
-    },
-    NightlyFlatpak {
-        repository: &'static str,
-        workflow: &'static str,
-        artifact: &'static str,
-    },
-    NightlyMacApp {
-        repository: &'static str,
-        workflow: &'static str,
-        artifact: &'static str,
-        app: &'static str,
-    },
-    Termux {
-        repository: &'static str,
-    },
+pub enum Recipe {
+    NightlyBinary(NightlyArtifact),
+    NightlyApp(NightlyArtifact, AppBundle),
+    ReleaseBinary(Release),
+    TermuxPackage(GitHubRepository),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Removal {
+    Removed,
+    NotInstalled,
 }
 
 pub struct Package {
-    pub name: &'static str,
-    pub install: fn(InstallTarget) -> Result<Install>,
+    pub name: PackageName,
+    pub recipe: fn(InstallTarget) -> Result<Recipe>,
     pub after_install: Option<fn(&Path) -> Result<()>>,
 }
 
 impl Package {
     pub fn installed(&self, host: InstallTarget) -> Result<bool> {
         if host.0 == System::Termux {
-            return Ok(which::first(self.name).is_some());
+            return Ok(which::first(self.name.as_str()).is_some());
         }
         Ok(paths::package_dir(self.name)?.exists())
     }
 
     pub fn selected_target(&self, host: InstallTarget) -> Result<InstallTarget> {
-        Ok(record::target(self.name)?.unwrap_or(host))
+        Ok(self
+            .installation()?
+            .map_or(host, |installation| installation.target))
     }
 
     pub fn install(&self, target: InstallTarget, force: bool) -> Result<()> {
         let name = self.name;
-        let binary: Option<PathBuf> = match (self.install)(target)? {
-            Install::NightlyBinary {
-                repository,
-                artifact,
-            } => Some(nightly::install(name, target, repository, artifact, force)?),
-            Install::ReleaseBinary {
-                owner,
-                repository,
-                asset,
-                archive,
-                checksums,
-                executables,
-            } => {
-                let release = release::Release {
-                    owner,
-                    repository,
-                    asset,
-                    archive,
-                    checksums,
-                    executables,
-                };
-                release::install(name, target, &release, force)?;
+        let binary: Option<PathBuf> = match (self.recipe)(target)? {
+            Recipe::NightlyBinary(artifact) => {
+                Some(nightly::deploy(name, target, &artifact, force)?)
+            }
+            Recipe::NightlyApp(artifact, bundle) => {
+                app::deploy(name, target, &artifact, bundle, force)?;
                 None
             }
-            Install::NightlyFlatpak {
-                repository,
-                workflow,
-                artifact,
-            } => {
-                let source = app::Source {
-                    repository,
-                    workflow,
-                    artifact,
-                };
-                app::install(name, target, &source, app::Installer::Flatpak, force)?;
+            Recipe::ReleaseBinary(release) => {
+                release::deploy(name, target, &release, force)?;
                 None
             }
-            Install::NightlyMacApp {
-                repository,
-                workflow,
-                artifact,
-                app,
-            } => {
-                let source = app::Source {
-                    repository,
-                    workflow,
-                    artifact,
-                };
-                app::install(name, target, &source, app::Installer::MacApp { app }, force)?;
-                None
-            }
-            Install::Termux { repository } => Some(termux::install(name, repository)?),
+            Recipe::TermuxPackage(repository) => Some(termux::deploy(name, repository)?),
         };
         match (self.after_install, binary) {
             (Some(after_install), Some(binary)) => after_install(&binary),
@@ -142,21 +114,17 @@ impl Package {
         }
     }
 
-    pub fn uninstall(&self, target: InstallTarget) -> Result<bool> {
-        match (self.install)(target)? {
-            Install::NightlyBinary { .. } | Install::ReleaseBinary { .. } => {
-                files::remove_package(self.name)
-            }
-            Install::NightlyFlatpak { .. }
-            | Install::NightlyMacApp { .. }
-            | Install::Termux { .. } => {
+    pub fn uninstall(&self, target: InstallTarget) -> Result<Removal> {
+        match (self.recipe)(target)? {
+            Recipe::NightlyBinary(_) | Recipe::ReleaseBinary(_) => files::remove_package(self.name),
+            Recipe::NightlyApp(..) | Recipe::TermuxPackage(_) => {
                 bail!("{}: uninstall is not supported for {target}", self.name)
             }
         }
     }
 
-    pub fn record(&self) -> Result<Option<Value>> {
-        record::read_value(self.name)
+    pub fn installation(&self) -> Result<Option<Installation>> {
+        Installation::load(self.name)
     }
 }
 
@@ -165,30 +133,14 @@ pub fn all() -> &'static [Package] {
 }
 
 pub fn names() -> Vec<&'static str> {
-    all().iter().map(|package| package.name).collect()
+    all().iter().map(|package| package.name.as_str()).collect()
 }
 
-pub fn run_each(
-    names: &[String],
-    action: impl Fn(&Package, InstallTarget) -> Result<()>,
-) -> ExitCode {
-    let host = match InstallTarget::host() {
-        Ok(host) => host,
-        Err(error) => {
-            eprintln!("Error: {error:?}");
-            return ExitCode::FAILURE;
-        }
-    };
-    let mut status = ExitCode::SUCCESS;
-    for name in names {
-        let result = match all().iter().find(|package| package.name == name) {
-            Some(package) => action(package, host),
-            None => Err(anyhow!("unknown package {name}")),
-        };
-        if let Err(error) = result {
-            eprintln!("Error: {name}: {error:?}");
-            status = ExitCode::FAILURE;
-        }
-    }
-    status
+pub fn parser() -> impl TypedValueParser<Value = &'static Package> {
+    PossibleValuesParser::new(names()).map(|name| {
+        all()
+            .iter()
+            .find(|package| package.name.as_str() == name)
+            .expect("the possible values are the package names")
+    })
 }

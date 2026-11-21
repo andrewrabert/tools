@@ -4,29 +4,41 @@ use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::PackageManager::Flatpak;
 use crate::install_target::System::{Linux, Macos};
-use crate::tools::bertbox::packages::{Install, Package};
+use crate::tools::bertbox::packages::{
+    AppBundle, GitHubRepository, NightlyArtifact, Package, PackageName, Recipe,
+};
 
-const REPOSITORY: &str = "andrewrabert/jellium-desktop";
+const REPOSITORY: GitHubRepository = GitHubRepository {
+    owner: "andrewrabert",
+    name: "jellium-desktop",
+};
 
 pub const PACKAGE: Package = Package {
-    name: "jellium-desktop",
-    install,
+    name: PackageName::new("jellium-desktop"),
+    recipe,
     after_install: None,
 };
 
-fn install(target: InstallTarget) -> Result<Install> {
+fn recipe(target: InstallTarget) -> Result<Recipe> {
     match target {
-        InstallTarget(Linux, X86_64, Some(Flatpak)) => Ok(Install::NightlyFlatpak {
-            repository: REPOSITORY,
-            workflow: "build-linux-flatpak",
-            artifact: "linux-flatpak-x86_64.zip",
-        }),
-        InstallTarget(Macos, Aarch64, None) => Ok(Install::NightlyMacApp {
-            repository: REPOSITORY,
-            workflow: "build-macos",
-            artifact: "macos-arm64.zip",
-            app: "Jellium Desktop.app",
-        }),
+        InstallTarget(Linux, X86_64, Some(Flatpak)) => Ok(Recipe::NightlyApp(
+            NightlyArtifact {
+                repository: REPOSITORY,
+                workflow: "build-linux-flatpak",
+                artifact: "linux-flatpak-x86_64.zip",
+            },
+            AppBundle::Flatpak,
+        )),
+        InstallTarget(Macos, Aarch64, None) => Ok(Recipe::NightlyApp(
+            NightlyArtifact {
+                repository: REPOSITORY,
+                workflow: "build-macos",
+                artifact: "macos-arm64.zip",
+            },
+            AppBundle::MacApp {
+                app: "Jellium Desktop.app",
+            },
+        )),
         _ => bail!("unsupported platform: {target}"),
     }
 }

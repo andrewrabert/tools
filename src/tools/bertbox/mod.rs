@@ -1,4 +1,5 @@
 mod completions;
+mod each;
 mod install;
 mod link;
 mod list;

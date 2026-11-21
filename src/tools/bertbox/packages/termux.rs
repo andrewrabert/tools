@@ -5,12 +5,11 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
+use crate::tools::bertbox::packages::{GitHubRepository, PackageName};
 use crate::which;
 
-pub fn install(name: &str, repository: &str) -> Result<PathBuf> {
-    let (owner, repo) = repository
-        .split_once('/')
-        .with_context(|| format!("{repository} is not OWNER/REPOSITORY"))?;
+pub fn deploy(name: PackageName, repository: GitHubRepository) -> Result<PathBuf> {
+    let GitHubRepository { owner, name: repo } = repository;
     let prefix = env::var_os("PREFIX").context("PREFIX is not set")?;
     let source = PathBuf::from(prefix)
         .join("etc/apt/sources.list.d")
@@ -26,11 +25,12 @@ pub fn install(name: &str, repository: &str) -> Result<PathBuf> {
         .with_context(|| format!("writing {}", source.display()))?;
     }
     let status = Command::new("pkg")
-        .args(["install", "-y", name])
+        .args(["install", "-y", name.as_str()])
         .status()
         .context("running pkg")?;
     if !status.success() {
         bail!("pkg install {name} failed: {status}");
     }
-    which::first(name).with_context(|| format!("{name} is not on PATH after installing it"))
+    which::first(name.as_str())
+        .with_context(|| format!("{name} is not on PATH after installing it"))
 }

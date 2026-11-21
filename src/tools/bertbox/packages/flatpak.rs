@@ -3,7 +3,7 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-pub fn install(path: &Path) -> Result<()> {
+pub fn install_bundle(path: &Path) -> Result<()> {
     println!("Installing...");
     let status = Command::new("flatpak")
         .args(["install", "--user", "--noninteractive", "--or-update"])

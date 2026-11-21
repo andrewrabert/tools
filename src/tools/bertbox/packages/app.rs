@@ -1,58 +1,45 @@
 use std::fs;
 
 use anyhow::{Context, Result, bail};
-use serde::{Deserialize, Serialize};
 
 use crate::install_target::InstallTarget;
-use crate::tools::bertbox::packages::{download, flatpak, mac_app, record};
+use crate::tools::bertbox::packages::{
+    Installation, NightlyArtifact, PackageName, Version, download, flatpak, mac_app,
+};
 
-pub struct Source<'a> {
-    pub repository: &'a str,
-    pub workflow: &'a str,
-    pub artifact: &'a str,
-}
-
-pub enum Installer<'a> {
+#[derive(Clone, Copy)]
+pub enum AppBundle {
     Flatpak,
-    MacApp { app: &'a str },
+    MacApp { app: &'static str },
 }
 
-impl Installer<'_> {
+impl AppBundle {
     fn extension(&self) -> &'static str {
         match self {
-            Installer::Flatpak => "flatpak",
-            Installer::MacApp { .. } => "dmg",
+            AppBundle::Flatpak => "flatpak",
+            AppBundle::MacApp { .. } => "dmg",
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct Record {
+pub fn deploy(
+    name: PackageName,
     target: InstallTarget,
-    etag: String,
-}
-
-pub fn install(
-    name: &str,
-    target: InstallTarget,
-    source: &Source<'_>,
-    installer: Installer<'_>,
+    artifact: &NightlyArtifact,
+    bundle: AppBundle,
     force: bool,
 ) -> Result<()> {
     let known = if force {
         None
     } else {
-        record::read::<Record>(name)?.filter(|known| known.target == target)
+        Installation::load(name)?.filter(|known| known.target == target)
     };
-    let url = format!(
-        "https://nightly.link/{}/workflows/{}/main/{}",
-        source.repository, source.workflow, source.artifact
-    );
 
     let client = download::client()?;
-    let response = download::get(&client, &url)?;
+    let response = download::get(&client, &artifact.url())?;
     let etag = download::etag(&response)?;
-    if known.is_some_and(|known| known.etag == etag) {
+    let version = Version::Etag(etag.clone());
+    if known.is_some_and(|known| known.version == version) {
         println!("Already up to date");
         return Ok(());
     }
@@ -60,7 +47,7 @@ pub fn install(
 
     println!("Extracting...");
     let member = download::sole_member(archive)?;
-    let extension = installer.extension();
+    let extension = bundle.extension();
     let file_name = member
         .name
         .rsplit('/')
@@ -74,17 +61,16 @@ pub fn install(
     let path = staging.path().join(&file_name);
     fs::write(&path, &member.data).with_context(|| format!("writing {}", path.display()))?;
 
-    match installer {
-        Installer::Flatpak => flatpak::install(&path)?,
-        Installer::MacApp { app } => mac_app::install(&path, app)?,
+    match bundle {
+        AppBundle::Flatpak => flatpak::install_bundle(&path)?,
+        AppBundle::MacApp { app } => mac_app::install_bundle(&path, app)?,
     }
-    record::write(
-        name,
-        &Record {
-            target,
-            etag: etag.clone(),
-        },
-    )?;
+    Installation {
+        target,
+        version,
+        sha256: None,
+    }
+    .store(name)?;
     println!("Stored etag {etag}");
     Ok(())
 }

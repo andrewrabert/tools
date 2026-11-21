@@ -7,7 +7,7 @@ use anyhow::{Context, Result, bail};
 const APPLICATIONS: &str = "/Applications";
 const QUARANTINE: &str = "com.apple.quarantine";
 
-pub fn install(dmg: &Path, app: &str) -> Result<()> {
+pub fn install_bundle(dmg: &Path, app: &str) -> Result<()> {
     let mount = dmg.with_file_name("mnt");
     fs::create_dir_all(&mount).with_context(|| format!("creating {}", mount.display()))?;
     run(Command::new("diskutil")

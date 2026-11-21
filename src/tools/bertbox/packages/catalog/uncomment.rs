@@ -3,15 +3,17 @@ use anyhow::{Result, bail};
 use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos};
-use crate::tools::bertbox::packages::{Archive, Executables, Install, Package};
+use crate::tools::bertbox::packages::{
+    Archive, ChecksumAsset, Executables, GitHubRepository, Package, PackageName, Recipe, Release,
+};
 
 pub const PACKAGE: Package = Package {
-    name: "uncomment",
-    install,
+    name: PackageName::new("uncomment"),
+    recipe,
     after_install: None,
 };
 
-fn install(target: InstallTarget) -> Result<Install> {
+fn recipe(target: InstallTarget) -> Result<Recipe> {
     let asset = match target {
         InstallTarget(Linux, X86_64, None) => "uncomment-x86_64-unknown-linux-gnu.tar.gz",
         InstallTarget(Linux, Aarch64, None) => "uncomment-aarch64-unknown-linux-gnu.tar.gz",
@@ -19,17 +21,19 @@ fn install(target: InstallTarget) -> Result<Install> {
         InstallTarget(Macos, Aarch64, None) => "uncomment-aarch64-apple-darwin.tar.gz",
         _ => bail!("unsupported platform: {target}"),
     };
-    Ok(Install::ReleaseBinary {
-        owner: "polylint",
-        repository: "uncomment",
+    Ok(Recipe::ReleaseBinary(Release {
+        repository: GitHubRepository {
+            owner: "polylint",
+            name: "uncomment",
+        },
         asset,
         archive: Archive::TarGz,
-        checksums: Some(checksums),
+        checksum_asset: Some(ChecksumAsset::PerTag(checksum_asset)),
         executables: Executables::Named,
-    })
+    }))
 }
 
-fn checksums(tag: &str) -> String {
+fn checksum_asset(tag: &str) -> String {
     let version = tag.strip_prefix('v').unwrap_or(tag);
     format!("uncomment_{version}_checksums.txt")
 }

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::atomic_write;
-use crate::tools::bertbox::packages::paths;
+use crate::tools::bertbox::packages::{PackageName, Removal, paths};
 
 const EXECUTABLE: u32 = 0o755;
 
@@ -35,18 +35,18 @@ fn write_with_mode(dest: &Path, data: &[u8], mode: Option<u32>) -> Result<()> {
     atomic_write::replace(temp, dest)
 }
 
-pub fn write_binary(name: &str, data: &[u8]) -> Result<PathBuf> {
-    write_executable(name, name, data)
+pub fn write_binary(name: PackageName, data: &[u8]) -> Result<PathBuf> {
+    write_executable(name, name.as_str(), data)
 }
 
-pub fn write_executable(name: &str, file_name: &str, data: &[u8]) -> Result<PathBuf> {
+pub fn write_executable(name: PackageName, file_name: &str, data: &[u8]) -> Result<PathBuf> {
     let dest = paths::package_bin(name)?.join(file_name);
     write_with_mode(&dest, data, Some(EXECUTABLE))?;
     println!("Installed: {}", dest.display());
     Ok(dest)
 }
 
-pub fn has_executables(name: &str) -> Result<bool> {
+pub fn has_executables(name: PackageName) -> Result<bool> {
     let bin = paths::package_bin(name)?;
     match fs::read_dir(&bin) {
         Ok(mut entries) => Ok(entries.next().is_some()),
@@ -55,7 +55,7 @@ pub fn has_executables(name: &str) -> Result<bool> {
     }
 }
 
-pub fn remove_other_executables(name: &str, keep: &HashSet<OsString>) -> Result<()> {
+pub fn remove_other_executables(name: PackageName, keep: &HashSet<OsString>) -> Result<()> {
     let bin = paths::package_bin(name)?;
     for entry in fs::read_dir(&bin).with_context(|| format!("reading {}", bin.display()))? {
         let entry = entry.with_context(|| format!("reading {}", bin.display()))?;
@@ -67,7 +67,7 @@ pub fn remove_other_executables(name: &str, keep: &HashSet<OsString>) -> Result<
     Ok(())
 }
 
-pub fn link_package(name: &str) -> Result<()> {
+pub fn link_package(name: PackageName) -> Result<()> {
     let bin_dir = paths::bin_dir()?;
     fs::create_dir_all(&bin_dir).with_context(|| format!("creating {}", bin_dir.display()))?;
     let package_bin = paths::package_bin(name)?;
@@ -94,16 +94,16 @@ pub fn link_package(name: &str) -> Result<()> {
     unlink_bin_entries(&package_dir, |target| !target.exists())
 }
 
-pub fn remove_package(name: &str) -> Result<bool> {
+pub fn remove_package(name: PackageName) -> Result<Removal> {
     let package_dir = paths::package_dir(name)?;
     if !package_dir.exists() {
-        return Ok(false);
+        return Ok(Removal::NotInstalled);
     }
     unlink_bin_entries(&package_dir, |_| true)?;
     fs::remove_dir_all(&package_dir)
         .with_context(|| format!("removing {}", package_dir.display()))?;
     println!("Removed: {}", package_dir.display());
-    Ok(true)
+    Ok(Removal::Removed)
 }
 
 fn unlink_bin_entries(package_dir: &Path, remove: impl Fn(&Path) -> bool) -> Result<()> {

@@ -3,15 +3,17 @@ use anyhow::{Result, bail};
 use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos};
-use crate::tools::bertbox::packages::{Archive, Executables, Install, Package};
+use crate::tools::bertbox::packages::{
+    Archive, ChecksumAsset, Executables, GitHubRepository, Package, PackageName, Recipe, Release,
+};
 
 pub const PACKAGE: Package = Package {
-    name: "moon",
-    install,
+    name: PackageName::new("moon"),
+    recipe,
     after_install: None,
 };
 
-fn install(target: InstallTarget) -> Result<Install> {
+fn recipe(target: InstallTarget) -> Result<Recipe> {
     let asset = match target {
         InstallTarget(Linux, X86_64, None) => "moon_cli-x86_64-unknown-linux-gnu.tar.xz",
         InstallTarget(Linux, Aarch64, None) => "moon_cli-aarch64-unknown-linux-gnu.tar.xz",
@@ -19,16 +21,14 @@ fn install(target: InstallTarget) -> Result<Install> {
         InstallTarget(Macos, Aarch64, None) => "moon_cli-aarch64-apple-darwin.tar.xz",
         _ => bail!("unsupported platform: {target}"),
     };
-    Ok(Install::ReleaseBinary {
-        owner: "moonrepo",
-        repository: "moon",
+    Ok(Recipe::ReleaseBinary(Release {
+        repository: GitHubRepository {
+            owner: "moonrepo",
+            name: "moon",
+        },
         asset,
         archive: Archive::TarXz,
-        checksums: Some(checksums),
+        checksum_asset: Some(ChecksumAsset::Fixed("sha256.sum")),
         executables: Executables::Named,
-    })
-}
-
-fn checksums(_tag: &str) -> String {
-    "sha256.sum".to_owned()
+    }))
 }

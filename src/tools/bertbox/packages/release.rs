@@ -7,60 +7,70 @@ use flate2::read::GzDecoder;
 use reqwest::StatusCode;
 use reqwest::blocking::Client;
 use reqwest::header::LOCATION;
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
 
 use crate::install_target::InstallTarget;
-use crate::tools::bertbox::packages::{Archive, Executables, download, files, record};
+use crate::tools::bertbox::packages::{
+    Archive, Executables, GitHubRepository, Installation, PackageName, Version, download, files,
+};
 
-#[derive(Serialize, Deserialize)]
-struct Record {
-    target: InstallTarget,
-    tag: String,
+#[derive(Clone, Copy)]
+pub enum ChecksumAsset {
+    Fixed(&'static str),
+    PerTag(fn(tag: &str) -> String),
 }
 
-pub struct Release<'a> {
-    pub owner: &'a str,
-    pub repository: &'a str,
-    pub asset: &'a str,
+impl ChecksumAsset {
+    fn name(&self, tag: &str) -> String {
+        match self {
+            ChecksumAsset::Fixed(name) => (*name).to_owned(),
+            ChecksumAsset::PerTag(name) => name(tag),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Release {
+    pub repository: GitHubRepository,
+    pub asset: &'static str,
     pub archive: Archive,
-    pub checksums: Option<fn(tag: &str) -> String>,
+    pub checksum_asset: Option<ChecksumAsset>,
     pub executables: Executables,
 }
 
-pub fn install(
-    name: &str,
+pub fn deploy(
+    name: PackageName,
     target: InstallTarget,
-    release: &Release<'_>,
+    release: &Release,
     force: bool,
 ) -> Result<()> {
     let Release {
-        owner,
         repository,
         asset,
         archive: format,
-        checksums,
+        checksum_asset,
         executables,
     } = *release;
-    let releases = format!("https://github.com/{owner}/{repository}/releases");
+    let releases = format!("https://github.com/{repository}/releases");
 
-    let tag = latest_tag(name, owner, repository, &releases)?;
+    let tag = latest_tag(name, repository, &releases)?;
+    let version = Version::Tag(tag.clone());
     let up_to_date = files::has_executables(name)?
-        && record::read::<Record>(name)?
-            .is_some_and(|known| known.target == target && known.tag == tag);
+        && Installation::load(name)?
+            .is_some_and(|known| known.target == target && known.version == version);
     if !force && up_to_date {
         println!("Already up to date ({tag})");
         return files::link_package(name);
     }
 
     let client = download::client()?;
-    let expected = match checksums {
-        Some(checksums) => Some(expected_sha256(
+    let expected = match checksum_asset {
+        Some(checksum_asset) => Some(expected_sha256(
             &client,
             &releases,
             &tag,
-            &checksums(&tag),
+            &checksum_asset.name(&tag),
             asset,
         )?),
         None => None,
@@ -78,7 +88,7 @@ pub fn install(
     let mut written = HashSet::new();
     each_file(&archive, format, |file_name, contents| {
         let wanted = match executables {
-            Executables::Named => file_name == name && written.is_empty(),
+            Executables::Named => file_name == name.as_str() && written.is_empty(),
             Executables::All => true,
         };
         if wanted {
@@ -97,10 +107,15 @@ pub fn install(
     files::remove_other_executables(name, &written)?;
     println!("Installed ({tag})");
     files::link_package(name)?;
-    record::write(name, &Record { target, tag })
+    Installation {
+        target,
+        version,
+        sha256: None,
+    }
+    .store(name)
 }
 
-fn latest_tag(name: &str, owner: &str, repository: &str, releases: &str) -> Result<String> {
+fn latest_tag(name: PackageName, repository: GitHubRepository, releases: &str) -> Result<String> {
     let url = format!("{releases}/latest");
     let response = download::client_without_redirects()?
         .head(&url)
@@ -127,7 +142,7 @@ fn latest_tag(name: &str, owner: &str, repository: &str, releases: &str) -> Resu
     let Some((found_owner, found_repository, tag)) = release_tag(&location) else {
         bail!("{name} has no published release: {url} redirects to {location}");
     };
-    if (found_owner.as_str(), found_repository.as_str()) != (owner, repository) {
+    if (found_owner.as_str(), found_repository.as_str()) != (repository.owner, repository.name) {
         bail!(moved(&location));
     }
     Ok(tag)
