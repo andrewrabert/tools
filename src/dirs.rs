@@ -17,6 +17,10 @@ pub fn cache() -> Result<PathBuf> {
     Ok(xdg()?.cache_dir())
 }
 
+pub fn data() -> Result<PathBuf> {
+    Ok(xdg()?.data_dir())
+}
+
 pub fn config() -> Result<PathBuf> {
     Ok(xdg()?.config_dir())
 }

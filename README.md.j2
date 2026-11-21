@@ -3,8 +3,10 @@
 A multicall binary of personal command-line tools.
 Run a tool as `bertbox <tool>`, `bertbox-<tool>`, or `<tool>`.
 
-`bertbox install DIR` links each tool name in `DIR` to the binary.
+`bertbox link [DIR]` links each tool name in `DIR` to the binary, by default in the shared bin directory `$XDG_DATA_HOME/bertbox/bin`.
 The External group is linked only when selected with `--group` or `--tool`.
+
+`bertbox install PACKAGE`, `bertbox update`, `bertbox list`, and `bertbox uninstall PACKAGE` manage the programs bertbox installs, each in its own directory under `$XDG_DATA_HOME/bertbox/pkgs` and linked into the shared bin directory.
 
 ## Tools
 {%- for group in groups %}

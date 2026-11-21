@@ -27,6 +27,7 @@ Helpers that many tools share.
 - `src/chardet.rs` character encoding detection & decoding
 - `src/dirs.rs` user base directories (home, cache, config, runtime)
 - `src/input.rs` input from stdin, args, or clipboard
+- `src/install_target.rs` install targets (system, arch, package manager) & the host's own
 - `src/mime.rs` MIME type detection
 - `src/picker.rs` terminal picker
 - `src/pool.rs` worker thread pool

@@ -9,6 +9,7 @@ mod ffmpeg;
 mod git;
 mod http;
 mod input;
+mod install_target;
 mod mime;
 mod mkvmerge;
 mod picker;
@@ -246,7 +247,11 @@ tool_groups! {
     "Bertbox": "Set up and inspect bertbox itself" {
         "completions" => bertbox::Completions,
         "install" => bertbox::Install,
+        "link" => bertbox::Link,
         "list" => bertbox::List,
+        "tools" => bertbox::ToolList,
+        "uninstall" => bertbox::Uninstall,
+        "update" => bertbox::Update,
     }
 }
 
