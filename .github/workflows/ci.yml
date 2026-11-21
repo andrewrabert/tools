@@ -88,9 +88,13 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: bertbox-${{ matrix.target }}
-          path: |
-            target/${{ matrix.target }}/release/bertbox
-            dist/*.deb
+          path: target/${{ matrix.target }}/release/bertbox
+      - uses: actions/upload-artifact@v7
+        if: matrix.target == 'aarch64-linux-android'
+        with:
+          name: bertbox-${{ matrix.target }}-termux
+          path: dist/*.deb
+          if-no-files-found: error
 
   build-termux-repository:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -103,7 +107,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: bertbox-aarch64-linux-android
+          name: bertbox-aarch64-linux-android-termux
           path: packages
       - name: Install repository tools
         run: sudo apt-get update && sudo apt-get install -y apt-utils dpkg-dev
