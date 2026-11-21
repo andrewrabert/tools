@@ -1,20 +1,45 @@
-use anyhow::{Context, Result, anyhow, bail};
+//! A blocking client for JDownloader's local API.
+
+mod model;
+
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
+use bertbox_http::{BaseUrl, json_body, sensitive_header};
 use reqwest::Url;
-use reqwest::blocking::{Client, RequestBuilder};
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use reqwest::blocking::{Client, ClientBuilder, RequestBuilder};
+use reqwest::header::{AUTHORIZATION, HeaderMap};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::http;
-use crate::tools::jdownloader_remote::model::{
-    Account, AccountId, AddLinks, ArchiveId, ArchiveSettings, ArchiveStatus, CaptchaId,
-    CaptchaImage, CaptchaJob, CleanupAction, CleanupMode, CleanupSelection, ConfigEntry,
-    CrawledLink, DownloadLink, DupesAction, FilePackage, LinkCollectingJob, LinkId, LinkVariant,
-    PackageId, Plugin, PluginConfigEntry, Priority, VariantId,
+use crate::model::CleanupSelection;
+pub use crate::model::{
+    Account, AccountId, AddLinks, AdvancedStatus, ArchiveId, ArchiveSettings, ArchiveStatus,
+    CaptchaId, CaptchaImage, CaptchaJob, CleanupAction, CleanupMode, ConfigEntry, CrawledLink,
+    DownloadLink, DupesAction, FilePackage, FinalLinkState, JobId, LinkCollectingJob, LinkId,
+    LinkState, LinkVariant, PackageId, Plugin, PluginConfigEntry, Priority, SkipReason,
+    StatusEntry, VariantId,
 };
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    Http(#[from] bertbox_http::Error),
+    /// The server answered with its own error.
+    #[error("{path}: {src} {kind}")]
+    Server {
+        path: String,
+        src: String,
+        kind: String,
+    },
+    /// The server failed without saying why.
+    #[error("{path}: HTTP {status}")]
+    Status { path: String, status: u16 },
+    #[error("archive not found: {0}")]
+    ArchiveNotFound(String),
+    #[error("decoding the captcha image")]
+    CaptchaImage(#[source] base64::DecodeError),
+}
 
 pub struct Credentials {
     pub username: String,
@@ -35,55 +60,55 @@ struct ErrorResponse {
 
 pub struct Api {
     client: Client,
-    base: Url,
+    base: BaseUrl,
 }
 
 impl Api {
-    pub fn new(base: &str, credentials: Option<&Credentials>) -> Result<Self> {
-        let mut base = Url::parse(base).with_context(|| format!("parsing the url {base:?}"))?;
-        base.path_segments_mut()
-            .map_err(|()| anyhow!("the jdownloader url cannot hold a path"))?
-            .pop_if_empty();
+    /// Builds a client from `builder` for the API at `base`, authenticating when given credentials.
+    pub fn new(
+        builder: ClientBuilder,
+        base: &str,
+        credentials: Option<&Credentials>,
+    ) -> Result<Self, Error> {
+        let base = BaseUrl::parse(base, &[])?;
         let mut headers = HeaderMap::new();
         if let Some(Credentials { username, password }) = credentials {
             let token = STANDARD.encode(format!("{username}:{password}"));
-            let mut value = HeaderValue::from_str(&format!("Basic {token}"))
-                .context("the credentials are not a valid header value")?;
-            value.set_sensitive(true);
+            let value = sensitive_header("the credentials", &format!("Basic {token}"))?;
             headers.insert(AUTHORIZATION, value);
         }
-        let client = http::client_builder()?
+        let client = builder
             .default_headers(headers)
             .build()
-            .context("building the http client")?;
+            .map_err(bertbox_http::Error::Client)?;
         Ok(Self { client, base })
     }
 
-    pub fn version(&self) -> Result<i64> {
+    pub fn version(&self) -> Result<i64, Error> {
         self.call("jd/version", json!([]))
     }
 
-    pub fn api_help(&self) -> Result<String> {
+    pub fn api_help(&self) -> Result<String, Error> {
         self.fetch(self.client.get(self.url("help")))
     }
 
-    pub fn start(&self) -> Result<()> {
+    pub fn start(&self) -> Result<(), Error> {
         self.send("downloadcontroller/start", json!([]))
     }
 
-    pub fn stop(&self) -> Result<()> {
+    pub fn stop(&self) -> Result<(), Error> {
         self.send("downloadcontroller/stop", json!([]))
     }
 
-    pub fn pause(&self, paused: bool) -> Result<()> {
+    pub fn pause(&self, paused: bool) -> Result<(), Error> {
         self.send("downloadcontroller/pause", json!([paused]))
     }
 
-    pub fn add_links(&self, links: &AddLinks) -> Result<LinkCollectingJob> {
+    pub fn add_links(&self, links: &AddLinks) -> Result<LinkCollectingJob, Error> {
         self.call("linkgrabberv2/addLinks", json!([links]))
     }
 
-    pub fn add_container(&self, kind: &str, content: &[u8]) -> Result<LinkCollectingJob> {
+    pub fn add_container(&self, kind: &str, content: &[u8]) -> Result<LinkCollectingJob, Error> {
         let url = format!(
             "data:application/octet-stream;base64,{}",
             STANDARD.encode(content)
@@ -91,7 +116,7 @@ impl Api {
         self.call("linkgrabberv2/addContainer", json!([kind, url]))
     }
 
-    pub fn downloads(&self) -> Result<Vec<DownloadLink>> {
+    pub fn downloads(&self) -> Result<Vec<DownloadLink>, Error> {
         let query = json!({
             "addedDate": true,
             "advancedStatus": true,
@@ -112,7 +137,7 @@ impl Api {
         self.call("downloadsV2/queryLinks", json!([query]))
     }
 
-    pub fn packages(&self) -> Result<Vec<FilePackage>> {
+    pub fn packages(&self) -> Result<Vec<FilePackage>, Error> {
         let query = json!({
             "bytesLoaded": true,
             "bytesTotal": true,
@@ -130,7 +155,7 @@ impl Api {
         self.call("downloadsV2/queryPackages", json!([query]))
     }
 
-    pub fn remove(&self, links: &[LinkId], packages: &[PackageId]) -> Result<()> {
+    pub fn remove(&self, links: &[LinkId], packages: &[PackageId]) -> Result<(), Error> {
         self.send("downloadsV2/removeLinks", json!([links, packages]))
     }
 
@@ -140,7 +165,7 @@ impl Api {
         packages: &[PackageId],
         action: CleanupAction,
         mode: CleanupMode,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let selection = if links.is_empty() && packages.is_empty() {
             CleanupSelection::All
         } else {
@@ -152,11 +177,11 @@ impl Api {
         )
     }
 
-    pub fn reset(&self, links: &[LinkId], packages: &[PackageId]) -> Result<()> {
+    pub fn reset(&self, links: &[LinkId], packages: &[PackageId]) -> Result<(), Error> {
         self.send("downloadsV2/resetLinks", json!([links, packages]))
     }
 
-    pub fn resume(&self, links: &[LinkId], packages: &[PackageId]) -> Result<()> {
+    pub fn resume(&self, links: &[LinkId], packages: &[PackageId]) -> Result<(), Error> {
         self.send("downloadsV2/resumeLinks", json!([links, packages]))
     }
 
@@ -165,19 +190,19 @@ impl Api {
         enabled: bool,
         links: &[LinkId],
         packages: &[PackageId],
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         self.send("downloadsV2/setEnabled", json!([enabled, links, packages]))
     }
 
-    pub fn rename_link(&self, link: LinkId, name: &str) -> Result<()> {
+    pub fn rename_link(&self, link: LinkId, name: &str) -> Result<(), Error> {
         self.send("downloadsV2/renameLink", json!([link, name]))
     }
 
-    pub fn rename_package(&self, package: PackageId, name: &str) -> Result<()> {
+    pub fn rename_package(&self, package: PackageId, name: &str) -> Result<(), Error> {
         self.send("downloadsV2/renamePackage", json!([package, name]))
     }
 
-    pub fn set_download_folder(&self, folder: &str, packages: &[PackageId]) -> Result<()> {
+    pub fn set_download_folder(&self, folder: &str, packages: &[PackageId]) -> Result<(), Error> {
         self.send(
             "downloadsV2/setDownloadDirectory",
             json!([folder, packages]),
@@ -189,14 +214,14 @@ impl Api {
         priority: Priority,
         links: &[LinkId],
         packages: &[PackageId],
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         self.send(
             "downloadsV2/setPriority",
             json!([priority, links, packages]),
         )
     }
 
-    pub fn grabber_links(&self) -> Result<Vec<CrawledLink>> {
+    pub fn grabber_links(&self) -> Result<Vec<CrawledLink>, Error> {
         let query = json!({
             "availability": true,
             "bytesTotal": true,
@@ -211,40 +236,40 @@ impl Api {
         self.call("linkgrabberv2/queryLinks", json!([query]))
     }
 
-    pub fn confirm(&self, links: &[LinkId], packages: &[PackageId]) -> Result<()> {
+    pub fn confirm(&self, links: &[LinkId], packages: &[PackageId]) -> Result<(), Error> {
         self.send("linkgrabberv2/moveToDownloadlist", json!([links, packages]))
     }
 
-    pub fn clear_grabber(&self) -> Result<()> {
+    pub fn clear_grabber(&self) -> Result<(), Error> {
         self.send("linkgrabberv2/clearList", json!([]))
     }
 
-    pub fn variants(&self, link: LinkId) -> Result<Vec<LinkVariant>> {
+    pub fn variants(&self, link: LinkId) -> Result<Vec<LinkVariant>, Error> {
         self.call("linkgrabberv2/getVariants", json!([link]))
     }
 
-    pub fn set_variant(&self, link: LinkId, variant: &VariantId) -> Result<()> {
+    pub fn set_variant(&self, link: LinkId, variant: &VariantId) -> Result<(), Error> {
         self.send("linkgrabberv2/setVariant", json!([link, variant]))
     }
 
-    pub fn captchas(&self) -> Result<Vec<CaptchaJob>> {
+    pub fn captchas(&self) -> Result<Vec<CaptchaJob>, Error> {
         self.call("captcha/list", json!([]))
     }
 
-    pub fn captcha_image(&self, captcha: CaptchaId) -> Result<CaptchaImage> {
+    pub fn captcha_image(&self, captcha: CaptchaId) -> Result<CaptchaImage, Error> {
         let url: String = self.call("captcha/get", json!([captcha]))?;
         CaptchaImage::from_data_url(&url)
     }
 
-    pub fn solve_captcha(&self, captcha: CaptchaId, answer: &str) -> Result<()> {
+    pub fn solve_captcha(&self, captcha: CaptchaId, answer: &str) -> Result<(), Error> {
         self.send("captcha/solve", json!([captcha, answer]))
     }
 
-    pub fn skip_captcha(&self, captcha: CaptchaId) -> Result<()> {
+    pub fn skip_captcha(&self, captcha: CaptchaId) -> Result<(), Error> {
         self.send("captcha/skip", json!([captcha, "SINGLE"]))
     }
 
-    pub fn accounts(&self) -> Result<Vec<Account>> {
+    pub fn accounts(&self) -> Result<Vec<Account>, Error> {
         let query = json!({
             "enabled": true,
             "error": true,
@@ -257,45 +282,45 @@ impl Api {
         self.call("accountsV2/listAccounts", json!([query]))
     }
 
-    pub fn add_account(&self, hoster: &str, username: &str, password: &str) -> Result<()> {
+    pub fn add_account(&self, hoster: &str, username: &str, password: &str) -> Result<(), Error> {
         self.send("accountsV2/addAccount", json!([hoster, username, password]))
     }
 
-    pub fn remove_accounts(&self, accounts: &[AccountId]) -> Result<()> {
+    pub fn remove_accounts(&self, accounts: &[AccountId]) -> Result<(), Error> {
         self.send("accountsV2/removeAccounts", json!([accounts]))
     }
 
-    pub fn enable_accounts(&self, accounts: &[AccountId]) -> Result<()> {
+    pub fn enable_accounts(&self, accounts: &[AccountId]) -> Result<(), Error> {
         self.send("accountsV2/enableAccounts", json!([accounts]))
     }
 
-    pub fn disable_accounts(&self, accounts: &[AccountId]) -> Result<()> {
+    pub fn disable_accounts(&self, accounts: &[AccountId]) -> Result<(), Error> {
         self.send("accountsV2/disableAccounts", json!([accounts]))
     }
 
-    pub fn refresh_accounts(&self, accounts: &[AccountId]) -> Result<()> {
+    pub fn refresh_accounts(&self, accounts: &[AccountId]) -> Result<(), Error> {
         self.send("accountsV2/refreshAccounts", json!([accounts, true]))
     }
 
-    pub fn archives(&self) -> Result<Vec<ArchiveStatus>> {
+    pub fn archives(&self) -> Result<Vec<ArchiveStatus>, Error> {
         self.call("extraction/getArchiveInfo", json!([[], []]))
     }
 
-    pub fn start_extraction(&self, links: &[LinkId], packages: &[PackageId]) -> Result<()> {
+    pub fn start_extraction(&self, links: &[LinkId], packages: &[PackageId]) -> Result<(), Error> {
         self.send("extraction/startExtractionNow", json!([links, packages]))
     }
 
-    pub fn set_archive_password(&self, archive: &ArchiveId, password: String) -> Result<()> {
+    pub fn set_archive_password(&self, archive: &ArchiveId, password: String) -> Result<(), Error> {
         let settings: Vec<ArchiveSettings> =
             self.call("extraction/getArchiveSettings", json!([[archive]]))?;
         let Some(settings) = settings.into_iter().next() else {
-            bail!("archive not found: {archive}");
+            return Err(Error::ArchiveNotFound(archive.to_string()));
         };
         let settings = settings.with_password(password);
         self.send("extraction/setArchiveSettings", json!([archive, settings]))
     }
 
-    pub fn config_entries(&self, pattern: Option<&str>) -> Result<Vec<ConfigEntry>> {
+    pub fn config_entries(&self, pattern: Option<&str>) -> Result<Vec<ConfigEntry>, Error> {
         let mut query = json!({ "values": true });
         if let Some(pattern) = pattern {
             query["pattern"] = json!(format!(".*{}.*", regex::escape(pattern)));
@@ -303,15 +328,15 @@ impl Api {
         self.call("config/query", json!([query]))
     }
 
-    pub fn config_get(&self, interface: &str, key: &str) -> Result<Value> {
+    pub fn config_get(&self, interface: &str, key: &str) -> Result<Value, Error> {
         self.call("config/get", json!([interface, null, key]))
     }
 
-    pub fn config_set(&self, interface: &str, key: &str, value: &Value) -> Result<()> {
+    pub fn config_set(&self, interface: &str, key: &str, value: &Value) -> Result<(), Error> {
         self.send("config/set", json!([interface, null, key, value]))
     }
 
-    pub fn set_dupes_action(&self, action: DupesAction) -> Result<()> {
+    pub fn set_dupes_action(&self, action: DupesAction) -> Result<(), Error> {
         self.config_set(
             "org.jdownloader.gui.views.linkgrabber.addlinksdialog.LinkgrabberSettings",
             "DefaultOnAddedDupesLinksAction",
@@ -319,14 +344,14 @@ impl Api {
         )
     }
 
-    pub fn plugins(&self) -> Result<Vec<Plugin>> {
+    pub fn plugins(&self) -> Result<Vec<Plugin>, Error> {
         self.call(
             "plugins/list",
             json!([{ "pattern": true, "version": true }]),
         )
     }
 
-    pub fn plugin_settings(&self, hoster: &str) -> Result<Vec<PluginConfigEntry>> {
+    pub fn plugin_settings(&self, hoster: &str) -> Result<Vec<PluginConfigEntry>, Error> {
         let query = json!({
             "pattern": format!(".*{}.*", regex::escape(hoster)),
             "values": true,
@@ -335,51 +360,41 @@ impl Api {
     }
 
     fn url(&self, path: &str) -> Url {
-        let mut url = self.base.clone();
-        url.path_segments_mut()
-            .expect("the base url was checked to hold a path")
-            .extend(path.split('/'));
-        url
+        self.base.join(path.split('/'))
     }
 
-    fn post(&self, path: &str, params: Value) -> Result<RequestBuilder> {
-        let body = serde_json::to_vec(&json!({ "params": params }))
-            .context("encoding the request body")?;
-        Ok(self
-            .client
-            .post(self.url(path))
-            .header(CONTENT_TYPE, "application/json")
-            .body(body))
+    fn post(&self, path: &str, params: Value) -> Result<RequestBuilder, Error> {
+        let request = self.client.post(self.url(path));
+        Ok(json_body(request, &json!({ "params": params }))?)
     }
 
-    fn send(&self, path: &str, params: Value) -> Result<()> {
+    fn send(&self, path: &str, params: Value) -> Result<(), Error> {
         self.fetch(self.post(path, params)?).map(drop)
     }
 
-    fn call<T: DeserializeOwned>(&self, path: &str, params: Value) -> Result<T> {
+    fn call<T: DeserializeOwned>(&self, path: &str, params: Value) -> Result<T, Error> {
         let body = self.fetch(self.post(path, params)?)?;
-        let envelope: Envelope<T> = serde_json::from_str(&body)
-            .with_context(|| format!("decoding the response to {path}"))?;
+        let envelope: Envelope<T> = bertbox_http::decode(path, &body)?;
         Ok(envelope.data)
     }
 
-    fn fetch(&self, request: RequestBuilder) -> Result<String> {
-        let request = request.build().context("building a request")?;
-        let path = request.url().path().to_owned();
-        let response = self
-            .client
-            .execute(request)
-            .with_context(|| format!("requesting {path}"))?;
-        let status = response.status();
-        let body = response
-            .text()
-            .with_context(|| format!("reading the response to {path}"))?;
-        if status.is_success() {
-            return Ok(body);
+    /// Sends a request and returns its body, failing with the server's error on a non-success status.
+    fn fetch(&self, request: RequestBuilder) -> Result<String, Error> {
+        let reply = bertbox_http::fetch(&self.client, request)?;
+        if reply.status.is_success() {
+            return Ok(reply.body);
         }
-        match serde_json::from_str::<ErrorResponse>(&body) {
-            Ok(error) => bail!("{path}: {} {}", error.src, error.kind),
-            Err(_) => bail!("{path}: HTTP {}", status.as_u16()),
+        let path = reply.url.path().to_owned();
+        match serde_json::from_str::<ErrorResponse>(&reply.body) {
+            Ok(error) => Err(Error::Server {
+                path,
+                src: error.src,
+                kind: error.kind,
+            }),
+            Err(_) => Err(Error::Status {
+                path,
+                status: reply.status.as_u16(),
+            }),
         }
     }
 }

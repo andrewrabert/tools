@@ -1,14 +1,12 @@
 use std::collections::{BTreeSet, HashMap};
 
 use anyhow::Result;
-use ratatui::layout::Constraint;
-use serde::Serialize;
-
-use crate::tools::jdownloader_remote::api::Api;
-use crate::tools::jdownloader_remote::model::{
-    Account, ArchiveStatus, CaptchaJob, ConfigEntry, CrawledLink, DownloadLink, FilePackage,
+use bertbox_jdownloader::{
+    Account, Api, ArchiveStatus, CaptchaJob, ConfigEntry, CrawledLink, DownloadLink, FilePackage,
     LinkState, Plugin,
 };
+use ratatui::layout::Constraint;
+use serde::Serialize;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Tab {

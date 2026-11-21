@@ -3,12 +3,12 @@ use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use anyhow::{Context, Result};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::Error;
 
 macro_rules! numeric_id {
     ($($name:ident),* $(,)?) => {$(
@@ -67,9 +67,8 @@ macro_rules! text_id {
 numeric_id!(LinkId, PackageId, JobId, AccountId, CaptchaId);
 text_id!(ArchiveId, VariantId);
 
-#[derive(Clone, Copy, Serialize, ValueEnum)]
+#[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[value(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Priority {
     Highest,
     Higher,
@@ -96,7 +95,7 @@ pub enum CleanupAction {
     Dupe,
 }
 
-#[derive(Clone, Copy, Serialize, ValueEnum)]
+#[derive(Clone, Copy, Serialize)]
 pub enum CleanupMode {
     #[serde(rename = "REMOVE_LINKS_AND_DELETE_FILES")]
     DeleteFiles,
@@ -106,7 +105,7 @@ pub enum CleanupMode {
     LinksOnly,
 }
 
-#[derive(Clone, Copy, Serialize, ValueEnum)]
+#[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DupesAction {
     Include,
@@ -117,7 +116,7 @@ pub enum DupesAction {
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum CleanupSelection {
+pub(crate) enum CleanupSelection {
     Selected,
     All,
 }
@@ -410,7 +409,7 @@ pub struct CaptchaImage {
 }
 
 impl CaptchaImage {
-    pub fn from_data_url(url: &str) -> Result<Self> {
+    pub fn from_data_url(url: &str) -> Result<Self, Error> {
         let (header, payload) = url.split_once(',').unwrap_or((url, ""));
         let mime = header
             .strip_prefix("data:")
@@ -422,9 +421,7 @@ impl CaptchaImage {
             Some((_, subtype)) if !subtype.is_empty() => subtype,
             _ => "png",
         };
-        let data = STANDARD
-            .decode(payload)
-            .context("decoding the captcha image")?;
+        let data = STANDARD.decode(payload).map_err(Error::CaptchaImage)?;
         Ok(Self {
             data,
             extension: extension.to_owned(),

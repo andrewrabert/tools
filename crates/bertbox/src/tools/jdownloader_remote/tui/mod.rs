@@ -12,6 +12,10 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, anyhow, bail};
+use bertbox_jdownloader::{
+    AccountId, AddLinks, Api, ArchiveId, CaptchaId, LinkId, LinkVariant, PackageId,
+    PluginConfigEntry, VariantId,
+};
 use clap::ValueEnum;
 use ratatui::crossterm::event::{
     self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEvent, KeyEventKind,
@@ -27,11 +31,8 @@ use ratatui::widgets::{
 use ratatui::{DefaultTerminal, Frame};
 use serde_json::Value as Json;
 
-use crate::tools::jdownloader_remote::api::Api;
-use crate::tools::jdownloader_remote::cli::{CleanupActions, Sort};
-use crate::tools::jdownloader_remote::model::{
-    AccountId, AddLinks, ArchiveId, CaptchaId, CleanupMode, DupesAction, LinkId, LinkVariant,
-    PackageId, Priority, VariantId,
+use crate::tools::jdownloader_remote::cli::{
+    CleanupActions, CleanupMode, DupesAction, Priority, Sort,
 };
 use crate::tools::jdownloader_remote::tui::form::{Field, Form, FormEvent};
 use crate::tools::jdownloader_remote::tui::view::{
@@ -310,10 +311,12 @@ impl App {
     fn act(
         &mut self,
         message: impl Into<String>,
-        change: impl FnOnce(&Api) -> Result<()> + Send + 'static,
+        change: impl FnOnce(&Api) -> Result<(), bertbox_jdownloader::Error> + Send + 'static,
     ) {
         let message = message.into();
-        self.perform(Box::new(move |api| change(api).map(|()| message)));
+        self.perform(Box::new(move |api| {
+            change(api).map(|()| message).map_err(anyhow::Error::from)
+        }));
     }
 
     fn receive(&mut self, outcome: Outcome) {
@@ -732,6 +735,7 @@ impl App {
                     Box::new(|api| {
                         api.clear_grabber()
                             .map(|()| "cleared the grabber".to_owned())
+                            .map_err(anyhow::Error::from)
                     }),
                 ));
             }
@@ -739,7 +743,7 @@ impl App {
                 if let Some(Node::Grabber(i)) = self.cursor() {
                     let link = self.data.grabber[i].uuid;
                     self.submit(Box::new(move |api| {
-                        Outcome::Variants(link, api.variants(link))
+                        Outcome::Variants(link, api.variants(link).map_err(anyhow::Error::from))
                     }));
                 }
             }
@@ -833,9 +837,12 @@ impl App {
                     let (interface, key) = (entry.interface_name.clone(), entry.key.clone());
                     let title = format!("{interface} {key}");
                     self.submit(Box::new(move |api| {
-                        let value = api.config_get(&interface, &key).and_then(|value| {
-                            serde_json::to_string_pretty(&value).context("formatting the value")
-                        });
+                        let value = api
+                            .config_get(&interface, &key)
+                            .map_err(anyhow::Error::from)
+                            .and_then(|value| {
+                                serde_json::to_string_pretty(&value).context("formatting the value")
+                            });
                         Outcome::Text(title, value)
                     }));
                 }
@@ -845,7 +852,11 @@ impl App {
                     let hoster = self.data.plugins[i].display_name.clone();
                     let title = format!("{hoster} settings");
                     self.submit(Box::new(move |api| {
-                        Outcome::Text(title, api.plugin_settings(&hoster).map(plugin_settings))
+                        let settings = api
+                            .plugin_settings(&hoster)
+                            .map_err(anyhow::Error::from)
+                            .map(plugin_settings);
+                        Outcome::Text(title, settings)
                     }));
                 }
             }
@@ -858,7 +869,7 @@ impl App {
         &mut self,
         verb: &'static str,
         confirm: bool,
-        change: impl FnOnce(&Api, &Selection) -> Result<()> + Send + 'static,
+        change: impl FnOnce(&Api, &Selection) -> Result<(), bertbox_jdownloader::Error> + Send + 'static,
     ) {
         let Some(selection) = self.selection() else {
             self.error("nothing selected");
@@ -866,7 +877,11 @@ impl App {
         };
         let description = selection.describe();
         let message = format!("{verb} {description}");
-        let action: Action = Box::new(move |api| change(api, &selection).map(|()| message));
+        let action: Action = Box::new(move |api| {
+            change(api, &selection)
+                .map(|()| message)
+                .map_err(anyhow::Error::from)
+        });
         if confirm {
             self.modal = Some(Modal::Confirm(
                 format!("{} {description}?", capitalize(verb)),
@@ -881,7 +896,9 @@ impl App {
         &mut self,
         verb: &'static str,
         confirm: bool,
-        change: impl FnOnce(&Api, Vec<AccountId>) -> Result<()> + Send + 'static,
+        change: impl FnOnce(&Api, Vec<AccountId>) -> Result<(), bertbox_jdownloader::Error>
+        + Send
+        + 'static,
     ) {
         let ids: Vec<AccountId> = self
             .targets()
@@ -898,7 +915,11 @@ impl App {
         let count = ids.len();
         let noun = if count == 1 { "account" } else { "accounts" };
         let message = format!("{verb} {count} {noun}");
-        let action: Action = Box::new(move |api| change(api, ids).map(|()| message));
+        let action: Action = Box::new(move |api| {
+            change(api, ids)
+                .map(|()| message)
+                .map_err(anyhow::Error::from)
+        });
         if confirm {
             self.modal = Some(Modal::Confirm(
                 format!("{} {count} {noun}?", capitalize(verb)),
@@ -1132,7 +1153,7 @@ impl App {
                 };
                 let message = format!("set priority {}", value_name(&priority));
                 self.act(message, move |api| {
-                    api.set_priority(priority, &links, &packages)
+                    api.set_priority(priority.into(), &links, &packages)
                 });
             }
             Pick::Variant { link, variants } => {
@@ -1419,7 +1440,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             };
             Box::new(move |api| {
                 if let Some(dupes) = dupes {
-                    api.set_dupes_action(dupes)?;
+                    api.set_dupes_action(dupes.into())?;
                 }
                 let job = api.add_links(&links)?;
                 Ok(format!("added {count} URLs as job {}", job.id))
@@ -1440,7 +1461,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             let dupes = dupes(form);
             Box::new(move |api| {
                 if let Some(dupes) = dupes {
-                    api.set_dupes_action(dupes)?;
+                    api.set_dupes_action(dupes.into())?;
                 }
                 let jobs = paths
                     .iter()
@@ -1469,7 +1490,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             };
             Box::new(move |api| {
                 for action in cleanup_actions(&actions) {
-                    api.cleanup(&links, &packages, action, mode)?;
+                    api.cleanup(&links, &packages, action, mode.into())?;
                 }
                 Ok("cleaned up the download list".to_owned())
             })
@@ -1479,6 +1500,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.rename_link(link, &name)
                     .map(|()| format!("renamed to {name}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::RenamePackage(package) => {
@@ -1486,6 +1508,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.rename_package(package, &name)
                     .map(|()| format!("renamed to {name}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::SetFolder(packages) => {
@@ -1493,6 +1516,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.set_download_folder(&folder, &packages)
                     .map(|()| format!("set the download folder to {folder}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::Solve(captcha) => {
@@ -1500,6 +1524,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.solve_captcha(captcha, &answer)
                     .map(|()| format!("answered captcha {captcha}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::SaveCaptcha(captcha) => {
@@ -1524,6 +1549,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.add_account(&hoster, &username, &password)
                     .map(|()| format!("added {username} on {hoster}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::ArchivePassword(archive) => {
@@ -1535,6 +1561,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.set_archive_password(&archive, password)
                     .map(|()| format!("set the password of {archive}"))
+                    .map_err(anyhow::Error::from)
             })
         }
         Submit::ConfigSet { interface, key } => {
@@ -1544,6 +1571,7 @@ fn action(form: &Form, submit: &Submit) -> Result<Action> {
             Box::new(move |api| {
                 api.config_set(&interface, &key, &value)
                     .map(|()| format!("set {key} to {value}"))
+                    .map_err(anyhow::Error::from)
             })
         }
     })
@@ -1571,9 +1599,7 @@ fn dupes(form: &Form) -> Option<DupesAction> {
     DupesAction::value_variants().get(index).copied()
 }
 
-fn plugin_settings(
-    entries: Vec<crate::tools::jdownloader_remote::model::PluginConfigEntry>,
-) -> String {
+fn plugin_settings(entries: Vec<PluginConfigEntry>) -> String {
     if entries.is_empty() {
         return "no settings".to_owned();
     }

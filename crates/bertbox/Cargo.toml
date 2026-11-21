@@ -1,0 +1,91 @@
+[package]
+name = "bertbox"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+aes = "0.9"
+anstream = "1"
+anyhow = "1"
+ast-grep-config = "0.51"
+ast-grep-core = "0.51"
+ast-grep-language = { version = "0.51", default-features = false, features = ["tree-sitter-rust"] }
+base64 = { workspace = true }
+bat = { version = "0.26", default-features = false, features = ["regex-fancy"] }
+bertbox-forgejo = { workspace = true }
+bertbox-http = { workspace = true }
+bertbox-immich = { workspace = true }
+bertbox-jdownloader = { workspace = true }
+chardetng = "1"
+clap = { version = "4", features = ["derive", "env", "string"] }
+clap_complete = "4"
+crc32fast = "1"
+crossterm = "0.29"
+ctr = "0.10"
+digest-io = "0.1"
+dns-lookup = "4"
+dotenvy = "0.15"
+etcetera = "0.11"
+flate2 = "1"
+hex = "0.4"
+ignore = "0.4"
+imagesize = "0.15"
+indicatif = "0.18"
+infer = "0.22"
+ipnet = "2"
+jiff = { version = "1.0", features = ["serde"] }
+libc = "0.2"
+linkify = "0.11"
+lzma-rs = "0.3"
+lofty = "0.25"
+mailparse = "0.18"
+md-5 = "0.11"
+minijinja = { version = "3", features = ["json", "loop_controls", "preserve_order", "serde", "unicode", "urlencode"] }
+minijinja-contrib = { version = "3", features = ["datetime", "html_entities", "pycompat", "rand", "timezone", "unicode_wordwrap", "wordcount"] }
+mozjpeg-sys = { version = "2", default-features = false, features = ["parallel", "unwinding"] }
+nix = { version = "0.32", features = ["fs", "hostname", "ioctl", "poll", "signal", "user"] }
+nucleo-matcher = "0.3"
+percent-encoding = "2"
+prettyplease = { version = "0.3", features = ["verbatim"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+qrcode = { version = "0.15", default-features = false, features = ["std"] }
+quote = "1"
+rand = "0.10"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+regex = { workspace = true }
+reqwest = { workspace = true }
+rpassword = "7"
+ruff_python_ast = "=0.0.23"
+ruff_python_formatter = "=0.0.23"
+ruff_python_parser = "=0.0.23"
+ruff_source_file = "=0.0.23"
+ruff_text_size = "=0.0.23"
+rusqlite = { version = "0.43", features = ["bundled", "fallible_uint"] }
+serde = { workspace = true }
+serde-saphyr = "2"
+serde_json = { workspace = true }
+sha1 = "0.11"
+sha2 = "0.11"
+signal-hook = "0.4"
+similar = "3"
+socket2 = "0.6"
+syn = { version = "3", features = ["full", "visit", "visit-mut"] }
+tar = { version = "0.4", default-features = false }
+tempfile = "3"
+toml = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+unicode-normalization = "0.1"
+url = { workspace = true }
+walkdir = "2"
+winnow = "1"
+zbus = "6"
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+zopfli = { version = "0.8", default-features = false, features = ["std"] }
+libdeflater = "1"
+
+[dev-dependencies]
+snapbox = "1"
+
+[build-dependencies]
+vergen-gix = { version = "10", features = ["emit_and_set"] }

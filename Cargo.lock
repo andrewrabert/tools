@@ -323,6 +323,10 @@ dependencies = [
  "ast-grep-language",
  "base64 0.23.1",
  "bat",
+ "bertbox-forgejo",
+ "bertbox-http",
+ "bertbox-immich",
+ "bertbox-jdownloader",
  "chardetng",
  "clap",
  "clap_complete",
@@ -388,11 +392,57 @@ dependencies = [
  "url",
  "vergen-gix",
  "walkdir",
- "webpki-root-certs",
  "winnow 1.0.5",
  "zbus",
  "zip",
  "zopfli",
+]
+
+[[package]]
+name = "bertbox-forgejo"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "bertbox-http"
+version = "0.1.0-dev"
+dependencies = [
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url",
+ "webpki-root-certs",
+]
+
+[[package]]
+name = "bertbox-immich"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "bertbox-jdownloader"
+version = "0.1.0-dev"
+dependencies = [
+ "base64 0.23.1",
+ "bertbox-http",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
