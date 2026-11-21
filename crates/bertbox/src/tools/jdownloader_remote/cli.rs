@@ -1,12 +1,9 @@
 use std::path::PathBuf;
 
+use bertbox_jdownloader::{AccountId, ArchiveId, CaptchaId, LinkId, PackageId, VariantId};
 use clap::{Args as ClapArgs, Subcommand, ValueEnum};
 use serde_json::Value;
 
-use crate::tools::jdownloader_remote::model::{
-    AccountId, ArchiveId, CaptchaId, CleanupMode, DupesAction, LinkId, PackageId, Priority,
-    VariantId,
-};
 use crate::tools::jdownloader_remote::output::Format;
 
 #[derive(ClapArgs)]
@@ -170,6 +167,71 @@ pub enum Sort {
     Percent,
     Speed,
     Eta,
+}
+
+/// A download priority as the command line and TUI name it.
+#[derive(Clone, Copy, ValueEnum)]
+#[value(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Priority {
+    Highest,
+    Higher,
+    High,
+    Default,
+    Low,
+    Lower,
+    Lowest,
+}
+
+impl From<Priority> for bertbox_jdownloader::Priority {
+    fn from(priority: Priority) -> Self {
+        match priority {
+            Priority::Highest => Self::Highest,
+            Priority::Higher => Self::Higher,
+            Priority::High => Self::High,
+            Priority::Default => Self::Default,
+            Priority::Low => Self::Low,
+            Priority::Lower => Self::Lower,
+            Priority::Lowest => Self::Lowest,
+        }
+    }
+}
+
+/// What cleanup does with links and their files, as the command line and TUI name it.
+#[derive(Clone, Copy, ValueEnum)]
+pub enum CleanupMode {
+    DeleteFiles,
+    RecycleFiles,
+    LinksOnly,
+}
+
+impl From<CleanupMode> for bertbox_jdownloader::CleanupMode {
+    fn from(mode: CleanupMode) -> Self {
+        match mode {
+            CleanupMode::DeleteFiles => Self::DeleteFiles,
+            CleanupMode::RecycleFiles => Self::RecycleFiles,
+            CleanupMode::LinksOnly => Self::LinksOnly,
+        }
+    }
+}
+
+/// How added links already in the download list are handled, as the command line and TUI name it.
+#[derive(Clone, Copy, ValueEnum)]
+pub enum DupesAction {
+    Include,
+    Exclude,
+    ExcludeAndRemove,
+    Ask,
+}
+
+impl From<DupesAction> for bertbox_jdownloader::DupesAction {
+    fn from(action: DupesAction) -> Self {
+        match action {
+            DupesAction::Include => Self::Include,
+            DupesAction::Exclude => Self::Exclude,
+            DupesAction::ExcludeAndRemove => Self::ExcludeAndRemove,
+            DupesAction::Ask => Self::Ask,
+        }
+    }
 }
 
 #[derive(Subcommand)]

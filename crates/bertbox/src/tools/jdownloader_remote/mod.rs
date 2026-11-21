@@ -1,6 +1,4 @@
-mod api;
 mod cli;
-mod model;
 mod output;
 mod tui;
 
@@ -11,16 +9,16 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
+use bertbox_jdownloader::{
+    AddLinks, Api, CleanupAction, Credentials, DownloadLink, LinkCollectingJob, VariantId,
+};
 
+use crate::http;
 use crate::tools::Tool;
-use crate::tools::jdownloader_remote::api::{Api, Credentials};
 pub use crate::tools::jdownloader_remote::cli::JdownloaderRemote;
 use crate::tools::jdownloader_remote::cli::{
-    Account, Captcha, CleanupActions, Command, Config, Downloads, Extract, Grabber, Plugins,
-    RenameTarget, Sort,
-};
-use crate::tools::jdownloader_remote::model::{
-    AddLinks, CleanupAction, DownloadLink, DupesAction, LinkCollectingJob, VariantId,
+    Account, Captcha, CleanupActions, Command, Config, Downloads, DupesAction, Extract, Grabber,
+    Plugins, RenameTarget, Sort,
 };
 use crate::tools::jdownloader_remote::output::{Cell, Format, Table};
 use crate::urls::{Scheme, unique_urls};
@@ -43,7 +41,7 @@ fn run(args: JdownloaderRemote) -> Result<()> {
         (None, None) => None,
         _ => unreachable!("clap requires --username and --password together"),
     };
-    let api = Api::new(&args.url, credentials.as_ref())?;
+    let api = Api::new(http::client_builder()?, &args.url, credentials.as_ref())?;
     let format = args.format;
     let mut out = io::stdout().lock();
     match args.command {
@@ -57,7 +55,7 @@ fn run(args: JdownloaderRemote) -> Result<()> {
             packages,
         } => {
             for action in cleanup_actions(&actions) {
-                api.cleanup(&links, &packages, action, mode)?;
+                api.cleanup(&links, &packages, action, mode.into())?;
             }
         }
         Command::List {
@@ -120,7 +118,7 @@ fn add(
     if files.is_empty() && urls.is_empty() {
         bail!("no container files or URLs to add");
     }
-    api.set_dupes_action(dupes)?;
+    api.set_dupes_action(dupes.into())?;
     let mut added = Vec::new();
     for path in files {
         add_container(api, &path, false)?;
@@ -188,34 +186,34 @@ fn downloads(api: &Api, format: Format, command: Downloads, out: &mut impl Write
             let table = Table::new(&["uuid", "name", "percent", "status", "saveTo"], rows);
             output::write_items(out, format, &packages, table)
         }
-        Downloads::Start => api.start(),
-        Downloads::Stop => api.stop(),
-        Downloads::Pause => api.pause(true),
-        Downloads::Unpause => api.pause(false),
-        Downloads::Remove(selection) => api.remove(&selection.links, &selection.packages),
-        Downloads::Reset(selection) => api.reset(&selection.links, &selection.packages),
-        Downloads::Resume(selection) => api.resume(&selection.links, &selection.packages),
+        Downloads::Start => Ok(api.start()?),
+        Downloads::Stop => Ok(api.stop()?),
+        Downloads::Pause => Ok(api.pause(true)?),
+        Downloads::Unpause => Ok(api.pause(false)?),
+        Downloads::Remove(selection) => Ok(api.remove(&selection.links, &selection.packages)?),
+        Downloads::Reset(selection) => Ok(api.reset(&selection.links, &selection.packages)?),
+        Downloads::Resume(selection) => Ok(api.resume(&selection.links, &selection.packages)?),
         Downloads::Enable(selection) => {
-            api.set_enabled(true, &selection.links, &selection.packages)
+            Ok(api.set_enabled(true, &selection.links, &selection.packages)?)
         }
         Downloads::Disable(selection) => {
-            api.set_enabled(false, &selection.links, &selection.packages)
+            Ok(api.set_enabled(false, &selection.links, &selection.packages)?)
         }
         Downloads::Rename { target, name } => match target {
             RenameTarget {
                 link: Some(link), ..
-            } => api.rename_link(link, &name),
+            } => Ok(api.rename_link(link, &name)?),
             RenameTarget {
                 package: Some(package),
                 ..
-            } => api.rename_package(package, &name),
+            } => Ok(api.rename_package(package, &name)?),
             RenameTarget { .. } => unreachable!("clap requires --link or --package"),
         },
-        Downloads::SetFolder { packages, dir } => api.set_download_folder(&dir, &packages),
+        Downloads::SetFolder { packages, dir } => Ok(api.set_download_folder(&dir, &packages)?),
         Downloads::Priority {
             selection,
             priority,
-        } => api.set_priority(priority, &selection.links, &selection.packages),
+        } => Ok(api.set_priority(priority.into(), &selection.links, &selection.packages)?),
     }
 }
 
@@ -305,7 +303,7 @@ fn grabber(api: &Api, format: Format, command: Grabber, out: &mut impl Write) ->
             }
             Ok(())
         }
-        Grabber::Clear => api.clear_grabber(),
+        Grabber::Clear => Ok(api.clear_grabber()?),
         Grabber::Variants { link_id } => {
             let variants = api.variants(link_id)?;
             let rows = variants
@@ -322,7 +320,7 @@ fn grabber(api: &Api, format: Format, command: Grabber, out: &mut impl Write) ->
         Grabber::SetVariant {
             link_id,
             variant_id,
-        } => api.set_variant(link_id, &variant_id),
+        } => Ok(api.set_variant(link_id, &variant_id)?),
     }
 }
 
@@ -352,8 +350,8 @@ fn captcha(api: &Api, format: Format, command: Captcha, out: &mut impl Write) ->
             });
             fs::write(&path, &image.data).with_context(|| format!("writing {}", path.display()))
         }
-        Captcha::Solve { captcha_id, answer } => api.solve_captcha(captcha_id, &answer),
-        Captcha::Skip { captcha_id } => api.skip_captcha(captcha_id),
+        Captcha::Solve { captcha_id, answer } => Ok(api.solve_captcha(captcha_id, &answer)?),
+        Captcha::Skip { captcha_id } => Ok(api.skip_captcha(captcha_id)?),
     }
 }
 
@@ -391,12 +389,12 @@ fn account(api: &Api, format: Format, command: Account, out: &mut impl Write) ->
             } else {
                 rpassword::prompt_password("Password: ").context("reading the password")?
             };
-            api.add_account(&hoster, &username, &password)
+            Ok(api.add_account(&hoster, &username, &password)?)
         }
-        Account::Remove(accounts) => api.remove_accounts(&accounts.ids),
-        Account::Enable(accounts) => api.enable_accounts(&accounts.ids),
-        Account::Disable(accounts) => api.disable_accounts(&accounts.ids),
-        Account::Refresh(accounts) => api.refresh_accounts(&accounts.ids),
+        Account::Remove(accounts) => Ok(api.remove_accounts(&accounts.ids)?),
+        Account::Enable(accounts) => Ok(api.enable_accounts(&accounts.ids)?),
+        Account::Disable(accounts) => Ok(api.disable_accounts(&accounts.ids)?),
+        Account::Refresh(accounts) => Ok(api.refresh_accounts(&accounts.ids)?),
     }
 }
 
@@ -418,11 +416,13 @@ fn extract(api: &Api, format: Format, command: Extract, out: &mut impl Write) ->
             let headers = &["id", "status", "type", "name"];
             output::write_items(out, format, &archives, Table::new(headers, rows))
         }
-        Extract::Start(selection) => api.start_extraction(&selection.links, &selection.packages),
+        Extract::Start(selection) => {
+            Ok(api.start_extraction(&selection.links, &selection.packages)?)
+        }
         Extract::SetPassword {
             archive_id,
             password,
-        } => api.set_archive_password(&archive_id, password),
+        } => Ok(api.set_archive_password(&archive_id, password)?),
     }
 }
 
@@ -458,7 +458,7 @@ fn config(api: &Api, format: Format, command: Config, out: &mut impl Write) -> R
             interface,
             key,
             value,
-        } => api.config_set(&interface, &key, &value),
+        } => Ok(api.config_set(&interface, &key, &value)?),
     }
 }
 

@@ -6,7 +6,7 @@
 repo = "builtin"
 hooks = [
     { id = "trailing-whitespace", exclude = "\\.bin$" },
-    { id = "end-of-file-fixer", exclude = "\\.bin$|^src/cue/testdata/" },
+    { id = "end-of-file-fixer", exclude = "\\.bin$|^crates/bertbox/src/cue/testdata/" },
     { id = "check-added-large-files" },
 ]
 

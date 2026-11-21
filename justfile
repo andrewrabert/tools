@@ -1,7 +1,7 @@
 set default-list := true
 
 build:
-    cargo build
+    cargo build --workspace
 
 # Cross-compile the release binary for Termux/Android (arm64) via `cross`
 build-android:
@@ -20,18 +20,18 @@ build-android:
     echo "binary: $PWD/target/aarch64-linux-android/release/bertbox"
 
 check:
-    cargo check
+    cargo check --workspace
 
 [positional-arguments]
 clippy *args:
-    cargo clippy --all-targets "$@"
+    cargo clippy --workspace --all-targets "$@"
 
 fmt:
-    cargo fmt
+    cargo fmt --all
 
 [positional-arguments]
 test *args:
-    cargo test "$@"
+    cargo test --workspace "$@"
 
 # Rewrite every snapshot file from what the tests produce
 [positional-arguments]
@@ -51,7 +51,7 @@ surface-spec-fixtures: build
             rust) extension=rs ;;
             python) extension=py ;;
         esac
-        for fixture in "{{justfile_directory()}}/src/tools/surface_spec/testdata/$language"/*/; do
+        for fixture in "{{justfile_directory()}}/crates/bertbox/src/tools/surface_spec/testdata/$language"/*/; do
             # An error fixture records the message the source fails with, which is written by hand.
             [[ -e "$fixture/error" ]] && continue
             name=$(basename "$fixture")
@@ -84,7 +84,7 @@ surface-spec-fixtures: build
 
 # Regenerate the ms-sys file system fixtures; needs dosfstools, exfatprogs and ntfs-3g
 ms-sys-fixtures:
-    {{justfile_directory()}}/src/tools/ms_sys/testdata/generate.sh
+    {{justfile_directory()}}/crates/bertbox/src/tools/ms_sys/testdata/generate.sh
 
 # List outdated dependencies
 outdated:

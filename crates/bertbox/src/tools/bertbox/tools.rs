@@ -95,10 +95,12 @@ mod tests {
     use snapbox::{Data, assert_data_eq};
 
     const README_TEMPLATE: &str =
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md.j2"));
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../README.md.j2"));
 
+    /// A file at the root of the workspace, two levels above this crate.
     fn root_file(name: &str) -> Data {
-        Data::read_from(&Path::new(env!("CARGO_MANIFEST_DIR")).join(name), None).raw()
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        Data::read_from(&root.join(name), None).raw()
     }
 
     #[test]

@@ -1,8 +1,7 @@
 use std::num::NonZeroUsize;
 
+use bertbox_forgejo::RepoName;
 use clap::{Args as ClapArgs, Subcommand};
-
-use crate::tools::forgejo::repo::RepoName;
 
 #[derive(ClapArgs)]
 #[command(about = "Manage repositories on a Forgejo server")]

@@ -1,4 +1,3 @@
-mod api;
 mod cli;
 mod repo;
 
@@ -7,14 +6,15 @@ use std::num::NonZeroUsize;
 use std::process::ExitCode;
 
 use anyhow::{Result, bail};
+use bertbox_forgejo::{Api, RepoName, Visibility};
 use crossterm::style::{Color, Stylize};
 use serde_json::{Value, json};
 
+use crate::http;
 use crate::tools::Tool;
-use crate::tools::forgejo::api::Api;
 pub use crate::tools::forgejo::cli::Forgejo;
 use crate::tools::forgejo::cli::{Command, Output};
-use crate::tools::forgejo::repo::{Repo, RepoName, Visibility, unique};
+use crate::tools::forgejo::repo::{Repo, unique};
 
 impl Tool for Forgejo {
     fn run(self) -> ExitCode {
@@ -29,7 +29,11 @@ impl Tool for Forgejo {
 }
 
 fn run(args: Forgejo) -> Result<()> {
-    let api = Api::new(&args.url, &args.token, args.output.verbose)?;
+    let mut api = Api::new(http::client_builder()?, &args.url, &args.token)?;
+    if args.output.verbose {
+        // serde_json keeps object keys sorted.
+        api = api.inspect(|value| eprintln!("{value:#}"));
+    }
     let output = &args.output;
     let mut out = io::stdout().lock();
     let command = args.command.unwrap_or(Command::List {
@@ -169,7 +173,7 @@ fn info(api: &Api, output: &Output, repos: Vec<RepoName>, out: &mut impl Write) 
     let infos = unique(repos)
         .iter()
         .map(|repo| api.get_repo(repo).map(Repo::from))
-        .collect::<Result<Vec<_>>>()?;
+        .collect::<Result<Vec<_>, bertbox_forgejo::Error>>()?;
     if output.print_name {
         for info in &infos {
             writeln!(out, "{}", info.name)?;
