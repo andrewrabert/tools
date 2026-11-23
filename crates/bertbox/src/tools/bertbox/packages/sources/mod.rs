@@ -1,3 +1,4 @@
+mod aweber_cli;
 mod bertbox;
 mod bxwrp;
 mod cloneholio;
@@ -11,6 +12,7 @@ use crate::tools::bertbox::packages::Source;
 
 pub static ALL: &[Source] = &[
     bertbox::SOURCE,
+    aweber_cli::SOURCE,
     bxwrp::SOURCE,
     cloneholio::SOURCE,
     noted::SOURCE,
