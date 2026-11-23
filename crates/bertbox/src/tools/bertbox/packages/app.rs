@@ -1,12 +1,56 @@
 use std::fs;
+use std::io::ErrorKind;
+use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
-use crate::install_target::InstallTarget;
+use crate::install_target::{InstallTarget, PackageManager, System};
 use crate::tools::bertbox::packages::nightly::ArtifactDownload;
 use crate::tools::bertbox::packages::{
-    Installation, NightlyArtifact, PackageName, Version, download, flatpak, mac_app,
+    NightlyArtifact, PackageName, Version, download, files, flatpak, mac_app, paths,
 };
+
+#[derive(Serialize, Deserialize)]
+struct FlatpakManifest {
+    version: Version,
+}
+
+#[derive(Serialize, Deserialize)]
+struct MacosManifest {
+    version: Version,
+}
+
+fn manifest_path(name: PackageName) -> Result<PathBuf> {
+    Ok(paths::system_dir()?
+        .join(name.as_str())
+        .join("version.json"))
+}
+
+fn load<T: DeserializeOwned>(name: PackageName) -> Result<Option<T>> {
+    let path = manifest_path(name)?;
+    match fs::read_to_string(&path) {
+        Ok(text) => Ok(serde_json::from_str(&text).ok()),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error).with_context(|| format!("reading {}", path.display())),
+    }
+}
+
+fn store(name: PackageName, manifest: &impl Serialize) -> Result<()> {
+    let rendered = serde_json::to_string_pretty(manifest).context("rendering the manifest")?;
+    files::write(&manifest_path(name)?, format!("{rendered}\n").as_bytes())
+}
+
+pub fn installed_target(name: PackageName, host: InstallTarget) -> Result<Option<InstallTarget>> {
+    let InstallTarget(system, arch, _) = host;
+    Ok(match system {
+        System::Linux => load::<FlatpakManifest>(name)?
+            .map(|_| InstallTarget(system, arch, Some(PackageManager::Flatpak))),
+        System::Macos => load::<MacosManifest>(name)?.map(|_| host),
+        System::Termux => None,
+    })
+}
 
 #[derive(Clone, Copy)]
 pub enum AppBundle {
@@ -25,7 +69,6 @@ impl AppBundle {
 
 pub fn deploy(
     name: PackageName,
-    target: InstallTarget,
     artifact: &NightlyArtifact,
     bundle: AppBundle,
     force: bool,
@@ -33,12 +76,15 @@ pub fn deploy(
     let known = if force {
         None
     } else {
-        Installation::load(name)?.filter(|known| known.target == target)
+        match bundle {
+            AppBundle::Flatpak => load::<FlatpakManifest>(name)?.map(|known| known.version),
+            AppBundle::MacApp { .. } => load::<MacosManifest>(name)?.map(|known| known.version),
+        }
     };
 
     let ArtifactDownload { etag, body } = artifact.download()?;
     let version = Version::Etag(etag.clone());
-    if known.is_some_and(|known| known.version == version) {
+    if known.is_some_and(|known| known == version) {
         println!("Already up to date");
         return Ok(());
     }
@@ -61,15 +107,15 @@ pub fn deploy(
     fs::write(&path, &member.data).with_context(|| format!("writing {}", path.display()))?;
 
     match bundle {
-        AppBundle::Flatpak => flatpak::install_bundle(&path)?,
-        AppBundle::MacApp { app } => mac_app::install_bundle(&path, app)?,
+        AppBundle::Flatpak => {
+            flatpak::install_bundle(&path)?;
+            store(name, &FlatpakManifest { version })?;
+        }
+        AppBundle::MacApp { app } => {
+            mac_app::install_bundle(&path, app)?;
+            store(name, &MacosManifest { version })?;
+        }
     }
-    Installation {
-        target,
-        version,
-        sha256: None,
-    }
-    .store(name)?;
     println!("Stored etag {etag}");
     Ok(())
 }

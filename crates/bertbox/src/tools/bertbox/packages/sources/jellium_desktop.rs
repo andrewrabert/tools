@@ -5,7 +5,7 @@ use crate::install_target::InstallTarget;
 use crate::install_target::PackageManager::Flatpak;
 use crate::install_target::System::{Linux, Macos};
 use crate::tools::bertbox::packages::{
-    AppBundle, GitHubRepository, NightlyArtifact, Package, PackageName, Recipe,
+    AppBundle, GitHubRepository, NightlyArtifact, PackageName, Recipe, Source,
 };
 
 const REPOSITORY: GitHubRepository = GitHubRepository {
@@ -13,7 +13,7 @@ const REPOSITORY: GitHubRepository = GitHubRepository {
     name: "jellium-desktop",
 };
 
-pub const PACKAGE: Package = Package {
+pub const SOURCE: Source = Source {
     name: PackageName::new("jellium-desktop"),
     recipe,
     after_install: None,

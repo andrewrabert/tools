@@ -173,40 +173,6 @@ impl Link {
     }
 }
 
-pub fn link_tools(dir: &Path, program: &Path) -> Result<()> {
-    fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
-    let names: HashSet<&str> = default_names().collect();
-    for name in &names {
-        let link = dir.join(name);
-        if fs::read_link(&link).is_ok_and(|current| current == program) {
-            continue;
-        }
-        if let Ok(metadata) = link.symlink_metadata() {
-            if !metadata.is_symlink() {
-                eprintln!("Skipping {}: already exists", link.display());
-                continue;
-            }
-            fs::remove_file(&link).with_context(|| format!("removing {}", link.display()))?;
-        }
-        symlink(program, &link)
-            .with_context(|| format!("linking {} to {}", link.display(), program.display()))?;
-    }
-    let entries = fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))?;
-    for entry in entries {
-        let entry = entry.with_context(|| format!("reading {}", dir.display()))?;
-        let file_name = entry.file_name();
-        let current = file_name
-            .to_str()
-            .is_some_and(|name| name == APP_NAME || names.contains(name));
-        if current || fs::read_link(entry.path()).ok().as_deref() != Some(program) {
-            continue;
-        }
-        fs::remove_file(entry.path())
-            .with_context(|| format!("removing {}", entry.path().display()))?;
-    }
-    write_completions(program)
-}
-
 fn write_completions(program: &Path) -> Result<()> {
     let output = Command::new(program)
         .env(dispatch::ENV_NAME, dispatch::ENV_VALUE)

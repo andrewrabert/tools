@@ -4,10 +4,10 @@ use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos};
 use crate::tools::bertbox::packages::{
-    Archive, ChecksumAsset, Executables, GitHubRepository, Package, PackageName, Recipe, Release,
+    Archive, ChecksumAsset, Executables, GitHubRepository, PackageName, Recipe, Release, Source,
 };
 
-pub const PACKAGE: Package = Package {
+pub const SOURCE: Source = Source {
     name: PackageName::new("moon"),
     recipe,
     after_install: None,

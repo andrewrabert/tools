@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-use std::ffi::OsString;
+use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow, bail};
 use bertbox_github::{Api, Error as GitHubError, Repository};
@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 
 use crate::install_target::InstallTarget;
 use crate::tools::bertbox::packages::{
-    Archive, Executables, GitHubRepository, Installation, PackageName, Version, download, files,
+    Archive, Executables, GitHubRepository, Package, PackageName, Version, download,
 };
 
 #[derive(Clone, Copy)]
@@ -37,6 +37,7 @@ pub struct Release {
 }
 
 pub fn deploy(
+    package: &Package,
     name: PackageName,
     target: InstallTarget,
     release: &Release,
@@ -57,12 +58,9 @@ pub fn deploy(
 
     let tag = latest_tag(&api, name, repository)?;
     let version = Version::Tag(tag.clone());
-    let up_to_date = files::has_executables(name)?
-        && Installation::load(name)?
-            .is_some_and(|known| known.target == target && known.version == version);
-    if !force && up_to_date {
+    if !force && package.is_version(target, &version)? {
         println!("Already up to date ({tag})");
-        return files::link_package(name);
+        return package.link();
     }
 
     let expected = match checksum_asset {
@@ -84,10 +82,10 @@ pub fn deploy(
     }
 
     println!("Extracting...");
-    let mut written = HashSet::new();
+    let mut extracted = BTreeMap::new();
     each_file(&archive, format, |file_name, contents| {
         let wanted = match executables {
-            Executables::Named => file_name == name.as_str() && written.is_empty(),
+            Executables::Named => file_name == name.as_str() && extracted.is_empty(),
             Executables::All => true,
         };
         if wanted {
@@ -95,23 +93,16 @@ pub fn deploy(
             contents
                 .read_to_end(&mut data)
                 .with_context(|| format!("extracting {file_name}"))?;
-            files::write_executable(name, file_name, &data)?;
-            written.insert(OsString::from(file_name));
+            extracted.insert(PathBuf::from(file_name), data);
         }
         Ok(())
     })?;
-    if written.is_empty() {
+    if extracted.is_empty() {
         bail!("no {name} executable in download");
     }
-    files::remove_other_executables(name, &written)?;
+    package.install(target, version, extracted.into_iter().collect())?;
     println!("Installed ({tag})");
-    files::link_package(name)?;
-    Installation {
-        target,
-        version,
-        sha256: None,
-    }
-    .store(name)
+    Ok(())
 }
 
 fn latest_tag(api: &Api, name: PackageName, repository: Repository<'_>) -> Result<String> {

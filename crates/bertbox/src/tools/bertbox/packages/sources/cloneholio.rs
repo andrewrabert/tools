@@ -4,26 +4,26 @@ use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos, Termux};
 use crate::tools::bertbox::packages::{
-    GitHubRepository, NightlyArtifact, Package, PackageName, Recipe,
+    GitHubRepository, NightlyArtifact, PackageName, Recipe, Source,
 };
 
 const REPOSITORY: GitHubRepository = GitHubRepository {
     owner: "andrewrabert",
-    name: "bxwrp",
+    name: "cloneholio",
 };
 
-pub const PACKAGE: Package = Package {
-    name: PackageName::new("bxwrp"),
+pub const SOURCE: Source = Source {
+    name: PackageName::new("cloneholio"),
     recipe,
     after_install: None,
 };
 
 fn recipe(target: InstallTarget) -> Result<Recipe> {
     let artifact = match target {
-        InstallTarget(Linux, X86_64, None) => "bxwrp-x86_64-unknown-linux-musl.zip",
-        InstallTarget(Linux, Aarch64, None) => "bxwrp-aarch64-unknown-linux-musl.zip",
-        InstallTarget(Macos, X86_64, None) => "bxwrp-x86_64-apple-darwin.zip",
-        InstallTarget(Macos, Aarch64, None) => "bxwrp-aarch64-apple-darwin.zip",
+        InstallTarget(Linux, X86_64, None) => "cloneholio-x86_64-unknown-linux-musl.zip",
+        InstallTarget(Linux, Aarch64, None) => "cloneholio-aarch64-unknown-linux-musl.zip",
+        InstallTarget(Macos, X86_64, None) => "cloneholio-x86_64-apple-darwin.zip",
+        InstallTarget(Macos, Aarch64, None) => "cloneholio-aarch64-apple-darwin.zip",
         InstallTarget(Termux, Aarch64, None) => {
             return Ok(Recipe::TermuxPackage(REPOSITORY));
         }
