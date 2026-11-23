@@ -13,7 +13,6 @@ use bertbox_jdownloader::{
     AddLinks, Api, CleanupAction, Credentials, DownloadLink, LinkCollectingJob, VariantId,
 };
 
-use crate::http;
 use crate::tools::Tool;
 pub use crate::tools::jdownloader_remote::cli::JdownloaderRemote;
 use crate::tools::jdownloader_remote::cli::{
@@ -41,7 +40,7 @@ fn run(args: JdownloaderRemote) -> Result<()> {
         (None, None) => None,
         _ => unreachable!("clap requires --username and --password together"),
     };
-    let api = Api::new(http::client_builder()?, &args.url, credentials.as_ref())?;
+    let api = Api::new(args.url, credentials.as_ref())?;
     let format = args.format;
     let mut out = io::stdout().lock();
     match args.command {

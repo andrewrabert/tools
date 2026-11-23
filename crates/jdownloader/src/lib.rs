@@ -4,9 +4,9 @@ mod model;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use bertbox_http::{BaseUrl, json_body, sensitive_header};
+use bertbox_http::{BaseUrl, Reply, json_body, sensitive_header};
 use reqwest::Url;
-use reqwest::blocking::{Client, ClientBuilder, RequestBuilder};
+use reqwest::blocking::{Client, RequestBuilder};
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
@@ -26,15 +26,15 @@ pub enum Error {
     #[error(transparent)]
     Http(#[from] bertbox_http::Error),
     /// The server answered with its own error.
-    #[error("{path}: {src} {kind}")]
+    #[error("{url}: {src} {kind}")]
     Server {
-        path: String,
+        url: Box<Url>,
         src: String,
         kind: String,
     },
     /// The server failed without saying why.
-    #[error("{path}: HTTP {status}")]
-    Status { path: String, status: u16 },
+    #[error("{url}: HTTP {status}")]
+    Status { url: Box<Url>, status: u16 },
     #[error("archive not found: {0}")]
     ArchiveNotFound(String),
     #[error("decoding the captcha image")]
@@ -64,20 +64,16 @@ pub struct Api {
 }
 
 impl Api {
-    /// Builds a client from `builder` for the API at `base`, authenticating when given credentials.
-    pub fn new(
-        builder: ClientBuilder,
-        base: &str,
-        credentials: Option<&Credentials>,
-    ) -> Result<Self, Error> {
-        let base = BaseUrl::parse(base, &[])?;
+    /// A client for the API at `base`, authenticating when given credentials.
+    pub fn new(base: Url, credentials: Option<&Credentials>) -> Result<Self, Error> {
+        let base = BaseUrl::new(base, &[])?;
         let mut headers = HeaderMap::new();
         if let Some(Credentials { username, password }) = credentials {
             let token = STANDARD.encode(format!("{username}:{password}"));
             let value = sensitive_header("the credentials", &format!("Basic {token}"))?;
             headers.insert(AUTHORIZATION, value);
         }
-        let client = builder
+        let client = bertbox_http::client_builder()?
             .default_headers(headers)
             .build()
             .map_err(bertbox_http::Error::Client)?;
@@ -89,7 +85,7 @@ impl Api {
     }
 
     pub fn api_help(&self) -> Result<String, Error> {
-        self.fetch(self.client.get(self.url("help")))
+        Ok(self.fetch(self.client.get(self.url("help")))?.body)
     }
 
     pub fn start(&self) -> Result<(), Error> {
@@ -373,26 +369,25 @@ impl Api {
     }
 
     fn call<T: DeserializeOwned>(&self, path: &str, params: Value) -> Result<T, Error> {
-        let body = self.fetch(self.post(path, params)?)?;
-        let envelope: Envelope<T> = bertbox_http::decode(path, &body)?;
+        let envelope: Envelope<T> = self.fetch(self.post(path, params)?)?.json()?;
         Ok(envelope.data)
     }
 
-    /// Sends a request and returns its body, failing with the server's error on a non-success status.
-    fn fetch(&self, request: RequestBuilder) -> Result<String, Error> {
+    /// Sends a request, failing with the server's error on a non-success status.
+    fn fetch(&self, request: RequestBuilder) -> Result<Reply, Error> {
         let reply = bertbox_http::fetch(&self.client, request)?;
         if reply.status.is_success() {
-            return Ok(reply.body);
+            return Ok(reply);
         }
-        let path = reply.url.path().to_owned();
+        let url = Box::new(reply.url);
         match serde_json::from_str::<ErrorResponse>(&reply.body) {
             Ok(error) => Err(Error::Server {
-                path,
+                url,
                 src: error.src,
                 kind: error.kind,
             }),
             Err(_) => Err(Error::Status {
-                path,
+                url,
                 status: reply.status.as_u16(),
             }),
         }

@@ -1,16 +1,12 @@
 use std::io::{self, Write};
+use std::net::IpAddr;
 use std::process::ExitCode;
-use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use bertbox_icanhazip::Api;
 use clap::Args as ClapArgs;
 
-use crate::http;
 use crate::tools::Tool;
-
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
-const IPV4_URL: &str = "https://ipv4.icanhazip.com";
-const IPV6_URL: &str = "https://ipv6.icanhazip.com";
 
 #[derive(ClapArgs)]
 #[command(about = "Print the public IPv4 address")]
@@ -22,13 +18,13 @@ pub struct PublicIpv6 {}
 
 impl Tool for PublicIpv4 {
     fn run(self) -> ExitCode {
-        exit_code(run(IPV4_URL))
+        exit_code(run(|api| Ok(api.ipv4()?.into())))
     }
 }
 
 impl Tool for PublicIpv6 {
     fn run(self) -> ExitCode {
-        exit_code(run(IPV6_URL))
+        exit_code(run(|api| Ok(api.ipv6()?.into())))
     }
 }
 
@@ -42,21 +38,11 @@ fn exit_code(result: Result<()>) -> ExitCode {
     }
 }
 
-fn run(url: &str) -> Result<()> {
-    let client = http::client_builder()?
-        .connect_timeout(CONNECT_TIMEOUT)
-        .build()
-        .context("building the http client")?;
-    let address = client
-        .get(url)
-        .send()
-        .and_then(|response| response.error_for_status())
-        .with_context(|| format!("requesting {url}"))?
-        .bytes()
-        .with_context(|| format!("reading the response of {url}"))?;
-
+fn run(address: impl FnOnce(&Api) -> Result<IpAddr>) -> Result<()> {
+    let api = Api::new()?;
+    let address = address(&api)?;
     let mut stdout = io::stdout().lock();
-    stdout.write_all(&address)?;
+    writeln!(stdout, "{address}")?;
     stdout.flush()?;
     Ok(())
 }

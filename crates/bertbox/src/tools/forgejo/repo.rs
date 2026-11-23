@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use bertbox_forgejo::{ApiRepo, RepoName, Visibility};
 use crossterm::style::Stylize;
 use serde::Serialize;
+use url::Url;
 
 /// Drops repeated names, keeping the first occurrence of each in order.
 pub fn unique(repos: Vec<RepoName>) -> Vec<RepoName> {
@@ -21,7 +22,7 @@ pub struct Repo {
     pub visibility: Visibility,
     pub archived: bool,
     pub description: String,
-    pub url: String,
+    pub url: Url,
 }
 
 impl From<ApiRepo> for Repo {
@@ -44,7 +45,7 @@ impl Repo {
             ("visibility", self.visibility.as_str().to_owned()),
             ("archived", self.archived.to_string()),
             ("description", self.description.clone()),
-            ("url", self.url.clone()),
+            ("url", self.url.to_string()),
         ];
         let width = fields.iter().map(|(key, _)| key.len()).max().unwrap_or(0);
         for (key, value) in fields {

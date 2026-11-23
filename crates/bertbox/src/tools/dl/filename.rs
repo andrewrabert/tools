@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use reqwest::header::CONTENT_DISPOSITION;
 
-use crate::http;
 use crate::tools::dl::target::Target;
 
 pub enum Tls {
@@ -12,7 +11,7 @@ pub enum Tls {
 }
 
 pub fn suggested_by_server(target: &Target, tls: &Tls) -> Result<Option<PathBuf>> {
-    let client = http::client_builder()?
+    let client = bertbox_http::client_builder()?
         .tls_danger_accept_invalid_certs(matches!(tls, Tls::Unverified))
         .build()
         .context("building the http client")?;

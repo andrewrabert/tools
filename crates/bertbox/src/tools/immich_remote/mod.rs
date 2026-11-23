@@ -7,7 +7,6 @@ use std::process::ExitCode;
 use anyhow::{Context, Result};
 use bertbox_immich::{Api, Asset};
 
-use crate::http;
 use crate::tools::Tool;
 use crate::tools::immich_remote::cli::Command;
 pub use crate::tools::immich_remote::cli::ImmichRemote;
@@ -25,7 +24,7 @@ impl Tool for ImmichRemote {
 }
 
 fn run(args: ImmichRemote) -> Result<()> {
-    let api = Api::new(http::client_builder()?, &args.url, &args.api_key)?;
+    let api = Api::new(args.url, &args.api_key)?;
     match args.command {
         Command::EmptyTrash {
             dryrun,

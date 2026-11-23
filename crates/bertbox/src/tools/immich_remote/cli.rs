@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 
 use clap::{Args as ClapArgs, Subcommand};
+use url::Url;
 
 #[derive(ClapArgs)]
 #[command(about = "Manage trash and libraries on an Immich server")]
 pub struct ImmichRemote {
     #[arg(long, env = "IMMICH_URL", help = "base url of the server")]
-    pub url: String,
+    pub url: Url,
     #[arg(long, env = "IMMICH_API_KEY", hide_env_values = true, help = "api key")]
     pub api_key: String,
     #[arg(

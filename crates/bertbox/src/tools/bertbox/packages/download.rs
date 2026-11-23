@@ -1,49 +1,14 @@
 use std::io::{Cursor, Read};
 
 use anyhow::{Context, Result, bail};
+use bertbox_http::Download;
 use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::blocking::{Client, Response};
-use reqwest::header::ETAG;
-use reqwest::redirect::Policy;
 use zip::ZipArchive;
 
-use crate::http;
-
-pub fn client() -> Result<Client> {
-    http::client_builder()?
-        .build()
-        .context("building the HTTP client")
-}
-
-pub fn client_without_redirects() -> Result<Client> {
-    http::client_builder()?
-        .redirect(Policy::none())
-        .build()
-        .context("building the HTTP client")
-}
-
-pub fn get(client: &Client, url: &str) -> Result<Response> {
-    client
-        .get(url)
-        .send()
-        .and_then(Response::error_for_status)
-        .with_context(|| format!("requesting {url}"))
-}
-
-pub fn etag(response: &Response) -> Result<String> {
-    let value = response
-        .headers()
-        .get(ETAG)
-        .with_context(|| format!("{} sent no ETag", response.url()))?;
-    let value = value
-        .to_str()
-        .with_context(|| format!("{} sent a non-text ETag", response.url()))?;
-    Ok(value.to_owned())
-}
-
-pub fn receive(response: Response) -> Result<Vec<u8>> {
-    let url = response.url().to_string();
-    let progress = match response.content_length() {
+/// Reads a whole download, showing its progress.
+pub fn receive(download: Download) -> Result<Vec<u8>> {
+    let url = download.url().clone();
+    let progress = match download.content_length() {
         Some(size) => ProgressBar::new(size),
         None => ProgressBar::new_spinner(),
     };
@@ -52,7 +17,7 @@ pub fn receive(response: Response) -> Result<Vec<u8>> {
     )?);
     let mut body = Vec::new();
     progress
-        .wrap_read(response)
+        .wrap_read(download)
         .read_to_end(&mut body)
         .with_context(|| format!("downloading {url}"))?;
     progress.finish_and_clear();

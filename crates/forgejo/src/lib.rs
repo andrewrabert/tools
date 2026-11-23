@@ -5,7 +5,7 @@ mod repo;
 use std::num::NonZeroUsize;
 
 use bertbox_http::{BaseUrl, Reply, json_body, sensitive_header};
-use reqwest::blocking::{Client, ClientBuilder, RequestBuilder};
+use reqwest::blocking::{Client, RequestBuilder};
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 use reqwest::{StatusCode, Url};
 use serde::Deserialize;
@@ -37,11 +37,11 @@ pub struct Api {
 }
 
 impl Api {
-    /// Builds a client from `builder` that authenticates to the server at `base` with `token`.
-    pub fn new(builder: ClientBuilder, base: &str, token: &str) -> Result<Self, Error> {
-        let base = BaseUrl::parse(base, &["api", "v1"])?;
+    /// A client that authenticates to the server at `base` with `token`.
+    pub fn new(base: Url, token: &str) -> Result<Self, Error> {
+        let base = BaseUrl::new(base, &["api", "v1"])?;
         let auth = sensitive_header("the token", &format!("token {token}"))?;
-        let client = builder
+        let client = bertbox_http::client_builder()?
             .default_headers(HeaderMap::from_iter([(AUTHORIZATION, auth)]))
             .build()
             .map_err(Error::Client)?;
@@ -151,14 +151,16 @@ impl Api {
     }
 
     fn json<T: DeserializeOwned>(&self, request: RequestBuilder) -> Result<T, Error> {
-        let reply = self.fetch(request)?;
-        let target = reply.target();
-        let body = reply.into_success()?;
-        let value: Value = bertbox_http::decode(&target, &body)?;
+        let reply = self.fetch(request)?.into_success()?;
+        let value: Value = reply.json()?;
         if let Some(inspect) = &self.inspect {
             inspect(&value);
         }
-        serde_json::from_value(value).map_err(|source| Error::Decode { target, source })
+        serde_json::from_value(value).map_err(|source| Error::Decode {
+            method: reply.method,
+            url: Box::new(reply.url),
+            source,
+        })
     }
 }
 

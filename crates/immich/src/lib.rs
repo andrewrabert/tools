@@ -3,9 +3,9 @@
 use std::collections::HashSet;
 use std::num::ParseIntError;
 
-use bertbox_http::{BaseUrl, json_body, sensitive_header};
+use bertbox_http::{BaseUrl, Reply, json_body, sensitive_header};
 use reqwest::Url;
-use reqwest::blocking::{Client, ClientBuilder, RequestBuilder};
+use reqwest::blocking::{Client, RequestBuilder};
 use reqwest::header::{HeaderMap, HeaderName};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
@@ -56,11 +56,11 @@ pub struct Api {
 }
 
 impl Api {
-    /// Builds a client from `builder` that authenticates to the server at `base` with `api_key`.
-    pub fn new(builder: ClientBuilder, base: &str, api_key: &str) -> Result<Self, Error> {
-        let base = BaseUrl::parse(base, &["api"])?;
+    /// A client that authenticates to the server at `base` with `api_key`.
+    pub fn new(base: Url, api_key: &str) -> Result<Self, Error> {
+        let base = BaseUrl::new(base, &["api"])?;
         let key = sensitive_header("the api key", api_key)?;
-        let client = builder
+        let client = bertbox_http::client_builder()?
             .default_headers(HeaderMap::from_iter([(
                 HeaderName::from_static("x-api-key"),
                 key,
@@ -125,11 +125,9 @@ impl Api {
         self.base.join(segments.iter().copied())
     }
 
-    /// Sends a request and returns its target and body, failing on a non-success status.
-    fn fetch(&self, request: RequestBuilder) -> Result<(String, String), Error> {
-        let reply = bertbox_http::fetch(&self.client, request)?;
-        let target = reply.target();
-        Ok((target, reply.into_success()?))
+    /// Sends a request, failing on a non-success status.
+    fn fetch(&self, request: RequestBuilder) -> Result<Reply, Error> {
+        Ok(bertbox_http::fetch(&self.client, request)?.into_success()?)
     }
 
     fn send(&self, request: RequestBuilder) -> Result<(), Error> {
@@ -137,7 +135,6 @@ impl Api {
     }
 
     fn json<T: DeserializeOwned>(&self, request: RequestBuilder) -> Result<T, Error> {
-        let (target, body) = self.fetch(request)?;
-        Ok(bertbox_http::decode(&target, &body)?)
+        Ok(self.fetch(request)?.json()?)
     }
 }

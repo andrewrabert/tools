@@ -10,7 +10,6 @@ use bertbox_forgejo::{Api, RepoName, Visibility};
 use crossterm::style::{Color, Stylize};
 use serde_json::{Value, json};
 
-use crate::http;
 use crate::tools::Tool;
 pub use crate::tools::forgejo::cli::Forgejo;
 use crate::tools::forgejo::cli::{Command, Output};
@@ -29,7 +28,7 @@ impl Tool for Forgejo {
 }
 
 fn run(args: Forgejo) -> Result<()> {
-    let mut api = Api::new(http::client_builder()?, &args.url, &args.token)?;
+    let mut api = Api::new(args.url, &args.token)?;
     if args.output.verbose {
         // serde_json keeps object keys sorted.
         api = api.inspect(|value| eprintln!("{value:#}"));

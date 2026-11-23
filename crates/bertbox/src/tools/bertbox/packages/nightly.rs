@@ -3,6 +3,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use bertbox_http::Download;
 use sha2::{Digest, Sha256};
 
 use crate::install_target::InstallTarget;
@@ -17,12 +18,33 @@ pub struct NightlyArtifact {
     pub artifact: &'static str,
 }
 
+/// An artifact being downloaded, with the ETag that identifies its contents.
+pub struct ArtifactDownload {
+    pub etag: String,
+    pub body: Download,
+}
+
 impl NightlyArtifact {
-    pub fn url(&self) -> String {
-        format!(
-            "https://nightly.link/{}/workflows/{}/main/{}",
-            self.repository, self.workflow, self.artifact
+    /// Starts downloading the artifact from the workflow's latest run on `main`.
+    pub fn download(&self) -> Result<ArtifactDownload> {
+        let location = bertbox_nightlylink::artifact_url(
+            self.repository.owner,
+            self.repository.name,
+            self.workflow,
+            "main",
+            self.artifact,
         )
+        .with_context(|| format!("locating {}", self.artifact))?;
+        let client = bertbox_http::client_builder()?
+            .build()
+            .context("building the HTTP client")?;
+        let body = bertbox_http::download(&client, location)
+            .with_context(|| format!("downloading {}", self.artifact))?;
+        let etag = body
+            .header("etag")
+            .with_context(|| format!("{} sent no text ETag", body.url()))?
+            .to_owned();
+        Ok(ArtifactDownload { etag, body })
     }
 }
 
@@ -39,15 +61,14 @@ pub fn deploy(
         valid_installation(name, target, &dest)?
     };
 
-    let client = download::client()?;
-    let response = download::get(&client, &artifact.url())?;
-    let etag = Version::Etag(download::etag(&response)?);
+    let ArtifactDownload { etag, body } = artifact.download()?;
+    let etag = Version::Etag(etag);
     if known.is_some_and(|known| known.version == etag) {
         println!("Already up to date");
         files::link_package(name)?;
         return Ok(dest);
     }
-    let archive = download::receive(response)?;
+    let archive = download::receive(body)?;
 
     println!("Extracting...");
     let binary = download::sole_member(archive)?.data;

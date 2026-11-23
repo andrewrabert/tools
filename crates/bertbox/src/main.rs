@@ -7,7 +7,6 @@ mod dispatch;
 mod env_file;
 mod ffmpeg;
 mod git;
-mod http;
 mod input;
 mod install_target;
 mod mime;

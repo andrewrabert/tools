@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use bertbox_jdownloader::{AccountId, ArchiveId, CaptchaId, LinkId, PackageId, VariantId};
 use clap::{Args as ClapArgs, Subcommand, ValueEnum};
 use serde_json::Value;
+use url::Url;
 
 use crate::tools::jdownloader_remote::output::Format;
 
@@ -10,7 +11,7 @@ use crate::tools::jdownloader_remote::output::Format;
 #[command(about = "Control JDownloader through its local API")]
 pub struct JdownloaderRemote {
     #[arg(long, env = "JDOWNLOADER_URL", help = "API base URL")]
-    pub url: String,
+    pub url: Url,
     #[arg(
         long,
         env = "JDOWNLOADER_USERNAME",

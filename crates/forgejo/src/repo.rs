@@ -2,6 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 /// An `owner/repo` pair naming one repository.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -48,7 +49,7 @@ pub struct ApiRepo {
     pub private: bool,
     pub archived: bool,
     pub description: Option<String>,
-    pub html_url: String,
+    pub html_url: Url,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]

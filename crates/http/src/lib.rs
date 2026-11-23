@@ -1,7 +1,9 @@
 //! Blocking HTTP plumbing shared by bertbox and its API clients.
 
-use reqwest::blocking::{Client, ClientBuilder, RequestBuilder};
-use reqwest::header::{CONTENT_TYPE, HeaderValue, InvalidHeaderValue};
+use std::io::{self, Read};
+
+use reqwest::blocking::{Client, ClientBuilder, RequestBuilder, Response};
+use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue, InvalidHeaderValue};
 use reqwest::{Method, StatusCode, Url};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -10,14 +12,8 @@ use serde::de::DeserializeOwned;
 pub enum Error {
     #[error("loading the TLS root certificates")]
     Certificates(#[source] reqwest::Error),
-    #[error("parsing the url {url:?}")]
-    ParseUrl {
-        url: String,
-        #[source]
-        source: url::ParseError,
-    },
     #[error("the url {url} cannot hold a path")]
-    CannotHoldPath { url: Url },
+    CannotHoldPath { url: Box<Url> },
     #[error("{what} is not a valid header value")]
     Header {
         what: &'static str,
@@ -30,35 +26,42 @@ pub enum Error {
     Build(#[source] reqwest::Error),
     #[error("encoding the request body")]
     Encode(#[source] serde_json::Error),
-    #[error("requesting {target}")]
+    #[error("requesting {method} {url}")]
     Request {
-        target: String,
+        method: Method,
+        url: Box<Url>,
         #[source]
         source: reqwest::Error,
     },
-    #[error("reading the response to {target}")]
+    #[error("reading the response to {method} {url}")]
     Read {
-        target: String,
+        method: Method,
+        url: Box<Url>,
         #[source]
         source: reqwest::Error,
     },
-    #[error("{target} failed: {status} {body}")]
+    #[error("{method} {url} failed: {status} {body}")]
     Status {
-        target: String,
+        method: Method,
+        url: Box<Url>,
         status: StatusCode,
         body: String,
     },
-    #[error("decoding the response to {target}")]
+    #[error("decoding the response to {method} {url}")]
     Decode {
-        target: String,
+        method: Method,
+        url: Box<Url>,
         #[source]
         source: serde_json::Error,
     },
 }
 
-/// Returns a blocking client builder sending `user_agent`, with TLS roots that work on every target.
-pub fn client_builder(user_agent: &str) -> Result<ClientBuilder, Error> {
-    let builder = ClientBuilder::new().user_agent(user_agent);
+/// The user agent every bertbox request sends.
+pub const USER_AGENT: &str = concat!("bertbox/", env!("CARGO_PKG_VERSION"));
+
+/// Returns a blocking client builder sending bertbox's user agent, with TLS roots that work on every target.
+pub fn client_builder() -> Result<ClientBuilder, Error> {
+    let builder = ClientBuilder::new().user_agent(USER_AGENT);
     // rustls-platform-verifier needs a JVM on Android, which a CLI does not have.
     #[cfg(target_os = "android")]
     let builder = builder.tls_certs_only(
@@ -76,20 +79,21 @@ pub fn client_builder(user_agent: &str) -> Result<ClientBuilder, Error> {
 pub struct BaseUrl(Url);
 
 impl BaseUrl {
-    /// Parses `raw` and appends `segments` to its path, dropping any trailing slash first.
-    pub fn parse(raw: &str, segments: &[&str]) -> Result<Self, Error> {
-        let mut url = Url::parse(raw).map_err(|source| Error::ParseUrl {
-            url: raw.to_owned(),
-            source,
-        })?;
+    /// Appends `segments` to the path of `url`, dropping any trailing slash first.
+    pub fn new(mut url: Url, segments: &[&str]) -> Result<Self, Error> {
         if url.cannot_be_a_base() {
-            return Err(Error::CannotHoldPath { url });
+            return Err(Error::CannotHoldPath { url: Box::new(url) });
         }
         url.path_segments_mut()
             .expect("a url that can be a base holds a path")
             .pop_if_empty()
             .extend(segments);
         Ok(Self(url))
+    }
+
+    /// The base URL itself.
+    pub fn url(&self) -> &Url {
+        &self.0
     }
 
     /// The base URL with `segments` appended to its path.
@@ -119,27 +123,34 @@ pub fn json_body(request: RequestBuilder, body: &impl Serialize) -> Result<Reque
 /// A response whose body has been read in full.
 pub struct Reply {
     pub method: Method,
+    /// The URL that answered, after any redirects.
     pub url: Url,
     pub status: StatusCode,
+    pub headers: HeaderMap,
     pub body: String,
 }
 
 impl Reply {
-    /// The `METHOD url` the reply answers, as errors name it.
-    pub fn target(&self) -> String {
-        target(&self.method, &self.url)
-    }
-
-    /// The body, or an error carrying it when the status is not a success.
-    pub fn into_success(self) -> Result<String, Error> {
+    /// The reply itself, or an error carrying its body when the status is not a success.
+    pub fn into_success(self) -> Result<Self, Error> {
         if !self.status.is_success() {
             return Err(Error::Status {
-                target: self.target(),
+                method: self.method,
+                url: Box::new(self.url),
                 status: self.status,
                 body: self.body,
             });
         }
-        Ok(self.body)
+        Ok(self)
+    }
+
+    /// The body decoded from JSON.
+    pub fn json<T: DeserializeOwned>(&self) -> Result<T, Error> {
+        serde_json::from_str(&self.body).map_err(|source| Error::Decode {
+            method: self.method.clone(),
+            url: Box::new(self.url.clone()),
+            source,
+        })
     }
 }
 
@@ -149,30 +160,79 @@ pub fn fetch(client: &Client, request: RequestBuilder) -> Result<Reply, Error> {
     let method = request.method().clone();
     let url = request.url().clone();
     let response = client.execute(request).map_err(|source| Error::Request {
-        target: target(&method, &url),
+        method: method.clone(),
+        url: Box::new(url),
         source,
     })?;
+    let url = response.url().clone();
     let status = response.status();
+    let headers = response.headers().clone();
     let body = response.text().map_err(|source| Error::Read {
-        target: target(&method, &url),
+        method: method.clone(),
+        url: Box::new(url.clone()),
         source,
     })?;
     Ok(Reply {
         method,
         url,
         status,
+        headers,
         body,
     })
 }
 
-/// Decodes a JSON `body`; `target` names the request in the error.
-pub fn decode<T: DeserializeOwned>(target: &str, body: &str) -> Result<T, Error> {
-    serde_json::from_str(body).map_err(|source| Error::Decode {
-        target: target.to_owned(),
-        source,
-    })
+/// A successful response whose body has not been read yet, for streaming large files.
+pub struct Download {
+    response: Response,
 }
 
-fn target(method: &Method, url: &Url) -> String {
-    format!("{method} {url}")
+impl Download {
+    /// The URL the body came from, after any redirects.
+    pub fn url(&self) -> &Url {
+        self.response.url()
+    }
+
+    /// The body's size in bytes, when the server sent it.
+    pub fn content_length(&self) -> Option<u64> {
+        self.response.content_length()
+    }
+
+    /// A response header's value, when present and text.
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.response.headers().get(name)?.to_str().ok()
+    }
+}
+
+impl Read for Download {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.response.read(buf)
+    }
+}
+
+/// Sends a GET for `url` and returns its unread body, failing on a non-success status.
+pub fn download(client: &Client, url: Url) -> Result<Download, Error> {
+    let response = client
+        .get(url.clone())
+        .send()
+        .map_err(|source| Error::Request {
+            method: Method::GET,
+            url: Box::new(url),
+            source,
+        })?;
+    let status = response.status();
+    if !status.is_success() {
+        let url = Box::new(response.url().clone());
+        let body = response.text().map_err(|source| Error::Read {
+            method: Method::GET,
+            url: url.clone(),
+            source,
+        })?;
+        return Err(Error::Status {
+            method: Method::GET,
+            url,
+            status,
+            body,
+        });
+    }
+    Ok(Download { response })
 }

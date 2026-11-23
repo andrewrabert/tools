@@ -2,12 +2,13 @@ use std::num::NonZeroUsize;
 
 use bertbox_forgejo::RepoName;
 use clap::{Args as ClapArgs, Subcommand};
+use url::Url;
 
 #[derive(ClapArgs)]
 #[command(about = "Manage repositories on a Forgejo server")]
 pub struct Forgejo {
     #[arg(long, env = "FORGEJO_URL", help = "base url of the server")]
-    pub url: String,
+    pub url: Url,
     #[arg(
         long,
         env = "FORGEJO_TOKEN",

@@ -13,9 +13,13 @@ ast-grep-language = { version = "0.51", default-features = false, features = ["t
 base64 = { workspace = true }
 bat = { version = "0.26", default-features = false, features = ["regex-fancy"] }
 bertbox-forgejo = { workspace = true }
+bertbox-github = { workspace = true }
 bertbox-http = { workspace = true }
+bertbox-icanhazip = { workspace = true }
 bertbox-immich = { workspace = true }
+bertbox-ipapi = { workspace = true }
 bertbox-jdownloader = { workspace = true }
+bertbox-nightlylink = { workspace = true }
 chardetng = "1"
 clap = { version = "4", features = ["derive", "env", "string"] }
 clap_complete = "4"

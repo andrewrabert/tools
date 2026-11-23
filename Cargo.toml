@@ -9,15 +9,19 @@ edition = "2024"
 [workspace.dependencies]
 base64 = "0.23"
 bertbox-forgejo = { path = "crates/forgejo" }
+bertbox-github = { path = "crates/github" }
 bertbox-http = { path = "crates/http" }
+bertbox-icanhazip = { path = "crates/icanhazip" }
 bertbox-immich = { path = "crates/immich" }
+bertbox-ipapi = { path = "crates/ipapi" }
 bertbox-jdownloader = { path = "crates/jdownloader" }
+bertbox-nightlylink = { path = "crates/nightlylink" }
 regex = "1"
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 thiserror = "2"
-url = "2"
+url = { version = "2", features = ["serde"] }
 webpki-root-certs = "1"
 
 [profile.release]

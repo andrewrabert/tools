@@ -49,7 +49,6 @@ Wrappers for external programs and services.
 - `crates/bertbox/src/clipboard.rs` clipboard copy & paste
 - `crates/bertbox/src/ffmpeg.rs` using ffmpeg & ffprobe
 - `crates/bertbox/src/git.rs` using git
-- `crates/bertbox/src/http.rs` HTTP client builder with bertbox's user agent
 - `crates/bertbox/src/mkvmerge.rs` using mkvmerge
 - `crates/bertbox/src/sqlite.rs` SQLite databases
 - `crates/bertbox/src/tmux.rs` using tmux

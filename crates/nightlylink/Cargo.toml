@@ -1,0 +1,10 @@
+[package]
+name = "bertbox-nightlylink"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bertbox-http = { workspace = true }
+reqwest = { workspace = true }
+thiserror = { workspace = true }
+url = { workspace = true }

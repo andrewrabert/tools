@@ -3,6 +3,7 @@ use std::fs;
 use anyhow::{Context, Result, bail};
 
 use crate::install_target::InstallTarget;
+use crate::tools::bertbox::packages::nightly::ArtifactDownload;
 use crate::tools::bertbox::packages::{
     Installation, NightlyArtifact, PackageName, Version, download, flatpak, mac_app,
 };
@@ -35,15 +36,13 @@ pub fn deploy(
         Installation::load(name)?.filter(|known| known.target == target)
     };
 
-    let client = download::client()?;
-    let response = download::get(&client, &artifact.url())?;
-    let etag = download::etag(&response)?;
+    let ArtifactDownload { etag, body } = artifact.download()?;
     let version = Version::Etag(etag.clone());
     if known.is_some_and(|known| known.version == version) {
         println!("Already up to date");
         return Ok(());
     }
-    let archive = download::receive(response)?;
+    let archive = download::receive(body)?;
 
     println!("Extracting...");
     let member = download::sole_member(archive)?;

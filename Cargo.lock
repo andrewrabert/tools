@@ -324,9 +324,13 @@ dependencies = [
  "base64 0.23.1",
  "bat",
  "bertbox-forgejo",
+ "bertbox-github",
  "bertbox-http",
+ "bertbox-icanhazip",
  "bertbox-immich",
+ "bertbox-ipapi",
  "bertbox-jdownloader",
+ "bertbox-nightlylink",
  "chardetng",
  "clap",
  "clap_complete",
@@ -407,6 +411,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "url",
+]
+
+[[package]]
+name = "bertbox-github"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
+ "thiserror",
 ]
 
 [[package]]
@@ -417,8 +431,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "url",
  "webpki-root-certs",
+]
+
+[[package]]
+name = "bertbox-icanhazip"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
+ "thiserror",
 ]
 
 [[package]]
@@ -428,6 +450,16 @@ dependencies = [
  "bertbox-http",
  "reqwest",
  "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "bertbox-ipapi"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
  "serde_json",
  "thiserror",
 ]
@@ -443,6 +475,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "bertbox-nightlylink"
+version = "0.1.0-dev"
+dependencies = [
+ "bertbox-http",
+ "reqwest",
+ "thiserror",
+ "url",
 ]
 
 [[package]]
@@ -5655,6 +5697,7 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]
