@@ -651,7 +651,7 @@ fn gamescope_args(proton: &Proton) -> Option<Vec<String>> {
 fn run(proton: Proton) -> Result<ExitCode> {
     let core = &proton.core;
     if core.cd {
-        bail!("cd fish integration failure");
+        bail!("cd zsh integration failure");
     }
     let home = dirs::home()?;
     let prefix_root = env::var(PREFIX_ROOT_VAR).unwrap_or_else(|_| DEFAULT_PREFIX_ROOT.to_owned());

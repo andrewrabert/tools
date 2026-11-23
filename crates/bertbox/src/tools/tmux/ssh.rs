@@ -104,7 +104,7 @@ fn run(args: Ssh) -> Result<ExitCode> {
 fn reachable(host: &str) -> Result<bool> {
     let status = Command::new("ssh")
         .args(["-q", "-o", "BatchMode=yes", "-o", "ConnectTimeout=3", host])
-        .args(["--", "fish", "-lic", "command -v tmux-attach"])
+        .args(["--", "zsh", "-lic", "command -v tmux-attach"])
         .status()
         .context("running ssh")?;
     Ok(status.success())
