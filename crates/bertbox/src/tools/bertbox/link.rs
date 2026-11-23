@@ -210,7 +210,7 @@ pub fn link_tools(dir: &Path, program: &Path) -> Result<()> {
 fn write_completions(program: &Path) -> Result<()> {
     let output = Command::new(program)
         .env(dispatch::ENV_NAME, dispatch::ENV_VALUE)
-        .args(["completions", "--all", "zsh"])
+        .args(["completions", "--all", "fish"])
         .output()
         .with_context(|| format!("running {}", program.display()))?;
     if !output.status.success() {
@@ -220,7 +220,7 @@ fn write_completions(program: &Path) -> Result<()> {
             output.status
         );
     }
-    let dest = packages::zsh_dir()?.join(format!("_{APP_NAME}"));
+    let dest = packages::fish_dir()?.join(format!("{APP_NAME}.fish"));
     packages::write_file(&dest, &output.stdout)?;
     println!("Installed: {}", dest.display());
     Ok(())

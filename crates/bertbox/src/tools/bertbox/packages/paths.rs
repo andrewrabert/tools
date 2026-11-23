@@ -13,8 +13,8 @@ pub fn bin_dir() -> Result<PathBuf> {
     Ok(data_root()?.join("bin"))
 }
 
-pub fn zsh_dir() -> Result<PathBuf> {
-    Ok(data_root()?.join("zsh"))
+pub fn fish_dir() -> Result<PathBuf> {
+    Ok(data_root()?.join("fish"))
 }
 
 pub fn package_dir(name: PackageName) -> Result<PathBuf> {
