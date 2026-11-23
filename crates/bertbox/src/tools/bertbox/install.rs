@@ -26,7 +26,7 @@ pub struct Install {
     flatpak: bool,
 
     /// Install this binary instead of downloading
-    #[arg(long, value_name = "PATH", conflicts_with_all = ["force", "flatpak"])]
+    #[arg(short, long, value_name = "PATH", conflicts_with_all = ["force", "flatpak"])]
     binary: Option<PathBuf>,
 }
 
