@@ -199,6 +199,7 @@ tool_groups! {
         "pi-config" => pi_config::PiConfig,
     }
     "System" {
+        "base16-shell-preview" => base16_shell_preview::Base16ShellPreview,
         "bwrapped" => bwrapped::Bwrapped,
         "cdemu-tool" => cdemu_tool::CdemuTool,
         #[cfg(target_os = "linux")]

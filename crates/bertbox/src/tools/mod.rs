@@ -1,6 +1,7 @@
 pub mod archive;
 pub mod audio_tag;
 pub mod b64;
+pub mod base16_shell_preview;
 pub mod bertbox;
 pub mod broken_links;
 pub mod bwrapped;

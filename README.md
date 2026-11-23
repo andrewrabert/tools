@@ -137,6 +137,7 @@ Create and unpack archives
 
 ### System
 
+- `base16-shell-preview`: Preview Base16 Shell themes in the terminal and enable one
 - `bwrapped`: Run a program inside a sandbox with filesystem isolation
 - `cdemu-tool`: Load disc images into CDEmu daemons run as systemd user units
 - `evhz`: Measure the polling rate of mice and other evdev devices
