@@ -3,6 +3,7 @@ mod bertbox;
 mod bxwrp;
 mod cloneholio;
 mod jellium_desktop;
+mod jevrev;
 mod moon;
 mod noted;
 mod uncomment;
@@ -16,6 +17,7 @@ pub static ALL: &[Source] = &[
     bxwrp::SOURCE,
     cloneholio::SOURCE,
     noted::SOURCE,
+    jevrev::SOURCE,
     uncomment::SOURCE,
     moon::SOURCE,
     zoekt_simple::SOURCE,
