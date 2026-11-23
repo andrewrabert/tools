@@ -174,20 +174,32 @@ impl Link {
 }
 
 fn write_completions(program: &Path) -> Result<()> {
+    write_shell_completions(
+        program,
+        "fish",
+        &packages::fish_dir()?.join(format!("{APP_NAME}.fish")),
+    )?;
+    write_shell_completions(
+        program,
+        "zsh",
+        &packages::zsh_dir()?.join(format!("_{APP_NAME}")),
+    )
+}
+
+fn write_shell_completions(program: &Path, shell: &str, dest: &Path) -> Result<()> {
     let output = Command::new(program)
         .env(dispatch::ENV_NAME, dispatch::ENV_VALUE)
-        .args(["completions", "--all", "fish"])
+        .args(["completions", "--all", shell])
         .output()
         .with_context(|| format!("running {}", program.display()))?;
     if !output.status.success() {
         bail!(
-            "{} completions failed: {}",
+            "{} {shell} completions failed: {}",
             program.display(),
             output.status
         );
     }
-    let dest = packages::fish_dir()?.join(format!("{APP_NAME}.fish"));
-    packages::write_file(&dest, &output.stdout)?;
+    packages::write_file(dest, &output.stdout)?;
     println!("Installed: {}", dest.display());
     Ok(())
 }

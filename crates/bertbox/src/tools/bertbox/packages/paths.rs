@@ -16,6 +16,10 @@ pub fn fish_dir() -> Result<PathBuf> {
     Ok(data_root()?.join("fish"))
 }
 
+pub fn zsh_dir() -> Result<PathBuf> {
+    Ok(data_root()?.join("zsh"))
+}
+
 pub fn pkgs_dir() -> Result<PathBuf> {
     Ok(data_root()?.join("pkgs"))
 }

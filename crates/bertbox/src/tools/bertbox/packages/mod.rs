@@ -27,7 +27,7 @@ pub use crate::tools::bertbox::packages::files::write as write_file;
 pub use crate::tools::bertbox::packages::github::GitHubRepository;
 pub use crate::tools::bertbox::packages::nightly::NightlyArtifact;
 pub use crate::tools::bertbox::packages::package::Package;
-pub use crate::tools::bertbox::packages::paths::{bin_dir, fish_dir};
+pub use crate::tools::bertbox::packages::paths::{bin_dir, fish_dir, zsh_dir};
 pub use crate::tools::bertbox::packages::release::{ChecksumAsset, Release};
 pub use crate::tools::bertbox::packages::version::Version;
 
