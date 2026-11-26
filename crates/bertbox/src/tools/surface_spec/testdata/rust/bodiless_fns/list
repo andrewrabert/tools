@@ -1,0 +1,7 @@
+bodiless_fns.rs: pub struct Player
+bodiless_fns.rs: Player::position: i64
+bodiless_fns.rs: #[interface(name = "org.mpris.MediaPlayer2.Player")] impl Player
+bodiless_fns.rs: fn Player::play(&self)
+bodiless_fns.rs: #[zbus(signal)] async fn Player::seeked(emitter: &SignalEmitter<'_>, position: i64) -> zbus::Result<()>
+bodiless_fns.rs: pub fn Player::stop(&self)
+bodiless_fns.rs: #[zbus(property)] fn Player::position(&self) -> i64

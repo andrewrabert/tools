@@ -1,7 +1,7 @@
 //! Python surfaces: a model of the captured defs and classes holding syntax facts only, printed
 //! back as Python and laid out by the Ruff formatter.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
@@ -210,6 +210,42 @@ impl FileSurface {
         self.nodes
             .iter()
             .filter(move |node| node.parent == Some(id))
+    }
+
+    pub(super) fn list(&self) -> Vec<String> {
+        let path = self.path.display();
+        let mut names: BTreeMap<NodeId, String> = BTreeMap::new();
+        let mut lines = Vec::new();
+        for node in &self.nodes {
+            let prefix = node.parent.map(|parent| names[&parent].clone());
+            let mut printer = Printer::default();
+            match &node.syntax {
+                Syntax::Def(function) => {
+                    let name = join(prefix.as_deref(), &function.name);
+                    printer.inline_decorators(&function.decorators);
+                    printer.function_signature(function, &name);
+                    names.insert(node.id, name);
+                }
+                Syntax::Class(class) => {
+                    let name = join(prefix.as_deref(), &class.name);
+                    printer.inline_decorators(&class.decorators);
+                    printer.class_signature(class, &name);
+                    names.insert(node.id, name);
+                }
+                Syntax::Attribute(attribute) => {
+                    printer.attribute_statement(attribute, prefix.as_deref());
+                }
+            }
+            lines.push(format!("{path}: {}", printer.text));
+        }
+        lines
+    }
+}
+
+fn join(prefix: Option<&str>, name: &str) -> String {
+    match prefix {
+        Some(prefix) => format!("{prefix}.{name}"),
+        None => name.to_owned(),
     }
 }
 
@@ -1656,11 +1692,16 @@ impl Printer {
     fn function_header(&mut self, function: &Function) {
         self.decorators(&function.decorators);
         self.indentation();
+        self.function_signature(function, &function.name);
+        self.push(":");
+    }
+
+    fn function_signature(&mut self, function: &Function, name: &str) {
         if function.is_async {
             self.push("async ");
         }
         self.push("def ");
-        self.push(&function.name);
+        self.push(name);
         self.type_params(&function.type_params);
         self.push("(");
         self.parameters(&function.parameters);
@@ -1669,20 +1710,23 @@ impl Printer {
             self.push(" -> ");
             self.expr(returns, Precedence::Lambda);
         }
-        self.push(":");
     }
 
     /// The class's decorators, then `class Name[...](bases, keywords):`.
     fn class_header(&mut self, class: &Class) {
         self.decorators(&class.decorators);
         self.indentation();
+        self.class_signature(class, &class.name);
+        self.push(":");
+    }
+
+    fn class_signature(&mut self, class: &Class, name: &str) {
         self.push("class ");
-        self.push(&class.name);
+        self.push(name);
         self.type_params(&class.type_params);
         if !class.bases.is_empty() || !class.keywords.is_empty() {
             self.arguments(&class.bases, &class.keywords);
         }
-        self.push(":");
     }
 
     fn decorators(&mut self, decorators: &[Expr]) {
@@ -1694,15 +1738,28 @@ impl Printer {
         }
     }
 
+    fn inline_decorators(&mut self, decorators: &[Expr]) {
+        for decorator in decorators {
+            self.push("@");
+            self.expr(decorator, Precedence::Named);
+            self.push(" ");
+        }
+    }
+
     fn attribute(&mut self, attribute: &Attribute) {
         self.indentation();
+        self.attribute_statement(attribute, None);
+        self.push("\n");
+    }
+
+    fn attribute_statement(&mut self, attribute: &Attribute, class: Option<&str>) {
         match attribute {
             Attribute::AnnAssign {
                 target,
                 annotation,
                 value,
             } => {
-                self.expr(target, Precedence::Atom);
+                self.target(target, class);
                 self.push(": ");
                 self.expr(annotation, Precedence::Lambda);
                 if let Some(value) = value {
@@ -1712,7 +1769,7 @@ impl Printer {
             }
             Attribute::Assign { targets, value } => {
                 for target in targets {
-                    self.expr(target, Precedence::Atom);
+                    self.target(target, class);
                     self.push(" = ");
                 }
                 self.expr(value, Precedence::Lambda);
@@ -1723,13 +1780,43 @@ impl Printer {
                 value,
             } => {
                 self.push("type ");
-                self.expr(name, Precedence::Atom);
+                self.target(name, class);
                 self.type_params(type_params);
                 self.push(" = ");
                 self.expr(value, Precedence::Lambda);
             }
         }
-        self.push("\n");
+    }
+
+    fn target(&mut self, target: &Expr, class: Option<&str>) {
+        let Some(class) = class else {
+            self.expr(target, Precedence::Atom);
+            return;
+        };
+        match target {
+            Expr::Tuple { elts } => {
+                self.push("(");
+                self.join(elts, |printer, elt| printer.target(elt, Some(class)));
+                if elts.len() == 1 {
+                    self.push(",");
+                }
+                self.push(")");
+            }
+            Expr::List { elts } => {
+                self.push("[");
+                self.join(elts, |printer, elt| printer.target(elt, Some(class)));
+                self.push("]");
+            }
+            Expr::Starred { value } => {
+                self.push("*");
+                self.target(value, Some(class));
+            }
+            _ => {
+                self.push(class);
+                self.push(".");
+                self.expr(target, Precedence::Atom);
+            }
+        }
     }
 
     fn type_params(&mut self, params: &[TypeParam]) {

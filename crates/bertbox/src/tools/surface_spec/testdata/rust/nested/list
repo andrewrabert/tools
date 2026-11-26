@@ -1,0 +1,22 @@
+nested.rs: pub fn outer(input: u32) -> u32
+nested.rs: struct outer::Local
+nested.rs: outer::Local::value: u32
+nested.rs: fn outer::helper(local: &Local) -> u32
+nested.rs: fn outer::helper::innermost() -> u32
+nested.rs: fn outer::in_closure(x: u32) -> u32
+nested.rs: enum Size
+nested.rs: Size::Small
+nested.rs: Size::Large
+nested.rs: fn pick(size: Size) -> usize
+nested.rs: pub struct Buffer
+nested.rs: Buffer::data: [u8; { length() }]
+nested.rs: const fn Buffer::data::length() -> usize
+nested.rs: pub fn sized(values: [u8; { count() }]) -> usize
+nested.rs: fn sized::count() -> usize
+nested.rs: pub fn outer_mod::in_mod()
+nested.rs: pub struct outer_mod::InMod
+nested.rs: pub(super) fn outer_mod::inner_mod::in_inner()
+nested.rs: pub enum outer_mod::inner_mod::innermost_mod::Deep
+nested.rs: outer_mod::inner_mod::innermost_mod::Deep::One
+nested.rs: impl Deep
+nested.rs: pub fn outer_mod::inner_mod::innermost_mod::Deep::get() -> Self

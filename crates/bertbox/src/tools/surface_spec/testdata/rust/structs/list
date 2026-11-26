@@ -1,0 +1,18 @@
+structs.rs: #[derive(Debug, Clone)] pub struct Point
+structs.rs: pub Point::x: i32
+structs.rs: pub Point::y: i32
+structs.rs: Point::label: String
+structs.rs: pub struct Pair
+structs.rs: pub Pair::0: u8
+structs.rs: Pair::1: u16
+structs.rs: pub struct Unit
+structs.rs: pub(crate) struct Borrowed<'a, T>
+structs.rs: pub Borrowed::value: &'a T
+structs.rs: Borrowed::count: usize
+structs.rs: pub struct Matrix<T, const ROWS: usize, const COLS: usize>
+structs.rs: Matrix::cells: [[T; COLS]; ROWS]
+structs.rs: struct Bounded<'a, K, V = ()> where K: Ord + Debug, V: 'a
+structs.rs: Bounded::key: K
+structs.rs: Bounded::value: &'a V
+structs.rs: pub struct Wrapped<T: Clone> where T: Default
+structs.rs: Wrapped::0: T

@@ -1,0 +1,12 @@
+inherent_impls.rs: pub struct Stack<T>
+inherent_impls.rs: Stack::items: Vec<T>
+inherent_impls.rs: impl<T: Clone> Stack<T>
+inherent_impls.rs: pub const Stack::CAPACITY: usize = 16
+inherent_impls.rs: pub fn Stack::new() -> Self
+inherent_impls.rs: pub fn Stack::push(&mut self, item: T)
+inherent_impls.rs: fn Stack::peek(&self) -> Option<&T>
+inherent_impls.rs: impl Stack<u8>
+inherent_impls.rs: pub fn Stack::sum(&self) -> u32
+inherent_impls.rs: impl<T> Stack<T> where T: Default + Clone
+inherent_impls.rs: pub(crate) fn Stack::fill(count: usize) -> Self
+inherent_impls.rs: pub fn Stack::len<'a>(&'a self) -> usize

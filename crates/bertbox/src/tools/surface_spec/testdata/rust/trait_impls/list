@@ -1,0 +1,10 @@
+trait_impls.rs: pub struct Wrapper<T>
+trait_impls.rs: Wrapper::0: T
+trait_impls.rs: pub struct Raw
+trait_impls.rs: Raw::0: *mut u8
+trait_impls.rs: impl<T: Display> Display for Wrapper<T>
+trait_impls.rs: unsafe impl Send for Raw
+trait_impls.rs: impl !Sync for Raw
+trait_impls.rs: impl<T> From<T> for Wrapper<T> where T: Clone
+trait_impls.rs: impl<'a, T> Iterator for Wrapper<&'a [T]>
+trait_impls.rs: impl Default for Raw

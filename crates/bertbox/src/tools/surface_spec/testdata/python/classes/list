@@ -1,0 +1,24 @@
+classes.py: class Empty
+classes.py: class Documented
+classes.py: class Base(Parent, metaclass=Meta, flag=True)
+classes.py: Base.count: int
+classes.py: Base.name: str = "base"
+classes.py: Base.first = Base.second = 0
+classes.py: (Base.x, Base.y) = (1, 2)
+classes.py: Base.template = """first line\n  indented second line\n"""
+classes.py: type Base.Alias[T] = list[T]
+classes.py: def Base.method(self, value: int) -> int
+classes.py: @property def Base.size(self) -> int
+classes.py: @size.setter def Base.size(self, value: int) -> None
+classes.py: @staticmethod def Base.make() -> "Base"
+classes.py: @classmethod def Base.build(cls, *args: object) -> "Base"
+classes.py: async def Base.run(self) -> None
+classes.py: class Base.Inner(Generic[T])
+classes.py: Base.Inner.value: T
+classes.py: def Base.Inner.get(self) -> T
+classes.py: class Base.Inner.Innermost
+classes.py: @dataclass(frozen=True) class Point[T: float](*bases, **options)
+classes.py: Point.x: T
+classes.py: Point.y: T = 0
+classes.py: class Methods
+classes.py: def Methods.only(self)

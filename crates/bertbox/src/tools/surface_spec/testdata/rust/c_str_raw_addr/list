@@ -1,0 +1,3 @@
+c_str_raw_addr.rs: pub fn c_str(x: [u8; { let _ = c"a\n\xFF"; 1 }])
+c_str_raw_addr.rs: pub fn raw_c_str(x: [u8; { let _ = c"b"; 2 }])
+c_str_raw_addr.rs: pub fn raw_addr(x: [u8; { let _ = unsafe { (&raw const BUF, &raw mut BUF) }; 3 }])

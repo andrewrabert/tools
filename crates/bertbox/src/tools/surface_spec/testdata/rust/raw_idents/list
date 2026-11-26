@@ -1,0 +1,13 @@
+raw_idents.rs: pub struct Answer
+raw_idents.rs: pub Answer::r#type: String
+raw_idents.rs: Answer::r#ref: Option<u32>
+raw_idents.rs: pub struct r#Box
+raw_idents.rs: pub r#Box::0: u8
+raw_idents.rs: pub enum Token
+raw_idents.rs: Token::r#async
+raw_idents.rs: Token::r#Match { r#in: u8 }
+raw_idents.rs: pub trait r#Trait
+raw_idents.rs: fn r#Trait::r#yield(&self, r#loop: bool) -> u8
+raw_idents.rs: impl Answer
+raw_idents.rs: pub fn Answer::r#type(&self) -> &str
+raw_idents.rs: pub fn r#match(r#struct: &Answer) -> bool

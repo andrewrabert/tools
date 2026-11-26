@@ -1,0 +1,8 @@
+extern_blocks.rs: pub unsafe extern "C" fn abs(x: i32) -> i32
+extern_blocks.rs: unsafe extern "C" fn labs(x: i64) -> i64
+extern_blocks.rs: unsafe extern "C" fn printf(format: *const u8, ...) -> i32
+extern_blocks.rs: unsafe extern fn bare()
+extern_blocks.rs: unsafe extern "system" fn GetTickCount() -> u32
+extern_blocks.rs: unsafe extern "system" fn CloseHandle(handle: *mut Handle) -> i32
+extern_blocks.rs: pub fn between()
+extern_blocks.rs: unsafe extern "C" fn after_between()

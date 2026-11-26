@@ -1,0 +1,11 @@
+functions.py: def plain()
+functions.py: def positional(a, b, /, c, d=1, *args, e, f=2, **kwargs)
+functions.py: def annotated(a: int, b: str = "x", *args: int, flag: bool = False, **kwargs: object) -> None
+functions.py: def keyword_only(*, key: str) -> str
+functions.py: def positional_only(a: int, /) -> int
+functions.py: async def fetch(url: str, timeout: float = 1.5) -> bytes
+functions.py: @decorator @decorator_factory(1, key="value") @module.attribute def decorated() -> None
+functions.py: @functools.cache async def decorated_async()
+functions.py: def generic[T, U: int, *Ts, **P, V: (str, bytes) = str](x: T, *args: *Ts) -> list[T]
+functions.py: def callable_params[**P, R](func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R
+functions.py: def defaults(a=None, b=True, c=..., d=(1,), e=[], f={}, g=lambda x: x, h=-1)

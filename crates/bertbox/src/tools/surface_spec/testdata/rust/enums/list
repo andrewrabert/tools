@@ -1,0 +1,17 @@
+enums.rs: #[derive(Debug, Clone, Copy)] pub enum Direction
+enums.rs: Direction::North
+enums.rs: Direction::East
+enums.rs: Direction::South
+enums.rs: Direction::West
+enums.rs: pub enum Shape
+enums.rs: Shape::Circle(f64)
+enums.rs: Shape::Rectangle { width: f64, height: f64 }
+enums.rs: Shape::Point
+enums.rs: #[repr(u8)] enum Status
+enums.rs: Status::Ok = 0
+enums.rs: Status::NotFound = 4
+enums.rs: Status::Failed = 1 << 3
+enums.rs: pub enum Tree<'a, T> where T: PartialOrd
+enums.rs: Tree::Leaf(&'a T)
+enums.rs: Tree::Node { left: Box<Tree<'a, T>>, right: Box<Tree<'a, T>> }
+enums.rs: Tree::Empty

@@ -1,0 +1,13 @@
+traits.rs: pub trait Named
+traits.rs: fn Named::name(&self) -> String
+traits.rs: pub trait Shape: Named + Clone + Debug
+traits.rs: type Shape::Unit
+traits.rs: type Shape::Scaled: Shape<Unit = Self::Unit>
+traits.rs: const Shape::SIDES: usize
+traits.rs: const Shape::SCALE: f64 = 1.0
+traits.rs: fn Shape::area(&self) -> f64
+traits.rs: fn Shape::describe(&self) -> String
+traits.rs: fn Shape::scale<F>(&self, factor: F) -> Self::Scaled where F: Into<f64> + Copy
+traits.rs: fn Shape::largest<'a, I: IntoIterator<Item = &'a Self>>(shapes: I) -> Option<&'a Self> where Self: 'a
+traits.rs: pub(crate) unsafe trait RawAccess<T: ?Sized>
+traits.rs: unsafe fn RawAccess::read(&self, offset: usize) -> T

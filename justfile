@@ -39,7 +39,7 @@ test *args:
 update-snapshots *args:
     {{just_executable()}} test "$@"
 
-# Regenerate the surface-spec fixture outputs from their Rust and Python sources and changes with the debug binary
+# Regenerate the surface-spec fixture outputs, --list lines included, from their Rust and Python sources and changes with the debug binary
 surface-spec-fixtures: build
     #!/usr/bin/env bash
     set -euo pipefail
@@ -66,6 +66,8 @@ surface-spec-fixtures: build
                 cp "$fixture/head" "$repo/$name.$extension"
                 (cd "$repo" && BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec --git HEAD \
                     --language "$language" "$name.$extension") > "$fixture/change"
+                (cd "$repo" && BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec --git HEAD \
+                    --list "$name.$extension") > "$fixture/change-list"
                 continue
             fi
             # The capture records the source as `<name>.<extension>`, the path the tests parse it as.
@@ -79,6 +81,8 @@ surface-spec-fixtures: build
             done
             BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec --input-json "$scratch/$name.json" \
                 --language "$language" > "$fixture/surface-spec"
+            BERTBOX_AS_BERTBOX=1 "$bertbox" surface-spec --input-json "$scratch/$name.json" \
+                --list > "$fixture/list"
         done
     done
 

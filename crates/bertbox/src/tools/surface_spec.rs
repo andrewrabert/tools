@@ -6,7 +6,6 @@ mod syn_serde;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::env;
-use std::ffi::OsString;
 use std::fmt;
 use std::fs;
 use std::io::{self, Write};
@@ -26,7 +25,7 @@ use serde::ser;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::atomic_write;
-use crate::git::Git;
+use crate::git::{Git, Ignored};
 use crate::tools::Tool;
 
 use justification::{Command, Justification};
@@ -44,23 +43,23 @@ const COMMON: &str = include_str!("surface_spec/templates/common.md.j2");
 pub struct SurfaceSpec {
     #[command(subcommand)]
     command: Option<Command>,
-    /// A source file or directory to list every declaration of; with --git, one to limit the
-    /// change to [default with --git: .]
+    /// A source file or directory to render every declaration of; with --git, one to limit
+    /// the change to [default with --git: .]
     #[arg(
         value_name = "PATH",
         required_unless_present_any = ["additions", "deletions", "git"],
         conflicts_with_all = ["additions", "deletions"],
     )]
     paths: Vec<PathBuf>,
-    /// List the declarations of this file or directory as additions; with --deletions, list
+    /// Render the declarations of this file or directory as additions; with --deletions,
     /// those it adds to that one, pairing files by their path under each directory
     #[arg(short, long, value_name = "PATH")]
     additions: Option<PathBuf>,
-    /// List the declarations of this file or directory as deletions; with --additions, list
+    /// Render the declarations of this file or directory as deletions; with --additions,
     /// those that one deletes from it
     #[arg(short, long, value_name = "PATH")]
     deletions: Option<PathBuf>,
-    /// List the declarations a git diff adds and deletes: `REV` from REV to the working tree,
+    /// Render the declarations a git diff adds and deletes: `REV` from REV to the working tree,
     /// `A..B` from A to B, or `A...B` from their merge base to B; an omitted side is HEAD
     #[arg(
         short,
@@ -92,6 +91,12 @@ pub struct SurfaceSpec {
         conflicts_with_all = ["additions", "deletions", "git", "json"],
     )]
     why: bool,
+    /// Print one line per declaration, as `cargo public-api` lists items, instead of a Markdown
+    /// surface spec: the file's path as the spec names the file, then the declaration named by
+    /// what encloses it as the source writes it, joined by `::` in Rust and `.` in Python; a
+    /// change prefixes deletions with `-` and additions with `+`
+    #[arg(long, conflicts_with_all = ["json", "why"])]
+    list: bool,
     #[command(flatten)]
     filter: Filter,
     #[command(flatten)]
@@ -100,7 +105,8 @@ pub struct SurfaceSpec {
     #[arg(short, long, value_enum)]
     language: Option<Language>,
     /// Write the JSON to this file, or each language's spec to `<language>.md` in this
-    /// directory, instead of stdout; required to render more than one language
+    /// directory (`<language>.txt` with --list), instead of stdout; required to render more
+    /// than one language
     #[arg(short, long, value_name = "PATH")]
     output: Option<PathBuf>,
 }
@@ -151,9 +157,7 @@ impl GitDiff {
             Self::WorkingTree(base) => (base.clone(), working_tree(&git, paths, selection)?),
             Self::Revisions { base, head } => (base.clone(), tree(&git, head, paths, selection)?),
             Self::MergeBase { base, head } => (
-                git.capture(["merge-base", base, head])?
-                    .trim_end()
-                    .to_owned(),
+                git.merge_base(base, head)?,
                 tree(&git, head, paths, selection)?,
             ),
         };
@@ -161,19 +165,12 @@ impl GitDiff {
     }
 }
 
-fn listed_sources(listed: &str, selection: &Selection) -> BTreeMap<PathBuf, Language> {
+fn listed_sources(listed: Vec<PathBuf>, selection: &Selection) -> BTreeMap<PathBuf, Language> {
     listed
-        .split_terminator('\0')
-        .map(PathBuf::from)
+        .into_iter()
         .filter(|path| selection.keeps(path))
         .filter_map(|path| Language::of(&path).map(|language| (path, language)))
         .collect()
-}
-
-fn pathspec(paths: &[PathBuf]) -> impl Iterator<Item = OsString> {
-    [OsString::from("--")]
-        .into_iter()
-        .chain(paths.iter().map(OsString::from))
 }
 
 fn tree(
@@ -182,18 +179,11 @@ fn tree(
     paths: &[PathBuf],
     selection: &Selection,
 ) -> Result<BTreeMap<PathBuf, Result<FileSurface>>> {
-    let listed = git.capture(
-        ["ls-tree", "-r", "-z", "--name-only", revision]
-            .map(OsString::from)
-            .into_iter()
-            .chain(pathspec(paths)),
-    )?;
-    Ok(listed_sources(&listed, selection)
+    Ok(listed_sources(git.tree_files(revision, paths)?, selection)
         .into_iter()
         .map(|(path, language)| {
-            let object = format!("{revision}:./{}", path.display());
             let surface = git
-                .capture(["cat-file", "blob", object.as_str()])
+                .file(revision, &path)
                 .and_then(|source| FileSurface::parse(path.clone(), language, &source));
             (path, surface)
         })
@@ -205,22 +195,18 @@ fn working_tree(
     paths: &[PathBuf],
     selection: &Selection,
 ) -> Result<BTreeMap<PathBuf, Result<FileSurface>>> {
-    let mut ls_files = vec!["ls-files", "-z", "--cached", "--others"];
-    if selection.gitignore {
-        ls_files.push("--exclude-standard");
-    }
-    let listed = git.capture(
-        ls_files
+    let ignored = if selection.gitignore {
+        Ignored::Exclude
+    } else {
+        Ignored::Include
+    };
+    Ok(
+        listed_sources(git.working_tree_files(paths, ignored)?, selection)
             .into_iter()
-            .map(OsString::from)
-            .chain(pathspec(paths)),
-    )?;
-    Ok(listed_sources(&listed, selection)
-        .into_iter()
-        // A file in the index but gone from the working tree is deleted.
-        .filter(|(path, _)| path.is_file())
-        .map(|(path, language)| (path.clone(), FileSurface::read(path, language)))
-        .collect())
+            .filter(|(path, _)| path.is_file())
+            .map(|(path, language)| (path.clone(), FileSurface::read(path, language)))
+            .collect(),
+    )
 }
 
 #[derive(ClapArgs)]
@@ -322,6 +308,13 @@ impl Language {
             Self::Python => "python.md",
         }
     }
+
+    fn list_file(self) -> &'static str {
+        match self {
+            Self::Rust => "rust.txt",
+            Self::Python => "python.txt",
+        }
+    }
 }
 
 impl Tool for SurfaceSpec {
@@ -399,13 +392,17 @@ impl SurfaceSpec {
             }
             (None, None, None) => return self.print_surface(&selection),
         };
-        let languages = match self.language {
-            Some(language) => BTreeSet::from([language]),
-            None => changes.iter().map(FileChange::language).collect(),
-        };
+        let languages = self.languages(changes.iter().map(FileChange::language).collect());
         match write_specs(
             languages,
-            |language| FileChange::spec(&changes, language, &self.rust),
+            |language| {
+                if self.list {
+                    Ok((FileChange::list(&changes, language, &self.rust), Vec::new()))
+                } else {
+                    FileChange::spec(&changes, language, &self.rust)
+                }
+            },
+            self.spec_file(),
             self.output.as_deref(),
         ) {
             Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
@@ -422,18 +419,39 @@ impl SurfaceSpec {
             }
             return Errors::check(errors);
         }
-        let languages = match self.language {
-            Some(language) => BTreeSet::from([language]),
-            None => surface.languages(),
-        };
+        let languages = self.languages(surface.languages());
         match write_specs(
             languages,
-            |language| surface.spec(language, &self.rust),
+            |language| {
+                if self.list {
+                    Ok((surface.list(language, &self.rust), Vec::new()))
+                } else {
+                    surface.spec(language, &self.rust)
+                }
+            },
+            self.spec_file(),
             self.output.as_deref(),
         ) {
             Ok(spec_errors) | Err(Errors(spec_errors)) => errors.extend(spec_errors),
         }
         Errors::check(errors)
+    }
+}
+
+impl SurfaceSpec {
+    fn languages(&self, captured: BTreeSet<Language>) -> BTreeSet<Language> {
+        match self.language {
+            Some(language) => BTreeSet::from([language]),
+            None => captured,
+        }
+    }
+
+    fn spec_file(&self) -> fn(Language) -> &'static str {
+        if self.list {
+            Language::list_file
+        } else {
+            Language::spec_file
+        }
     }
 }
 
@@ -510,6 +528,7 @@ fn write_capture(surface: &CapturedSurface, output: Option<&Path>) -> Result<()>
 fn write_specs(
     languages: BTreeSet<Language>,
     spec: impl Fn(Language) -> Result<(String, Vec<anyhow::Error>)>,
+    file: fn(Language) -> &'static str,
     output: Option<&Path>,
 ) -> Result<Vec<anyhow::Error>, Errors> {
     match (output, Vec::from_iter(languages).as_slice()) {
@@ -537,7 +556,7 @@ fn write_specs(
                     }
                 };
                 errors.extend(spec_errors);
-                if let Err(error) = write(&dir.join(language.spec_file()), &spec) {
+                if let Err(error) = write(&dir.join(file(language)), &spec) {
                     errors.push(error);
                     return Err(Errors(errors));
                 }
@@ -1125,6 +1144,19 @@ impl CapturedSurface {
         );
         Ok((Spec::SurfaceSpec { declarations }.render(language)?, errors))
     }
+
+    fn list(&self, language: Language, rust: &rust::Includes) -> String {
+        lines(
+            self.files
+                .iter()
+                .filter(|file| file.language() == language)
+                .flat_map(|file| file.list(rust)),
+        )
+    }
+}
+
+fn lines(lines: impl IntoIterator<Item = String>) -> String {
+    lines.into_iter().map(|line| line + "\n").collect()
 }
 
 /// The nodes of a capture's JSON not yet reached from its root.
@@ -1268,6 +1300,23 @@ impl FileChange {
         Ok((spec.render(language)?, errors))
     }
 
+    fn list(changes: &[Self], language: Language, rust: &rust::Includes) -> String {
+        let mut list = Vec::new();
+        for change in changes
+            .iter()
+            .filter(|change| change.language() == language)
+        {
+            let (base, head) = match change {
+                Self::Added(head) => (Vec::new(), head.list(rust)),
+                Self::Deleted(base) => (base.list(rust), Vec::new()),
+                Self::Kept { base, head } => (base.list(rust), head.list(rust)),
+            };
+            list.extend(lacking(&base, &head).map(|line| format!("-{line}")));
+            list.extend(lacking(&head, &base).map(|line| format!("+{line}")));
+        }
+        lines(list)
+    }
+
     fn declarations(
         &self,
         rust: &rust::Includes,
@@ -1296,6 +1345,22 @@ impl FileChange {
             Self::Deleted(base) => base,
         }
     }
+}
+
+fn lacking<'a>(lines: &'a [String], other: &[String]) -> impl Iterator<Item = &'a String> {
+    let mut unmatched: BTreeMap<&str, usize> = BTreeMap::new();
+    for line in other {
+        *unmatched.entry(line).or_default() += 1;
+    }
+    lines
+        .iter()
+        .filter(move |line| match unmatched.get_mut(line.as_str()) {
+            Some(count) if *count > 0 => {
+                *count -= 1;
+                false
+            }
+            Some(_) | None => true,
+        })
 }
 
 enum Spec {
@@ -1420,6 +1485,13 @@ impl FileSurface {
         match self {
             Self::Rust(file) => file.path(),
             Self::Python(file) => file.path(),
+        }
+    }
+
+    fn list(&self, rust: &rust::Includes) -> Vec<String> {
+        match self {
+            Self::Rust(file) => file.list(rust),
+            Self::Python(file) => file.list(),
         }
     }
 
@@ -1688,6 +1760,7 @@ mod tests {
                 additions: fixture_file!($dir, $case, "additions"),
                 deletions: fixture_file!($dir, $case, "deletions"),
                 surface_spec: fixture_file!($dir, $case, "surface-spec"),
+                list: fixture_file!($dir, $case, "list"),
             }
         };
     }
@@ -1735,6 +1808,7 @@ mod tests {
         additions: &'static str,
         deletions: &'static str,
         surface_spec: &'static str,
+        list: &'static str,
     }
 
     impl Fixture {
@@ -1769,6 +1843,10 @@ mod tests {
                 .expect("rendered spec");
             assert!(errors.is_empty());
             assert_eq!(surface_spec, self.surface_spec);
+            assert_eq!(
+                surface().list(self.language, &rust::Includes::default()),
+                self.list
+            );
         }
     }
 
@@ -1780,6 +1858,7 @@ mod tests {
                 base: fixture_file!($dir, $case, "base"),
                 head: fixture_file!($dir, $case, "head"),
                 change: fixture_file!($dir, $case, "change"),
+                list: fixture_file!($dir, $case, "change-list"),
             }
         };
     }
@@ -1791,6 +1870,7 @@ mod tests {
         base: &'static str,
         head: &'static str,
         change: &'static str,
+        list: &'static str,
     }
 
     impl ChangeFixture {
@@ -1799,15 +1879,19 @@ mod tests {
                 FileSurface::parse(PathBuf::from(self.path), self.language, source)
                     .expect("capturable fixture")
             };
-            let change = FileChange::Kept {
+            let change = [FileChange::Kept {
                 base: parse(self.base),
                 head: parse(self.head),
-            };
+            }];
             let (spec, errors) =
-                FileChange::spec(&[change], self.language, &rust::Includes::default())
+                FileChange::spec(&change, self.language, &rust::Includes::default())
                     .expect("rendered spec");
             assert!(errors.is_empty());
             assert_eq!(spec, self.change);
+            assert_eq!(
+                FileChange::list(&change, self.language, &rust::Includes::default()),
+                self.list
+            );
         }
     }
 

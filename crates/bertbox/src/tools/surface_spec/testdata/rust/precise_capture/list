@@ -1,0 +1,8 @@
+precise_capture.rs: pub fn none() -> impl Fn() + use<>
+precise_capture.rs: pub fn lifetime<'a>(s: &'a str) -> impl Iterator<Item = char> + use<'a>
+precise_capture.rs: pub fn params<'a, T: Clone, const N: usize>(x: &'a T) -> impl Sized + use<'a, T, N>
+precise_capture.rs: pub trait Source
+precise_capture.rs: fn Source::items(&self) -> impl Iterator<Item = u8> + use<Self>
+precise_capture.rs: pub struct Bytes
+precise_capture.rs: Bytes::0: Vec<u8>
+precise_capture.rs: impl Source for Bytes

@@ -1,0 +1,27 @@
+nested.py: def typed_only(values: Iterator[int]) -> int
+nested.py: class TypedOnly
+nested.py: TypedOnly.value: int
+nested.py: def in_elif()
+nested.py: def in_else()
+nested.py: def accelerated() -> bool
+nested.py: def fallback() -> bool
+nested.py: class Loaded
+nested.py: def cleanup()
+nested.py: def outer(x: int) -> int
+nested.py: def outer.inner(y: int) -> int
+nested.py: def outer.inner.innermost() -> int
+nested.py: class outer.Local
+nested.py: def outer.Local.method(self)
+nested.py: class Container
+nested.py: def Container.method(self)
+nested.py: def Container.method.helper()
+nested.py: class Container.method.InMethod
+nested.py: Container.method.InMethod.field: int
+nested.py: class Container.Nested
+nested.py: class Container.Nested.Deeper
+nested.py: Container.Nested.Deeper.depth: int = 2
+nested.py: def in_for()
+nested.py: def in_for_else()
+nested.py: def in_while()
+nested.py: def in_with()
+nested.py: def in_match()

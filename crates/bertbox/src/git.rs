@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -70,6 +70,58 @@ impl<'a> Git<'a> {
                 .trim_end_matches('\n'),
         ))
     }
+
+    pub fn tree_files(&self, revision: &str, paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
+        let listed = self.capture(
+            ["ls-tree", "-r", "-z", "--name-only", revision]
+                .map(OsString::from)
+                .into_iter()
+                .chain(pathspec(paths)),
+        )?;
+        Ok(nul_separated(&listed))
+    }
+
+    pub fn file(&self, revision: &str, path: &Path) -> Result<String> {
+        let object = format!("{revision}:./{}", path.display());
+        self.capture(["cat-file", "blob", object.as_str()])
+    }
+
+    pub fn working_tree_files(&self, paths: &[PathBuf], ignored: Ignored) -> Result<Vec<PathBuf>> {
+        let mut ls_files = vec!["ls-files", "-z", "--cached", "--others"];
+        if let Ignored::Exclude = ignored {
+            ls_files.push("--exclude-standard");
+        }
+        let listed = self.capture(
+            ls_files
+                .into_iter()
+                .map(OsString::from)
+                .chain(pathspec(paths)),
+        )?;
+        Ok(nul_separated(&listed))
+    }
+
+    pub fn merge_base(&self, a: &str, b: &str) -> Result<String> {
+        Ok(self
+            .capture(["merge-base", a, b])?
+            .trim_end_matches('\n')
+            .to_owned())
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum Ignored {
+    Include,
+    Exclude,
+}
+
+fn pathspec(paths: &[PathBuf]) -> impl Iterator<Item = OsString> {
+    [OsString::from("--")]
+        .into_iter()
+        .chain(paths.iter().map(OsString::from))
+}
+
+fn nul_separated(listed: &str) -> Vec<PathBuf> {
+    listed.split_terminator('\0').map(PathBuf::from).collect()
 }
 
 pub fn run(command: &mut Command) -> Result<()> {

@@ -1,6 +1,6 @@
 //! Rust surfaces: syn syntax trees of the captured items, rendered with prettyplease.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
@@ -416,6 +416,248 @@ impl FileSurface {
         }
         descendants
     }
+
+    pub(super) fn list(&self, includes: &Includes) -> Vec<String> {
+        let path = self.path.display();
+        let mut names: BTreeMap<NodeId, String> = BTreeMap::new();
+        let mut lines = Vec::new();
+        for node in &self.nodes {
+            let parent = node.parent.map(|parent| self.node(parent));
+            let (mut prefix, enclosing_mods) = match parent {
+                Some(parent) => (names[&parent.id].clone(), parent.mod_path.len()),
+                None => (String::new(), 0),
+            };
+            for module in &node.mod_path[enclosing_mods..] {
+                prefix = join(&prefix, module);
+            }
+            let (name, node_lines) = self.list_node(node, parent, &prefix);
+            names.insert(node.id, name);
+            if includes.keeps(self, node) {
+                lines.extend(node_lines.into_iter().map(|line| format!("{path}: {line}")));
+            }
+        }
+        lines
+    }
+
+    fn list_node(&self, node: &Node, parent: Option<&Node>, prefix: &str) -> (String, Vec<String>) {
+        match &node.syntax {
+            Syntax::ItemFn { syntax } => {
+                let mut item = syn::ItemFn::from_adapter(syntax);
+                let name = rename(prefix, &mut item.sig.ident);
+                let line = list_line(stub(&item.attrs, &item.vis, &item.sig), &name);
+                (name, vec![line])
+            }
+            Syntax::ImplItemFn { syntax } => {
+                let mut method = syn::ImplItemFn::from_adapter(syntax);
+                let name = rename(prefix, &mut method.sig.ident);
+                if parent.is_some_and(|parent| matches!(parent.syntax, Syntax::TraitImpl { .. })) {
+                    return (name, Vec::new());
+                }
+                let attrs = &method.attrs;
+                let vis = &method.vis;
+                let defaultness = method.modifiers.defaultness;
+                let sig = &method.sig;
+                let line = list_line(quote! { #(#attrs)* #vis #defaultness #sig; }, &name);
+                (name, vec![line])
+            }
+            Syntax::TraitItemFn { syntax } => {
+                let mut method = syn::TraitItemFn::from_adapter(syntax);
+                let name = rename(prefix, &mut method.sig.ident);
+                let line = list_line(
+                    stub(&method.attrs, &Visibility::Inherited, &method.sig),
+                    &name,
+                );
+                (name, vec![line])
+            }
+            Syntax::ForeignItemFn {
+                foreign_mod,
+                syntax,
+            } => {
+                let mut item = syn::ForeignItemFn::from_adapter(syntax);
+                let name = rename(prefix, &mut item.sig.ident);
+                item.sig.safety = syn::Safety::Unsafe(Default::default());
+                item.sig.abi = Some(syn::Abi::from_adapter(&foreign_mod.abi));
+                let line = list_line(stub(&item.attrs, &item.vis, &item.sig), &name);
+                (name, vec![line])
+            }
+            Syntax::ItemStruct { syntax } => {
+                let mut item = syn::ItemStruct::from_adapter(syntax);
+                let name = rename(prefix, &mut item.ident);
+                item.fields = syn::Fields::Unit;
+                item.semi_token = Some(Default::default());
+                let line = header(&unparse(Item::Struct(item))).replace(NAME, &name);
+                (name, vec![line])
+            }
+            Syntax::Field { syntax } => {
+                let mut field = syn::Field::from_adapter(syntax);
+                let own = match &field.ident {
+                    Some(ident) => ident.to_string(),
+                    None => self.field_index(node).to_string(),
+                };
+                let name = join(prefix, &own);
+                field.ident = Some(name_placeholder());
+                field.colon_token = Some(Default::default());
+                let wrapper: syn::ItemStruct = syn::parse_quote! { struct Wrapper { #field } };
+                let line = member(&unparse(Item::Struct(wrapper))).replace(NAME, &name);
+                (name, vec![line])
+            }
+            Syntax::ItemEnum { syntax } => {
+                let mut item = syn::ItemEnum::from_adapter(syntax);
+                let name = rename(prefix, &mut item.ident);
+                let line = header(&unparse(Item::Enum(item))).replace(NAME, &name);
+                (name, vec![line])
+            }
+            Syntax::Variant { syntax } => {
+                let mut variant = syn::Variant::from_adapter(syntax);
+                let name = rename(prefix, &mut variant.ident);
+                let wrapper: syn::ItemEnum = syn::parse_quote! { enum Wrapper { #variant } };
+                let line = member(&unparse(Item::Enum(wrapper))).replace(NAME, &name);
+                (name, vec![line])
+            }
+            Syntax::ItemTrait { syntax } => {
+                let mut item = syn::ItemTrait::from_adapter(syntax);
+                let name = rename(prefix, &mut item.ident);
+                let associated = std::mem::take(&mut item.items);
+                let mut lines = vec![header(&unparse(Item::Trait(item))).replace(NAME, &name)];
+                lines.extend(associated.into_iter().map(|mut associated| {
+                    let own = match &mut associated {
+                        TraitItem::Const(constant) => Some(rename(&name, &mut constant.ident)),
+                        TraitItem::Type(alias) => Some(rename(&name, &mut alias.ident)),
+                        _ => None,
+                    };
+                    let wrapper: syn::ItemTrait =
+                        syn::parse_quote! { trait Wrapper { #associated } };
+                    associated_line(&name, own, Item::Trait(wrapper))
+                }));
+                (name, lines)
+            }
+            Syntax::InherentImpl { syntax } | Syntax::TraitImpl { syntax } => {
+                let mut item = syn::ItemImpl::from_adapter(syntax);
+                let name = join(prefix, &self_name(&item.self_ty));
+                let associated = std::mem::take(&mut item.items);
+                let mut lines = vec![header(&unparse(Item::Impl(item)))];
+                if matches!(node.syntax, Syntax::InherentImpl { .. }) {
+                    lines.extend(associated.into_iter().map(|mut associated| {
+                        let own = match &mut associated {
+                            ImplItem::Const(constant) => Some(rename(&name, &mut constant.ident)),
+                            ImplItem::Type(alias) => Some(rename(&name, &mut alias.ident)),
+                            _ => None,
+                        };
+                        let wrapper: syn::ItemImpl =
+                            syn::parse_quote! { impl Wrapper { #associated } };
+                        associated_line(&name, own, Item::Impl(wrapper))
+                    }));
+                }
+                (name, lines)
+            }
+        }
+    }
+
+    fn field_index(&self, node: &Node) -> usize {
+        node.parent
+            .map(|parent| {
+                self.children(parent)
+                    .filter(|child| matches!(child.syntax, Syntax::Field { .. }))
+                    .position(|child| child.id == node.id)
+                    .expect("a field is among its struct's fields")
+            })
+            .unwrap_or_default()
+    }
+}
+
+const NAME: &str = "__surface_spec_name";
+
+fn name_placeholder() -> syn::Ident {
+    syn::Ident::new(NAME, proc_macro2::Span::call_site())
+}
+
+fn join(prefix: &str, name: &str) -> String {
+    if prefix.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{prefix}::{name}")
+    }
+}
+
+fn self_name(self_ty: &syn::Type) -> String {
+    match self_ty {
+        syn::Type::Path(syn::TypePath {
+            qself: None, path, ..
+        }) => {
+            let segments = path
+                .segments
+                .iter()
+                .map(|segment| segment.ident.to_string());
+            let leading = if path.leading_colon.is_some() {
+                "::"
+            } else {
+                ""
+            };
+            format!("{leading}{}", Vec::from_iter(segments).join("::"))
+        }
+        other => {
+            let alias: syn::ItemType = syn::parse_quote! { type Wrapper = #other; };
+            let text = one_line(&unparse(Item::Type(alias)));
+            let ty = text
+                .strip_prefix("type Wrapper = ")
+                .and_then(|text| text.strip_suffix(';'))
+                .expect("prettyplease prints a type alias as `type Wrapper = Type;`");
+            format!("<{ty}>")
+        }
+    }
+}
+
+fn rename(prefix: &str, ident: &mut syn::Ident) -> String {
+    let name = join(prefix, &ident.to_string());
+    *ident = name_placeholder();
+    name
+}
+
+fn associated_line(name: &str, own: Option<String>, wrapper: Item) -> String {
+    let line = member(&unparse(wrapper));
+    match own {
+        Some(own) => line.replace(NAME, &own),
+        None => join(name, &line),
+    }
+}
+
+fn list_line(tokens: TokenStream, name: &str) -> String {
+    header(&unparse(Item::Verbatim(tokens))).replace(NAME, name)
+}
+
+fn header(text: &str) -> String {
+    let line = one_line(text);
+    let line = line.strip_suffix(';').unwrap_or(&line);
+    let line = line.strip_suffix("{}").unwrap_or(line).trim_end();
+    line.strip_suffix(',').unwrap_or(line).to_owned()
+}
+
+fn member(text: &str) -> String {
+    let line = one_line(text);
+    let (Some(open), Some(close)) = (line.find('{'), line.rfind('}')) else {
+        unreachable!("a wrapper item has a braced body");
+    };
+    let inner = line[open + 1..close].trim();
+    let inner = inner.strip_suffix(',').unwrap_or(inner);
+    inner.strip_suffix(';').unwrap_or(inner).to_owned()
+}
+
+fn one_line(text: &str) -> String {
+    let mut line = String::new();
+    for part in text.lines().map(str::trim).filter(|part| !part.is_empty()) {
+        if part.starts_with([')', ']', '>', '}']) {
+            if line.ends_with(',') {
+                line.pop();
+            }
+            if part.starts_with('}') {
+                line.push(' ');
+            }
+        } else if !line.is_empty() && !line.ends_with(['(', '[', '<']) {
+            line.push(' ');
+        }
+        line.push_str(part);
+    }
+    line
 }
 
 /// Which of a node's children its declaration holds.

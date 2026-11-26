@@ -1,0 +1,6 @@
+-changes.rs: pub fn Point::new() -> Self
+-changes.rs: pub fn removed()
++changes.rs: pub Point::y: i32
++changes.rs: pub fn Point::new(x: i32, y: i32) -> Self
++changes.rs: pub fn Point::y(&self) -> i32
++changes.rs: impl Default for Point

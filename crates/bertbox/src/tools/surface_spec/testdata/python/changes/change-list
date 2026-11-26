@@ -1,0 +1,5 @@
+-changes.py: def Config.load(self, path: str) -> None
+-changes.py: def removed() -> None
++changes.py: Config.debug: bool = False
++changes.py: def Config.load(self, path: Path) -> None
++changes.py: class Empty
