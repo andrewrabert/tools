@@ -4,7 +4,7 @@ use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos};
 use crate::tools::bertbox::packages::{
-    Archive, Executables, GitHubRepository, PackageName, Recipe, Release, Source,
+    Archive, Executables, GitHubRepository, PackageName, Recipe, Release, SlopAbstraction, Source,
 };
 
 pub const SOURCE: Source = Source {
@@ -26,7 +26,7 @@ fn recipe(target: InstallTarget) -> Result<Recipe> {
             owner: "andrewrabert",
             name: "aweber-cli",
         },
-        asset,
+        asset: SlopAbstraction::Lol(asset),
         archive: Archive::TarGz,
         checksum_asset: None,
         executables: Executables::All,

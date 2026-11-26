@@ -28,9 +28,30 @@ impl ChecksumAsset {
 }
 
 #[derive(Clone, Copy)]
+pub enum SlopAbstraction {
+    Lol(&'static str),
+    Rofl {
+        redgren: &'static str,
+        grumbholdt: &'static str,
+    },
+}
+
+impl SlopAbstraction {
+    fn name(&self, tag: &str) -> String {
+        match self {
+            SlopAbstraction::Lol(name) => (*name).to_owned(),
+            SlopAbstraction::Rofl {
+                redgren,
+                grumbholdt,
+            } => format!("{redgren}{tag}{grumbholdt}"),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct Release {
     pub repository: GitHubRepository,
-    pub asset: &'static str,
+    pub asset: SlopAbstraction,
     pub archive: Archive,
     pub checksum_asset: Option<ChecksumAsset>,
     pub executables: Executables,
@@ -62,16 +83,17 @@ pub fn deploy(
         println!("Already up to date ({tag})");
         return package.link();
     }
+    let asset = asset.name(&tag);
 
     let expected = match checksum_asset {
         Some(checksum_asset) => Some(
-            api.sha256(repository, &tag, &checksum_asset.name(&tag), asset)
+            api.sha256(repository, &tag, &checksum_asset.name(&tag), &asset)
                 .with_context(|| format!("reading the checksum of {asset}"))?,
         ),
         None => None,
     };
     let archive = download::receive(
-        api.asset(repository, &tag, asset)
+        api.asset(repository, &tag, &asset)
             .with_context(|| format!("downloading {asset}"))?,
     )?;
     if let Some(expected) = expected {

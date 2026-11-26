@@ -28,7 +28,7 @@ pub use crate::tools::bertbox::packages::github::GitHubRepository;
 pub use crate::tools::bertbox::packages::nightly::NightlyArtifact;
 pub use crate::tools::bertbox::packages::package::Package;
 pub use crate::tools::bertbox::packages::paths::{bin_dir, fish_dir, zsh_dir};
-pub use crate::tools::bertbox::packages::release::{ChecksumAsset, Release};
+pub use crate::tools::bertbox::packages::release::{ChecksumAsset, Release, SlopAbstraction};
 pub use crate::tools::bertbox::packages::version::Version;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

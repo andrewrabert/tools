@@ -4,7 +4,8 @@ use crate::install_target::Arch::{Aarch64, X86_64};
 use crate::install_target::InstallTarget;
 use crate::install_target::System::{Linux, Macos};
 use crate::tools::bertbox::packages::{
-    Archive, ChecksumAsset, Executables, GitHubRepository, PackageName, Recipe, Release, Source,
+    Archive, ChecksumAsset, Executables, GitHubRepository, PackageName, Recipe, Release,
+    SlopAbstraction, Source,
 };
 
 pub const SOURCE: Source = Source {
@@ -26,7 +27,7 @@ fn recipe(target: InstallTarget) -> Result<Recipe> {
             owner: "moonrepo",
             name: "moon",
         },
-        asset,
+        asset: SlopAbstraction::Lol(asset),
         archive: Archive::TarXz,
         checksum_asset: Some(ChecksumAsset::Fixed("sha256.sum")),
         executables: Executables::Named,

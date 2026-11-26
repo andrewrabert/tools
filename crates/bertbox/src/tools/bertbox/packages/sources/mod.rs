@@ -2,6 +2,7 @@ mod aweber_cli;
 mod bertbox;
 mod bxwrp;
 mod cloneholio;
+mod grafeo;
 mod jellium_desktop;
 mod jevrev;
 mod moon;
@@ -21,5 +22,6 @@ pub static ALL: &[Source] = &[
     uncomment::SOURCE,
     moon::SOURCE,
     zoekt_simple::SOURCE,
+    grafeo::SOURCE,
     jellium_desktop::SOURCE,
 ];
