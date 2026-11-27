@@ -39,10 +39,10 @@ infer = "0.22"
 ipnet = "2"
 jiff = { version = "1.0", features = ["serde"] }
 libc = "0.2"
-linkify = "0.11"
+linkify = "0.12"
 lzma-rs = "0.3"
 lofty = "0.25"
-mailparse = "0.18"
+mailparse = "0.19"
 md-5 = "0.11"
 minijinja = { version = "3", features = ["json", "loop_controls", "preserve_order", "serde", "unicode", "urlencode"] }
 minijinja-contrib = { version = "3", features = ["datetime", "html_entities", "pycompat", "rand", "timezone", "unicode_wordwrap", "wordcount"] }
